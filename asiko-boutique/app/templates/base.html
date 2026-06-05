@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ASIKO Boutique{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' },
+                        neutral: { dark: '#1A1A1A' },
+                        status: { mint: '#10B981', crimson: '#EF4444' },
+                    },
+                    fontFamily: {
+                        display: ['"Playfair Display"', 'Georgia', 'serif'],
+                        sans: ['"Inter"', 'system-ui', 'sans-serif'],
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+    </style>
+</head>
+<body class="h-full bg-[#FBF9F6] text-[#1A1A1A] antialiased">
+    <div class="min-h-full flex flex-col">
+        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#D4AF37]/20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <a href="/" class="font-display text-2xl font-light text-[#0D2A22] tracking-wider">ASIKO</a>
+                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-[#D4AF37]/40 text-[#0D2A22]">Boutique</span>
+                    </div>
+                    <nav class="hidden md:flex items-center gap-6">
+                        <a href="/" class="text-sm font-medium text-[#0D2A22] hover:text-[#D4AF37] transition-colors">Home</a>
+                        <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 hover:text-[#0D2A22] transition-colors">Lookbook</a>
+                        <a href="/virtual-experience" class="text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] transition-colors">
+                            <span class="inline-flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/></svg>
+                                3D Atelier
+                            </span>
+                        </a>
+                    </nav>
+                    <div class="flex items-center gap-4">
+                        <button
+                            hx-get="/cart/drawer"
+                            hx-target="#cart-drawer-content"
+                            hx-swap="innerHTML"
+                            onclick="document.getElementById('cart-drawer').classList.remove('hidden')"
+                            class="relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#0D2A22] border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10 transition-colors"
+                        >
+                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                            <span class="hidden sm:inline">Cart</span>
+                            <span id="cart-counter" class="font-mono text-xs tracking-widest">
+                                {% if cart and cart.item_count > 0 %}
+                                <span class="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-[#0D2A22] text-white text-xs flex items-center justify-center">{{ cart.item_count }}</span>
+                                {% endif %}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1">{% block content %}{% endblock %}</main>
+
+        <footer class="border-t border-[#D4AF37]/20 bg-white mt-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="text-center">
+                    <span class="font-display text-xl text-[#0D2A22] tracking-wider">ASIKO</span>
+                    <p class="text-sm text-[#1A1A1A]/50 mt-2">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Cart Drawer -->
+        <div id="cart-drawer" class="hidden fixed inset-0 z-50" x-data="{ open: true }" x-show="open" x-cloak>
+            <div class="absolute inset-0 bg-[#0D2A22]/80" onclick="document.getElementById('cart-drawer').classList.add('hidden')"></div>
+            <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl overflow-y-auto">
+                <div class="flex items-center justify-between p-4 border-b border-[#D4AF37]/20">
+                    <h2 class="font-display text-lg text-[#0D2A22]">Shopping Cart</h2>
+                    <button onclick="document.getElementById('cart-drawer').classList.add('hidden')" class="p-2 hover:bg-[#D4AF37]/10 rounded-md">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
+                </div>
+                <div id="cart-drawer-content" class="p-4"><p class="text-center text-[#1A1A1A]/50 py-8">Loading...</p></div>
+            </div>
+        </div>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

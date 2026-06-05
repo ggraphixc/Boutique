@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }} - ASIKO Boutique{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-[#FBF9F6] text-[#1A1A1A] font-sans antialiased selection:bg-[#0D2A22] selection:text-[#FBF9F6]">
+    <div class="max-w-7xl mx-auto px-4 py-12 lg:px-8">
+
+        <!-- Breadcrumb -->
+        <nav class="mb-8 lg:mb-12">
+            <a href="/" class="inline-flex items-center gap-2 text-sm text-[#1A1A1A]/50 hover:text-[#0D2A22] transition-colors font-sans">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                Back to Store
+            </a>
+        </nav>
+
+        <!-- Grid Structure for Editorial PDP Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
+
+            <!-- Left Column: High-Fidelity Editorial Visual Gallery (7 Columns) -->
+            <div class="lg:col-span-7 space-y-6">
+                <div class="aspect-[3/4] w-full overflow-hidden bg-neutral-100 border border-neutral-200">
+                    {% if product.base_image %}
+                    <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="font-serif text-[120px] text-[#0D2A22]/10 select-none">A</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% if product.gallery_images %}
+                <div class="grid grid-cols-2 gap-4">
+                    {% for image in product.gallery_images %}
+                    <div class="aspect-[3/4] overflow-hidden bg-neutral-100 border border-neutral-200">
+                        <img src="{{ image.url if image.url is defined else image }}" alt="Editorial Detail Layer {{ loop.index }}" class="w-full h-full object-cover object-center">
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column: Purchasing Engine & Core UX Extenders (5 Columns) -->
+            <div class="lg:col-span-5 space-y-8 lg:sticky lg:top-8 lg:h-fit">
+
+                <!-- Editorial Hierarchy Header Block -->
+                <div class="border-b border-neutral-200 pb-6">
+                    {% if product.collection_name %}
+                    <p class="font-mono text-xs tracking-[0.3em] uppercase text-[#D4AF37] mb-2">{{ product.collection_name }}</p>
+                    {% endif %}
+                    <h1 class="font-serif text-3xl lg:text-4xl text-[#0D2A22] tracking-wide leading-tight mb-3">{{ product.name }}</h1>
+                    <p class="font-mono text-lg text-[#0D2A22] tracking-wider">&#8358;{{ "{:,}".format(product.base_price if product.base_price is defined else product.price | int) }}</p>
+                </div>
+
+                <!-- FEATURE 4: Tiered Allocation Gatekeeper Zone (Asynchronous Lazy-Load) -->
+                <div class="w-full min-h-[64px]"
+                     hx-get="/catalog/allocation/{{ product.slug }}"
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <!-- Elegant Monospace Skeleton Loader State -->
+                    <div class="flex items-center justify-between p-4 border border-neutral-200 animate-pulse bg-neutral-50/50">
+                        <div class="flex items-center space-x-3">
+                            <div class="h-2 w-2 rounded-full bg-neutral-300"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 w-32 bg-neutral-200 rounded"></div>
+                                <div class="h-2 w-48 bg-neutral-200 rounded"></div>
+                            </div>
+                        </div>
+                        <div class="h-6 w-16 bg-neutral-200 rounded"></div>
+                    </div>
+                </div>
+
+                <!-- 3D Virtual Atelier Link -->
+                {% if product.model_3d_url %}
+                <a href="/virtual-experience"
+                   class="group w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 border border-[#D4AF37] bg-[#FBF9F6] hover:bg-[#0D2A22] text-[#0D2A22] hover:text-[#FBF9F6] font-mono text-xs uppercase tracking-[0.2em] transition-all duration-300">
+                    <svg class="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/>
+                    </svg>
+                    <span>View in 3D Atelier</span>
+                    <span class="relative flex h-1.5 w-1.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-60"></span>
+                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#D4AF37]"></span>
+                    </span>
+                </a>
+                {% endif %}
+
+                <!-- Product Text Narrative -->
+                {% if product.description %}
+                <div class="prose prose-neutral">
+                    <p class="text-sm font-light text-neutral-600 leading-relaxed">{{ product.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- FEATURE 1: The Digital Atelier Accordion (Alpine.js State Architecture) -->
+                <div x-data="{ open: false, display_unit: 'cm' }" class="border border-neutral-200 bg-white">
+                    <button @click="open = !open" type="button" class="w-full flex justify-between items-center px-5 py-4 bg-white text-left transition-colors hover:bg-neutral-50">
+                        <span class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] font-semibold">1. Digital Atelier Measurement Blueprints</span>
+                        <span class="text-neutral-400 font-light text-lg" x-text="open ? '−' : '+'"></span>
+                    </button>
+
+                    <div x-show="open" x-collapse x-cloak class="px-5 pb-6 pt-2 border-t border-neutral-100 space-y-4">
+                        <!-- Metric/Imperial Dynamic Switcher Toggle Button Group -->
+                        <div class="flex justify-end space-x-2">
+                            <span class="text-[11px] font-mono uppercase text-neutral-400 mr-2 self-center">Scale Rule:</span>
+                            <button @click="display_unit = 'cm'" type="button" :class="display_unit === 'cm' ? 'bg-[#0D2A22] text-[#FBF9F6]' : 'bg-neutral-100 text-neutral-600'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all">Metric (cm)</button>
+                            <button @click="display_unit = 'in'" type="button" :class="display_unit === 'in' ? 'bg-[#0D2A22] text-[#FBF9F6]' : 'bg-neutral-100 text-neutral-600'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all">Imperial (in)</button>
+                        </div>
+
+                        <!-- HTMX Form Pipeline -->
+                        <form hx-post="/catalog/atelier/bind" hx-swap="outerHTML" class="space-y-4">
+                            <input type="hidden" name="display_unit" :value="display_unit">
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Chest</label>
+                                    <input type="number" step="0.1" name="chest" required :placeholder="display_unit === 'cm' ? '96' : '38'" class="w-full border border-neutral-200 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#0D2A22] bg-[#FBF9F6]">
+                                </div>
+                                <div>
+                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Waist</label>
+                                    <input type="number" step="0.1" name="waist" required :placeholder="display_unit === 'cm' ? '82' : '32'" class="w-full border border-neutral-200 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#0D2A22] bg-[#FBF9F6]">
+                                </div>
+                                <div>
+                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 mb-1">Hips</label>
+                                    <input type="number" step="0.1" name="hips" required :placeholder="display_unit === 'cm' ? '102' : '40'" class="w-full border border-neutral-200 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#0D2A22] bg-[#FBF9F6]">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-[#0D2A22] text-[#FBF9F6] py-2.5 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22]/90 transition-all">
+                                Lock Dimension Vectors
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- FEATURE 3: The Capsule Matrix ("Complete the Ensemble") -->
+                {% if product.capsule_look and product.capsule_look['items'] %}
+                <div class="border border-neutral-200 bg-white p-5 space-y-4">
+                    <div class="border-b border-neutral-100 pb-3">
+                        <h3 class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] font-semibold">2. Complete the Curated Ensemble</h3>
+                        <p class="text-[11px] text-neutral-400 font-light mt-0.5">Check elements directly to stage cohesive look execution.</p>
+                    </div>
+
+                    <!-- Mass Selection Form Matrix Block -->
+                    <form hx-post="/catalog/cart/capsule" hx-target="#capsule-status-msg" class="space-y-4">
+                        <div class="space-y-3">
+                            {% for item in product.capsule_look['items'] %}
+                            <div class="relative flex items-center justify-between p-3 border border-neutral-100 hover:border-neutral-200 transition-all bg-[#FBF9F6]/40">
+                                <div class="flex items-center space-x-3">
+                                    {% if item.image_url is defined %}
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-12 h-16 object-cover bg-neutral-100">
+                                    {% elif item.image is defined %}
+                                    <img src="{{ item.image }}" alt="{{ item.name }}" class="w-12 h-16 object-cover bg-neutral-100">
+                                    {% else %}
+                                    <div class="w-12 h-16 bg-neutral-100 flex items-center justify-center">
+                                        <span class="font-serif text-lg text-[#0D2A22]/20">A</span>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="text-xs font-medium text-neutral-800">{{ item.name }}</p>
+                                        <p class="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mt-0.5">{{ item.type if item.type is defined else (item.type_tag if item.type_tag is defined else '') }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-4">
+                                    <span class="font-mono text-xs text-neutral-600">&#8358;{{ "{:,}".format(item.price | int) }}</span>
+                                    <input type="checkbox" name="variant_ids" value="{{ item.default_variant_id }}" checked
+                                           class="h-4 w-4 rounded-none accent-[#0D2A22] cursor-pointer border-neutral-300 focus:ring-0">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Target Insertion Slot for Response Message Logs -->
+                        <div id="capsule-status-msg" class="w-full"></div>
+
+                        <button type="submit" class="w-full border border-[#0D2A22] text-[#0D2A22] py-3 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22] hover:text-[#FBF9F6] transition-all duration-300">
+                            Deploy Selected Wardrobe Elements to Bag
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <!-- FEATURE 2: Conversational Luxury Bridge (Direct WhatsApp Concierge Connection) -->
+                <div class="pt-4 border-t border-neutral-200">
+                    {% if concierge_token %}
+                    <a href="/catalog/concierge/redirect?token={{ concierge_token }}"
+                       class="w-full inline-flex justify-center items-center px-6 py-3.5 border border-[#D4AF37] text-[#0D2A22] font-mono text-xs uppercase tracking-widest hover:bg-[#FBF9F6] transition-all text-center cursor-pointer group">
+                        <span class="mr-2 transition-transform duration-300 group-hover:translate-x-0.5">&#10022;</span>
+                        Initiate Private Atelier Consultation
+                    </a>
+                    <p class="text-center text-[10px] font-mono text-neutral-400 mt-2 uppercase tracking-wider">Direct encrypted digital ledger link &bull; Response time under 5m</p>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}

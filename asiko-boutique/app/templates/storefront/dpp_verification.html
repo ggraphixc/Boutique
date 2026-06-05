@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASIKO — Digital Product Passport Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Times New Roman', serif; background: #FBF9F6; }
+        .font-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+        .font-serif { font-family: 'Times New Roman', serif; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fade-in 0.6s ease-out; }
+        @keyframes pulse-gold { 0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(212, 175, 55, 0); } }
+        .pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="min-h-screen bg-[#FBF9F6] text-[#0D2A22]">
+
+    <!-- Header -->
+    <header class="border-b border-[#0D2A22]/10">
+        <div class="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+            <a href="/" class="text-[10px] font-mono uppercase tracking-[0.3em] text-[#0D2A22]">
+                ASIKO
+            </a>
+            <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D4AF37]">
+                Digital Product Passport
+            </span>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-6 py-12">
+
+        {% if verified %}
+        <!-- VERIFIED STATE -->
+        <div class="animate-fade-in">
+            <!-- Verification Badge -->
+            <div class="flex items-center gap-3 mb-8">
+                <div class="w-10 h-10 rounded-full bg-[#10B981] flex items-center justify-center pulse-gold">
+                    <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-serif text-[#0D2A22]">Passport Verified</h1>
+                    <p class="text-[10px] font-mono text-[#10B981] uppercase tracking-wider">
+                        Authentic ASIKO Garment
+                    </p>
+                </div>
+            </div>
+
+            <!-- Product Identity Card -->
+            <div class="bg-white border border-[#0D2A22]/10 rounded-2xl overflow-hidden mb-6">
+                {% if product_image %}
+                <div class="aspect-[3/2] bg-[#FBF9F6]">
+                    <img src="{{ product_image }}" alt="{{ product_name }}" class="w-full h-full object-cover">
+                </div>
+                {% endif %}
+                <div class="p-6">
+                    <h2 class="text-xl font-serif text-[#0D2A22] mb-1">{{ product_name }}</h2>
+                    {% if product_description %}
+                    <p class="text-sm text-neutral-500 mb-4">{{ product_description[:120] }}{% if product_description|length > 120 %}...{% endif %}</p>
+                    {% endif %}
+                    <div class="flex items-center gap-4 text-[10px] font-mono text-neutral-400 uppercase tracking-wider">
+                        <span>Serial: {{ serial }}</span>
+                        <span>&middot;</span>
+                        <span>Artisan: {{ artisan_id }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traceability Data -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Fabric Lineage -->
+                <div class="bg-white border border-[#0D2A22]/10 rounded-xl p-4">
+                    <div class="text-[9px] font-mono text-[#D4AF37] uppercase tracking-widest mb-2">
+                        Fabric Lineage
+                    </div>
+                    <p class="text-xs text-[#0D2A22] leading-relaxed">
+                        {{ fabric_lineage }}
+                    </p>
+                </div>
+
+                <!-- Processing & Dye -->
+                <div class="bg-white border border-[#0D2A22]/10 rounded-xl p-4">
+                    <div class="text-[9px] font-mono text-[#D4AF37] uppercase tracking-widest mb-2">
+                        Processing & Dye Vector
+                    </div>
+                    <p class="text-xs text-[#0D2A22] leading-relaxed">
+                        {{ processing_dye_vector }}
+                    </p>
+                </div>
+
+                <!-- Living Wage Index -->
+                <div class="bg-white border border-[#0D2A22]/10 rounded-xl p-4">
+                    <div class="text-[9px] font-mono text-[#D4AF37] uppercase tracking-widest mb-2">
+                        Living Wage Index
+                    </div>
+                    {% if living_wage_index %}
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-2xl font-mono text-[#0D2A22]">{{ living_wage_index }}</span>
+                        <span class="text-[10px] font-mono text-neutral-400">/ 100</span>
+                    </div>
+                    <div class="mt-2 h-1.5 bg-[#FBF9F6] rounded-full overflow-hidden">
+                        <div class="h-full bg-[#10B981] rounded-full" style="width: {{ living_wage_index }}%"></div>
+                    </div>
+                    {% else %}
+                    <p class="text-xs text-neutral-400">Not audited</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Price -->
+            <div class="text-center py-4 border-t border-[#0D2A22]/10">
+                <span class="font-mono text-sm text-[#0D2A22]">
+                    Retail Value: &curren;{{ "{:,.0f}".format(product_price) }}
+                </span>
+            </div>
+        </div>
+
+        {% else %}
+        <!-- UNVERIFIED / ERROR STATE -->
+        <div class="animate-fade-in text-center py-16">
+            <div class="w-16 h-16 mx-auto mb-6 rounded-full bg-[#EF4444]/10 flex items-center justify-center">
+                <svg class="w-8 h-8 text-[#EF4444]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                </svg>
+            </div>
+            <h1 class="text-lg font-serif text-[#0D2A22] mb-2">Passport Verification Failed</h1>
+            <p class="text-xs font-mono text-[#EF4444] uppercase tracking-wider mb-6">
+                {{ error }}
+            </p>
+            <p class="text-sm text-neutral-500 max-w-md mx-auto">
+                This passport token could not be verified. It may have been altered, expired, or is not associated with an authentic ASIKO garment.
+            </p>
+            <a href="/" class="inline-block mt-8 text-[10px] font-mono uppercase tracking-wider text-[#0D2A22] border-b border-[#0D2A22]/30 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
+                Return to Store
+            </a>
+        </div>
+        {% endif %}
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-[#0D2A22]/10 mt-12">
+        <div class="max-w-3xl mx-auto px-6 py-6 text-center">
+            <p class="text-[9px] font-mono text-neutral-400 uppercase tracking-widest">
+                ASIKO Boutique &middot; Digital Product Passport &middot; Blockchain-Verified Authenticity
+            </p>
+        </div>
+    </footer>
+
+</body>
+</html>

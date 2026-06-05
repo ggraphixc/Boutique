@@ -1,0 +1,5 @@
+{% if shipping_cost is not none %}
+<span id="shipping-cost" class="font-medium text-[#0D2A22]">{{ shipping_cost|naira }}</span>
+{% else %}
+<span id="shipping-cost" class="font-medium text-[#1A1A1A]/50">Select a state</span>
+{% endif %}

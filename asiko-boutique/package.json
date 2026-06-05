@@ -1,0 +1,14 @@
+{
+  "name": "asiko-boutique",
+  "version": "1.0.0",
+  "description": "ÀSÌKÒ Boutique - AI-Powered Fashion Experience",
+  "scripts": {
+    "optimize-mesh": "node .skills/headless_optimizer.js"
+  },
+  "dependencies": {
+    "@gltf-transform/core": "^3.0.0",
+    "@gltf-transform/functions": "^3.0.0",
+    "meshoptimizer": "^0.22.0"
+  },
+  "devDependencies": {}
+}

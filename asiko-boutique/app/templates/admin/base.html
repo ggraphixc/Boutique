@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#050B0A] text-white">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÀSÌKÒ Control Center</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+        .panel-scroll::-webkit-scrollbar { width: 3px; }
+        .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+        .panel-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 99px; }
+
+        [x-cloak] { display: none !important; }
+
+        /* Loading skeleton animation */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton-loading {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+        }
+
+        /* HTMX transitions */
+        .htmx-request { opacity: 0.6; pointer-events: none; }
+        .htmx-request .skeleton-loading { display: block; }
+    </style>
+</head>
+<body class="h-full flex overflow-hidden antialiased">
+
+    <!-- ============================================================== -->
+    <!-- PERSISTENT EDITORIAL SIDEBAR                                    -->
+    <!-- ============================================================== -->
+    <aside class="w-64 flex-shrink-0 bg-[#0A1211] border-r border-white/[0.05] flex flex-col justify-between h-full overflow-hidden">
+        <div class="flex flex-col h-full">
+
+            <!-- Brand Header -->
+            <div class="px-6 pt-7 pb-5 border-b border-white/[0.04]">
+                <div class="flex items-center gap-3">
+                    <span class="font-display text-xl font-light tracking-[0.25em] text-white uppercase">ÀSÌKÒ</span>
+                    <span class="text-[9px] font-mono tracking-[0.3em] text-[#D4AF37] uppercase">Engine</span>
+                </div>
+                <p class="text-[9px] font-mono text-white/30 mt-2 tracking-wider">Supply Chain Ledger v2.0</p>
+            </div>
+
+            <!-- Core Navigation Group -->
+            <nav class="flex-1 overflow-y-auto panel-scroll px-4 pt-6 pb-4 space-y-6">
+
+                <!-- Management Section -->
+                <div>
+                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">Management</span>
+                    <div class="space-y-0.5">
+                        <button hx-get="/admin/products" hx-target="#workspace" hx-push-url="true"
+                                id="nav-products"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View Catalog Assets">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            <span>Catalog Assets</span>
+                        </button>
+
+                        <button hx-get="/admin/vendors" hx-target="#workspace" hx-push-url="true"
+                                id="nav-vendors"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View Store Owners">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            <span>Store Owners</span>
+                        </button>
+
+                        <button hx-get="/admin/passports" hx-target="#workspace" hx-push-url="true"
+                                id="nav-passports"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View DPP Ledgers">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>DPP Ledgers</span>
+                        </button>
+
+                        <button hx-get="/admin/orders" hx-target="#workspace" hx-push-url="true"
+                                id="nav-orders"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View Order Pipeline">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                            </svg>
+                            <span>Order Pipeline</span>
+                        </button>
+
+                        <button hx-get="/admin/dashboard" hx-target="#workspace" hx-push-url="true"
+                                id="nav-dashboard"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View Executive Dashboard">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                            </svg>
+                            <span>Executive Dashboard</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- System Config Section -->
+                <div>
+                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">System Config</span>
+                    <div class="space-y-0.5">
+                        <button hx-get="/admin/settings/general" hx-target="#workspace" hx-push-url="true"
+                                id="nav-settings-general"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="Core Tuning settings">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <span>Core Tuning</span>
+                        </button>
+
+                        <button hx-get="/admin/settings/shipping" hx-target="#workspace" hx-push-url="true"
+                                id="nav-settings-shipping"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="Shipping Matrix settings">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
+                            </svg>
+                            <span>Shipping Matrix</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Administration Section -->
+                <div>
+                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">Administration</span>
+                    <div class="space-y-0.5">
+                        <button hx-get="/admin/reservations" hx-target="#workspace" hx-push-url="true"
+                                id="nav-reservations"
+                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
+                                aria-label="View Stock Sentinel">
+                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                            <span>Stock Sentinel</span>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Infrastructure Connection Pulse -->
+            <div class="flex-shrink-0 border-t border-white/[0.04] px-6 py-4">
+                <div class="flex items-center justify-between text-[11px] font-mono text-white/40">
+                    <div class="flex items-center gap-2">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                        <span class="text-white/50">DB Cluster</span>
+                    </div>
+                    <span class="text-emerald-400/80 text-[10px]">Active</span>
+                </div>
+                <div class="mt-2 flex items-center justify-between text-[9px] font-mono text-white/20">
+                    <span>Neon PostgreSQL</span>
+                    <span>0.3ms latency</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ============================================================== -->
+    <!-- DYNAMIC DATA WORKSPACE                                           -->
+    <!-- ============================================================== -->
+    <main id="workspace"
+          hx-trigger="load"
+          hx-get="/admin/products"
+          hx-indicator="#workspace-indicator"
+          class="flex-1 overflow-y-auto bg-[#050B0A] panel-scroll relative"
+          role="main"
+          aria-label="Admin workspace">
+
+        <!-- Loading indicator -->
+        <div id="workspace-indicator" class="fixed top-0 left-64 right-0 h-0.5 z-50 bg-[#0A1211] overflow-hidden opacity-0 transition-opacity duration-200">
+            <div class="h-full w-full bg-[#D4AF37] origin-left scale-x-0 transition-transform duration-500 ease-out htmx-request:scale-x-100 htmx-request:opacity-100"></div>
+        </div>
+
+        <!-- Content area with padding -->
+        <div class="p-8 lg:p-10 min-h-full" id="workspace-content">
+            <!-- HTMX content renders here -->
+        </div>
+    </main>
+
+    <!-- ============================================================== -->
+    <!-- GLOBAL ALPINE STATE                                             -->
+    <!-- ============================================================== -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            // Global admin state
+            Alpine.data('adminState', () => ({
+                sidebarCollapsed: false,
+                activePanel: 'catalog',
+                lastRefresh: null,
+
+                toggleSidebar() {
+                    this.sidebarCollapsed = !this.sidebarCollapsed;
+                }
+            }));
+
+            // Notification toast system
+            Alpine.data('notificationToast', () => ({
+                visible: false,
+                message: '',
+                type: 'success',
+
+                show(msg, type = 'success') {
+                    this.message = msg;
+                    this.type = type;
+                    this.visible = true;
+                    setTimeout(() => { this.visible = false; }, 4000);
+                }
+            }));
+        });
+
+        // Listen for HTMX after-swap to update active nav item
+        document.addEventListener('htmx:afterSwap', (e) => {
+            const triggerId = e.detail?.elt?.id;
+            if (!triggerId || !triggerId.startsWith('nav-')) return;
+
+            // Remove active state from all nav items
+            document.querySelectorAll('aside [id^="nav-"]').forEach(btn => {
+                btn.classList.remove('bg-white/[0.04]', 'text-white');
+                btn.classList.add('text-white/60');
+            });
+
+            // Highlight the clicked nav item
+            const trigger = document.getElementById(triggerId);
+            if (trigger) {
+                trigger.classList.remove('text-white/60');
+                trigger.classList.add('bg-white/[0.04]', 'text-white');
+            }
+        });
+
+        // HTMX error handling
+        document.addEventListener('htmx:responseError', (e) => {
+            console.error('[Admin] HTMX request failed:', e.detail);
+        });
+    </script>
+</body>
+</html>

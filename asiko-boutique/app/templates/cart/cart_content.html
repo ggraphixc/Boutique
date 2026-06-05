@@ -1,0 +1,61 @@
+{% if cart.lines %}
+<div class="space-y-4">
+    {% for item in cart.lines %}
+    <div class="flex gap-4 p-4 rounded-lg border border-[#D4AF37]/20">
+        <div class="w-16 h-16 bg-[#FBF9F6] rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {% if item.image_url %}
+            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+            {% else %}
+            <span class="font-display text-[#0D2A22]/30 text-xl">A</span>
+            {% endif %}
+        </div>
+        <div class="flex-1 min-w-0">
+            <h4 class="font-medium text-[#0D2A22] text-sm truncate">{{ item.name }}</h4>
+            {% if item.size or item.color %}
+            <p class="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mt-0.5">
+                {{ item.size }}{% if item.size and item.color %} / {% endif %}{{ item.color }}
+            </p>
+            {% endif %}
+            <p class="text-sm font-semibold text-[#0D2A22] mt-1">{{ item.price|naira }}</p>
+            <div class="flex items-center gap-2 mt-2">
+                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML">
+                    <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
+                    <input type="hidden" name="action" value="decrement">
+                    <button type="submit" class="h-7 w-7 inline-flex items-center justify-center border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/></svg>
+                    </button>
+                </form>
+                <span class="text-sm font-medium w-6 text-center">{{ item.quantity }}</span>
+                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML">
+                    <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
+                    <input type="hidden" name="action" value="increment">
+                    <button type="submit" class="h-7 w-7 inline-flex items-center justify-center border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+                </form>
+                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML" class="ml-auto">
+                    <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
+                    <input type="hidden" name="action" value="remove">
+                    <button type="submit" class="h-7 w-7 inline-flex items-center justify-center text-[#EF4444] hover:bg-[#EF4444]/10 rounded-md">
+                        <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+<div class="border-t border-[#D4AF37]/20 pt-4 mt-4 space-y-4">
+    <div class="flex justify-between items-center">
+        <span class="text-[#1A1A1A]/70">Subtotal</span>
+        <span class="text-xl font-semibold text-[#0D2A22]">{{ cart.total|naira }}</span>
+    </div>
+    <p class="text-xs text-[#1A1A1A]/50">Shipping calculated at checkout</p>
+    <a href="/checkout" class="block w-full text-center px-4 py-3 text-sm font-medium text-white bg-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 transition-colors">Proceed to Checkout</a>
+</div>
+{% else %}
+<div class="flex flex-col items-center justify-center py-12 text-center">
+    <svg class="h-12 w-12 text-[#D4AF37]/30 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+    <p class="text-[#1A1A1A]/50">Your cart is empty</p>
+</div>
+{% endif %}

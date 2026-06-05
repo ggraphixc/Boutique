@@ -1,0 +1,47 @@
+<div class="border-t border-[#0D2A22]/10 pt-4 flex items-center justify-between">
+    <div class="flex flex-col space-y-0.5">
+        <span class="text-[10px] uppercase font-mono tracking-widest text-[#0D2A22]/50">Showroom Status</span>
+        <div id="client-status-{{ product.id }}">
+            {% if product.pipeline_status == 'completed' %}
+                <span class="text-xs font-mono text-emerald-700 flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> 3D Fitting Active
+                </span>
+            {% elif product.pipeline_status == 'failed' %}
+                <span class="text-xs font-mono text-rose-600">2D Static Display Only</span>
+            {% elif product.pipeline_status != 'idle' %}
+                <span class="text-xs font-mono text-amber-600 animate-pulse flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span> 3D Synthesis Processing...
+                </span>
+            {% else %}
+                <span class="text-xs font-mono text-black/40">Standard Catalog Item</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if product.pipeline_status == 'completed' and product.model_3d_url %}
+        <button
+            x-data="{ loading: false }"
+            @click="
+                loading = true;
+                $dispatch('layer-capsule-mesh', {
+                    meshUrl: '{{ product.model_3d_url }}',
+                    layerDepth: {{ product.apparel_layer_depth or 2 }},
+                    assetCategory: '{{ product.asset_category or 'apparel' }}',
+                    productName: '{{ product.name }}'
+                });
+                setTimeout(() => { loading = false }, 800);
+            "
+            class="relative overflow-hidden bg-[#0D2A22] text-[#FBF9F6] border border-[#0D2A22] hover:bg-[#D4AF37] hover:text-[#0D2A22] hover:border-[#D4AF37] px-5 py-2 font-mono text-xs uppercase tracking-widest font-bold rounded-none transition-all duration-300 shadow-sm"
+            :class="loading ? 'opacity-80' : ''">
+
+            <span x-show="!loading">Instant Wear</span>
+            <span x-show="loading" class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-current animate-ping"></span> Layering Asset...
+            </span>
+        </button>
+    {% else %}
+        <button disabled class="bg-black/5 text-black/30 border border-black/10 px-5 py-2 font-mono text-xs uppercase tracking-widest font-bold cursor-not-allowed">
+            Flat View Only
+        </button>
+    {% endif %}
+</div>

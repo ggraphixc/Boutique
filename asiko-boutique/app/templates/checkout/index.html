@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Checkout - ASIKO Boutique{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="font-display text-3xl text-[#0D2A22] mb-8">Checkout</h1>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Order Summary -->
+        <div class="space-y-6">
+            <h2 class="font-display text-xl text-[#0D2A22]">Order Summary</h2>
+            <div class="space-y-4">
+                {% for item in cart.lines %}
+                <div class="flex gap-4 p-4 rounded-lg border border-[#D4AF37]/20">
+                    <div class="w-16 h-16 bg-[#FBF9F6] rounded-md flex items-center justify-center flex-shrink-0">
+                        <span class="font-display text-[#0D2A22]/30 text-xl">A</span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-medium text-[#0D2A22] text-sm truncate">{{ item.name }}</h4>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-sm font-semibold text-[#0D2A22]">{{ item.price|naira }}</span>
+                            <span class="text-xs text-[#1A1A1A]/50">Qty: {{ item.quantity }}</span>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="border-t border-[#D4AF37]/20 pt-4 space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-[#1A1A1A]/70">Subtotal</span>
+                    <span class="font-medium text-[#0D2A22]">{{ cart.total|naira }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-[#1A1A1A]/70">Shipping</span>
+                    <span id="shipping-cost" class="font-medium text-[#0D2A22]">—</span>
+                </div>
+                <div class="flex justify-between text-lg font-semibold">
+                    <span class="text-[#0D2A22]">Total</span>
+                    <span id="order-total" class="text-[#0D2A22]">{{ cart.total|naira }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Shipping & Payment Form -->
+        <div class="space-y-6">
+            <form hx-post="/checkout/submit" hx-target="#checkout-form" hx-swap="innerHTML" id="checkout-form" class="space-y-6">
+                <h2 class="font-display text-xl text-[#0D2A22]">Shipping Information</h2>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-[#0D2A22] mb-1">First Name</label>
+                        <input type="text" name="first_name" required
+                            class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-[#0D2A22] mb-1">Last Name</label>
+                        <input type="text" name="last_name" required
+                            class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Email Address</label>
+                    <input type="email" name="email" required
+                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Phone Number</label>
+                    <input type="tel" name="phone" required
+                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Delivery Address</label>
+                    <textarea name="address" rows="2" required
+                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">State</label>
+                    <select name="state" required id="state-select"
+                        hx-get="/checkout/shipping-summary"
+                        hx-trigger="change"
+                        hx-target="#shipping-cost"
+                        hx-swap="outerHTML"
+                        hx-include="#state-select"
+                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                        <option value="">Select State</option>
+                        {% for state in states %}
+                        <option value="{{ state.code }}">{{ state.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" class="w-full px-6 py-3 text-sm font-medium text-white bg-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 transition-colors">
+                        Place Order
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
