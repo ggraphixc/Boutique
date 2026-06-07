@@ -429,7 +429,9 @@
         <!-- Content area (HTMX swaps sections here) -->
         <div class="flex-1 overflow-y-auto panel-scroll bg-[#FAFAFA] dark:bg-[#0B0B0D]">
             <div class="p-6 md:p-8" id="workspace-content">
-                <!-- HTMX content renders here -->
+                {% if section_template %}
+                    {% include section_template %}
+                {% endif %}
             </div>
         </div>
     </main>

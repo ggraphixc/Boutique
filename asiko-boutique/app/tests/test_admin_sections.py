@@ -114,6 +114,40 @@ class TestAdminSectionRendering:
             assert marker in r.text, f"{path} missing marker {marker!r}"
 
 
+class TestDirectNavigationShell:
+    """Direct browser navigation to section URLs returns the full admin shell."""
+
+    def test_direct_nav_returns_admin_shell(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/members")
+            assert r.status_code == 200
+            # Should contain the admin shell markers
+            assert "ÀSÌKÒ" in r.text
+            assert "nav-members" in r.text
+            # Should also contain the section content
+            assert 'data-section="members"' in r.text
+
+    def test_htmx_nav_returns_raw_fragment(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/members", headers={"HX-Request": "true"})
+            assert r.status_code == 200
+            # Should NOT contain the admin shell markers
+            assert "ÀSÌKÒ" not in r.text
+            assert "nav-members" not in r.text
+            # Should still contain the section content
+            assert 'data-section="members"' in r.text
+
+    def test_direct_nav_dashboard_returns_shell(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/dashboard")
+            assert r.status_code == 200
+            assert "ÀSÌKÒ" in r.text
+            assert 'data-section="dashboard"' in r.text
+
+
 class TestAdminIndexBaseTemplate:
     """The /admin index renders the new light-theme base shell with 8 nav items."""
 

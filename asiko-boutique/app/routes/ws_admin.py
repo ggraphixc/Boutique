@@ -9,7 +9,7 @@ from typing import List
 
 from starlette.requests import Request
 from starlette.websockets import WebSocket, WebSocketDisconnect
-from starlette.routing import Route
+from starlette.routing import Route, WebSocketRoute
 
 from app.realtime import (
     manager,
@@ -154,13 +154,12 @@ def _render_review_summary_fragment(payload: dict) -> str:
 # WS Endpoints
 # ---------------------------------------------------------------------------
 
-async def ws_admin_dashboard(request: Request) -> None:
+async def ws_admin_dashboard(ws: WebSocket) -> None:
     """
     WebSocket endpoint for the admin dashboard.
     Subscribes to: new_order, new_review, pipeline_update.
     Pushes pre-rendered HTML fragments for HTMX to swap.
     """
-    ws: WebSocket = request.scope["ws"]
     channels = [CH_NEW_ORDER, CH_NEW_REVIEW, CH_PIPELINE_UPDATE]
 
     await manager.connect(ws, channels)
@@ -183,14 +182,13 @@ async def ws_admin_dashboard(request: Request) -> None:
         await manager.disconnect(ws, channels)
 
 
-async def ws_admin_pipeline(request: Request) -> None:
+async def ws_admin_pipeline(ws: WebSocket) -> None:
     """
     WebSocket endpoint for a single product's pipeline status.
     URL: /ws/admin/pipeline/{product_id}
     Subscribes to: pipeline_update (filtered by product_id in broadcast).
     """
-    product_id = request.path_params.get("product_id", "")
-    ws: WebSocket = request.scope["ws"]
+    product_id = ws.path_params.get("product_id", "")
     channels = [CH_PIPELINE_UPDATE]
 
     await manager.connect(ws, channels)
@@ -211,13 +209,12 @@ async def ws_admin_pipeline(request: Request) -> None:
         await manager.disconnect(ws, channels)
 
 
-async def ws_admin_reviews(request: Request) -> None:
+async def ws_admin_reviews(ws: WebSocket) -> None:
     """
     WebSocket endpoint for admin review notifications.
     Subscribes to: new_review.
     Pushes the updated review summary stats fragment.
     """
-    ws: WebSocket = request.scope["ws"]
     channels = [CH_NEW_REVIEW]
 
     await manager.connect(ws, channels)
@@ -243,7 +240,7 @@ async def ws_admin_reviews(request: Request) -> None:
 # ---------------------------------------------------------------------------
 
 ws_admin_routes = [
-    Route("/ws/admin/dashboard", endpoint=ws_admin_dashboard),
-    Route("/ws/admin/pipeline/{product_id}", endpoint=ws_admin_pipeline),
-    Route("/ws/admin/reviews", endpoint=ws_admin_reviews),
+    WebSocketRoute("/ws/admin/dashboard", endpoint=ws_admin_dashboard),
+    WebSocketRoute("/ws/admin/pipeline/{product_id}", endpoint=ws_admin_pipeline),
+    WebSocketRoute("/ws/admin/reviews", endpoint=ws_admin_reviews),
 ]

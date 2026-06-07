@@ -37,6 +37,22 @@ logger = logging.getLogger("asiko.admin.sections")
 
 
 # ---------------------------------------------------------------------------
+# Section response wrapper
+# HTMX requests get the raw fragment; direct browser navigation gets the
+# full admin shell wrapping the section.
+# ---------------------------------------------------------------------------
+def _section_response(request: Request, template: str, context: dict) -> HTMLResponse:
+    """Return an HTMX fragment for HTMX requests, or the full admin shell
+    wrapping the section for direct browser navigation."""
+    ctx = {"request": request, **context}
+    if request.headers.get("HX-Request"):
+        return templates.TemplateResponse(request, template, ctx)
+    # Direct navigation — render section inside the admin shell
+    ctx["section_template"] = template
+    return templates.TemplateResponse(request, "admin/base.html", ctx)
+
+
+# ---------------------------------------------------------------------------
 # Pipeline status display mapping
 # DB enum (generation_status_type): idle, queued, generating_mesh, optimizing_gltf, completed, failed
 # UI label:                       not_started, processing, generated, failed
@@ -300,7 +316,7 @@ async def section_dashboard(request: Request) -> HTMLResponse:
         "top_sellers": top_sellers,
         "recent_orders": recent_orders,
     }
-    return templates.TemplateResponse(request, "admin/sections/dashboard.html", context)
+    return _section_response(request, "admin/sections/dashboard.html", context)
 
 
 # ===========================================================================
@@ -309,9 +325,9 @@ async def section_dashboard(request: Request) -> HTMLResponse:
 async def section_products(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/products.html",
-        {"request": request, "products": products},
+        {"products": products},
     )
 
 
@@ -347,10 +363,9 @@ async def section_categories(request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.warning("[admin] categories fetch failed: %s", exc)
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/categories.html",
         {
-            "request": request,
             "categories": categories,
             "uncategorized_count": uncategorized_count or 0,
         },
@@ -363,9 +378,9 @@ async def section_categories(request: Request) -> HTMLResponse:
 async def section_all_products(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/all_products.html",
-        {"request": request, "products": products},
+        {"products": products},
     )
 
 
@@ -419,10 +434,9 @@ async def section_reviews(request: Request) -> HTMLResponse:
         logger.warning("[admin] reviews fetch failed (table may not exist yet): %s", exc)
 
     five_star_pct = int((five_star_count / len(reviews)) * 100) if reviews else 0
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/reviews.html",
         {
-            "request": request,
             "reviews": reviews,
             "rating_avg": round(rating_avg, 1) if rating_avg else None,
             "five_star_count": five_star_count or 0,
@@ -460,9 +474,9 @@ async def section_ads(request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.warning("[admin] ads fetch failed (table may not exist yet): %s", exc)
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/ads.html",
-        {"request": request, "ads": ads},
+        {"ads": ads},
     )
 
 
@@ -480,9 +494,9 @@ async def section_settings_get(request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.warning("[admin] settings fetch failed (table may not exist yet): %s", exc)
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/settings.html",
-        {"request": request, "settings": settings},
+        {"settings": settings},
     )
 
 
@@ -550,9 +564,9 @@ async def section_about_get(request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.warning("[admin] about_me fetch failed (table may not exist yet): %s", exc)
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/about.html",
-        {"request": request, "about": about},
+        {"about": about},
     )
 
 
@@ -735,7 +749,7 @@ async def section_operations(request: Request) -> HTMLResponse:
         "reservations": active_reservations,
         "waitlists": pending_waitlists,
     }
-    return templates.TemplateResponse(request, "admin/sections/operations.html", context)
+    return _section_response(request, "admin/sections/operations.html", context)
 
 
 # ===========================================================================
@@ -808,10 +822,9 @@ async def section_sales(request: Request) -> HTMLResponse:
         "cancelled":  ("bg-rose-50",   "text-rose-700",   "ring-rose-200"),
     }
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/sales.html",
         {
-            "request": request,
             "orders": orders,
             "metrics": metrics,
             "status_styles": status_styles,
@@ -931,10 +944,9 @@ async def section_analytics(request: Request) -> HTMLResponse:
     except Exception as exc:
         logger.warning("[admin] analytics fetch failed: %s", exc)
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/analytics.html",
         {
-            "request": request,
             "totals": totals,
             "daily": daily,
             "max_rev": max_rev,
@@ -1009,10 +1021,9 @@ async def section_members(request: Request) -> HTMLResponse:
         "returning": ("bg-gray-100",   "text-gray-600",    "ring-gray-200"),
     }
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/members.html",
         {
-            "request": request,
             "members": members,
             "totals": totals,
             "status_styles": status_styles,
@@ -1055,9 +1066,9 @@ async def section_view_site(request: Request) -> HTMLResponse:
     base = os.environ.get("PUBLIC_SITE_URL") or ""
     public_url = f"{base}/" if base else "/"
 
-    return templates.TemplateResponse(
+    return _section_response(
         request, "admin/sections/view_site.html",
-        {"request": request, "counts": counts, "public_url": public_url},
+        {"counts": counts, "public_url": public_url},
     )
 
 

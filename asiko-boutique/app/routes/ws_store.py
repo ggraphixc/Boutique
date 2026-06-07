@@ -7,7 +7,7 @@ import logging
 
 from starlette.requests import Request
 from starlette.websockets import WebSocket, WebSocketDisconnect
-from starlette.routing import Route
+from starlette.routing import Route, WebSocketRoute
 
 from app.realtime import (
     manager,
@@ -73,15 +73,14 @@ def _render_stock_badge_fragment(payload: dict) -> str:
 # WS Endpoints
 # ---------------------------------------------------------------------------
 
-async def ws_store_product(request: Request) -> None:
+async def ws_store_product(ws: WebSocket) -> None:
     """
     WebSocket endpoint for a single product's real-time updates.
     URL: /ws/store/product/{product_id}
     Subscribes to: new_review, stock_update (filtered by product_id).
     Pushes HTML fragments for PDP review stats + stock badge.
     """
-    product_id = request.path_params.get("product_id", "")
-    ws: WebSocket = request.scope["ws"]
+    product_id = ws.path_params.get("product_id", "")
     channels = [CH_NEW_REVIEW, CH_STOCK_UPDATE]
 
     await manager.connect(ws, channels)
@@ -107,5 +106,5 @@ async def ws_store_product(request: Request) -> None:
 # ---------------------------------------------------------------------------
 
 ws_store_routes = [
-    Route("/ws/store/product/{product_id}", endpoint=ws_store_product),
+    WebSocketRoute("/ws/store/product/{product_id}", endpoint=ws_store_product),
 ]

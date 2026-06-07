@@ -236,8 +236,87 @@ async def get_general_settings_fragment(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+async def create_product(request: Request):
+    """
+    POST /admin/products/create — Create a new product.
+    Accepts multipart form: name, price, category, description, source_2d_file (optional).
+    Returns redirect to reload the products section.
+    """
+    import os
+    import secrets
+    import re
+    from starlette.responses import HTMLResponse, RedirectResponse
+
+    form = await request.form()
+    name = (form.get("name") or "").strip()
+    price_raw = (form.get("price") or "0").strip()
+    category = (form.get("category") or "").strip()
+    description = (form.get("description") or "").strip()
+    uploaded_file = form.get("source_2d_file")
+
+    if not name:
+        return HTMLResponse(
+            "<span class='text-xs text-red-500'>Product name is required.</span>",
+            status_code=400,
+        )
+
+    try:
+        price = float(price_raw)
+    except (ValueError, TypeError):
+        price = 0.0
+
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+    # Handle optional image upload
+    UPLOAD_DIR = "static/uploads"
+    image_path = None
+    if uploaded_file and hasattr(uploaded_file, "filename") and uploaded_file.filename:
+        ext = os.path.splitext(uploaded_file.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>Invalid image format. Use JPG, PNG, or WebP.</span>",
+                status_code=400,
+            )
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        secure_name = f"prod_{secrets.token_hex(8)}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, secure_name)
+        contents = await uploaded_file.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        image_path = f"/{file_path}"
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        # Check for duplicate slug, append suffix if needed
+        base_slug = slug
+        suffix = 1
+        while True:
+            exists = await conn.fetchval(
+                "SELECT id FROM products WHERE slug = $1", slug
+            )
+            if not exists:
+                break
+            suffix += 1
+            slug = f"{base_slug}-{suffix}"
+
+        await conn.execute(
+            """
+            INSERT INTO products (name, slug, price, stock_quantity, base_image, description, pipeline_status)
+            VALUES ($1, $2, $3, 0, $4, $5, 'idle')
+            """,
+            name, slug, price, image_path, description or None,
+        )
+
+    # Return a success message with HX-Redirect to reload the products section
+    return HTMLResponse(
+        "<div class='text-xs text-emerald-600 font-medium'>Product created successfully.</div>",
+        headers={"HX-Redirect": "/admin/section/products"},
+    )
+
+
 routes = [
     Route("/admin/products", endpoint=get_admin_products_fragment, methods=["GET"]),
+    Route("/admin/products/create", endpoint=create_product, methods=["POST"]),
     Route("/admin/products/{id}/detail", endpoint=get_product_detail_fragment, methods=["GET"]),
     Route("/admin/products/{id}", endpoint=handle_delete_product, methods=["DELETE"]),
     Route("/admin/settings", endpoint=get_general_settings_fragment, methods=["GET"]),
