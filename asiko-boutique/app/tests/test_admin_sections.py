@@ -577,6 +577,51 @@ class TestNewSections:
             assert "bg-purple-50" in body
             assert "BRAND COMMAND" not in body  # v2 only
 
+    def test_sales_section_renders_with_real_uuid_order_id(self):
+        """Regression: order.id from asyncpg is a pgproto.UUID (not subscriptable).
+        The sales template does `o.id[:8]`, so the route must coerce it to a
+        plain string before passing to the template."""
+        import uuid as uuidlib
+        order_id = uuidlib.UUID("abcd1234-5678-90ab-cdef-1234567890ab")
+
+        def _make_uuid_pool():
+            pool = MagicMock()
+            order_row = {
+                "id": order_id,
+                "customer_email": "jane.doe@asiko.com",
+                "total_amount": 25000.0,
+                "shipping_state": "Lagos",
+                "shipping_cost": 1500.0,
+                "status": "paid",
+                "payment_reference": "PAY-001",
+                "created_at": None,
+                "item_count": 2,
+            }
+
+            @asynccontextmanager
+            async def _acquire():
+                conn = MagicMock()
+                conn.fetch = AsyncMock(return_value=[order_row])
+                conn.fetchrow = AsyncMock(return_value=None)
+                conn.fetchval = AsyncMock(return_value=0)
+                conn.execute = AsyncMock(return_value=None)
+                yield conn
+
+            pool.acquire = _acquire
+            return pool
+
+        app = _make_app_with_routes(pool_factory=_make_uuid_pool)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/sales")
+            assert r.status_code == 200, f"got {r.status_code}: {r.text[:400]}"
+            body = r.text
+            # Order id should be rendered as a string, with the 8-char prefix
+            # ("#abcd1234") visible in the table. Without str() coercion in
+            # the route, the slice would TypeError and the response would be 500.
+            assert "#abcd1234" in body
+            # Customer email should also render (proves we didn't crash mid-row).
+            assert "jane.doe@asiko.com" in body
+
     def test_sales_sidebar_nav_active_for_slug_sales(self):
         """The idMap must map slug 'sales' to nav button 'nav-sales'."""
         import re

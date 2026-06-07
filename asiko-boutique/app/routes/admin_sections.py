@@ -775,6 +775,7 @@ async def section_sales(request: Request) -> HTMLResponse:
 
             for r in rows:
                 d = dict(r)
+                d["id"] = str(d.get("id") or "")
                 d["total_amount"] = float(d.get("total_amount") or 0)
                 d["shipping_cost"] = float(d.get("shipping_cost") or 0)
                 d["created_at_human"] = _humanize_dt(d.get("created_at"))
