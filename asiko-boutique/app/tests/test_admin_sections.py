@@ -89,10 +89,14 @@ class TestAdminIndexBaseTemplate:
             assert "border-r border-gray-200" in body
             # Brand
             assert "ÀSÌKÒ" in body
+            assert "Pro Atelier" in body  # subtitle below brand
             # 8 nav items, each with id="nav-XXX"
             for nav_id in (
-                "nav-dashboard", "nav-products", "nav-categories", "nav-all-products",
+                "nav-dashboard", "nav-products", "nav-categories",
                 "nav-reviews", "nav-ads", "nav-settings", "nav-about",
+                # nav-sales (renamed from nav-all-products in the shell) and
+                # nav-sales both map to all-products via idMap in JS
+                "nav-sales",
             ):
                 assert nav_id in body, f"missing nav id {nav_id}"
 
@@ -117,6 +121,151 @@ class TestAdminIndexBaseTemplate:
             r = client.get("/admin")
             assert "Hide" in r.text
             assert "asiko:sidebarOpen" in r.text  # localStorage key
+
+    def test_index_single_nav_group_v2(self):
+        """V2 shell uses a single nav group (no MAIN/INSIGHTS/CONFIG headers at the top,
+        only one Account divider)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            # The "Account" divider is present
+            assert "Account" in body
+            # The old group headers (MAIN, INSIGHTS, CONFIG) are gone
+            assert ">MAIN<" not in body
+            assert ">INSIGHTS<" not in body
+            assert ">CONFIG<" not in body
+
+    def test_index_light_blue_active_state_v2(self):
+        """V2 active state is light-blue (rgb(239, 246, 255) / blue-50 + blue-600 text)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            # The CSS rule for the active state
+            assert "rgb(239, 246, 255)" in body  # blue-50 background
+            assert "rgb(37, 99, 235)" in body    # blue-600 text/icon
+            # The JS setActiveNav() handler exists
+            assert "setActiveNav" in body
+            # is-active class is toggled in the handler
+            assert "is-active" in body
+
+    def test_index_top_bar_right_side_icons_only(self):
+        """V2 top bar has only right-side icons (no big title). The page title
+        lives in the workspace content area instead."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            # Right-side icons are present
+            assert "title=\"Source code\"" in body
+            assert "title=\"Bookmark\"" in body
+            assert "title=\"Notifications\"" in body
+            assert "title=\"Toggle theme\"" in body
+            assert "title=\"Profile\"" in body
+            # No big title in the top bar (titles live in the workspace content)
+            assert "<h1" not in body.split('<main id="workspace"')[1].split('<!-- HTMX content renders here -->')[0]
+
+    def test_index_help_and_support_bottom(self):
+        """Sidebar bottom has Help & Support + Hide/Show toggle."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert "Help &amp; Support" in body or "Help & Support" in body
+
+
+class TestDashboardKpiCards:
+    """The v2 dashboard renders 4 KPI cards: Total Sales, Active Users, Orders, Products."""
+
+    def test_all_four_kpi_titles_present(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            for title in ("Total Sales", "Active Users", "Orders", "Products"):
+                assert title in body, f"missing KPI title {title!r}"
+
+    def test_kpi_cards_have_pastel_icon_chips(self):
+        """Each KPI card has a colored icon chip (blue/emerald/purple/amber)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            assert "bg-blue-50" in body
+            assert "bg-emerald-50" in body
+            assert "bg-purple-50" in body
+            assert "bg-amber-50" in body
+
+    def test_kpi_cards_have_green_trend_arrow(self):
+        """Each KPI card shows the green trend arrow (svg path d=...M13 7h8...)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            # The green trend arrow SVG path is identical for all 4 cards
+            assert body.count("M13 7h8m0 0v8m0-8l-8 8-4-4-6 6") >= 4
+
+    def test_page_title_in_content_area(self):
+        """Page title 'Dashboard' + subtitle 'Welcome back to your dashboard' live
+        in the workspace content area (not the top bar)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            assert ">Dashboard<" in body
+            assert "Welcome back to your dashboard" in body
+
+
+class TestDashboardActivityStatsGrid:
+    """The v2 dashboard has a 2-col grid: Recent Activity (left) + Quick Stats (right)."""
+
+    def test_recent_activity_panel_present(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            assert "Recent Activity" in body
+            assert "View all" in body  # link to expanded feed
+
+    def test_quick_stats_panel_present(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            assert "Quick Stats" in body
+            # Three core stat labels
+            assert "Conversion Rate" in body
+            assert "Bounce Rate" in body
+            assert "Page Views" in body
+            # Plus 3D pipeline bar
+            assert "3D Pipeline" in body
+
+    def test_progress_bars_present(self):
+        """Quick Stats uses h-1.5 rounded progress bars (colored)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            assert "bg-blue-500" in body   # conversion rate bar
+            assert "bg-orange-500" in body  # bounce rate bar
+            assert "bg-emerald-500" in body # page views bar
+
+    def test_activity_uses_unified_kind(self):
+        """Recent Activity items have icon_bg + icon_color from the new icon map."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/dashboard").text
+            # Background/icon color pairs from the activity feed
+            assert "bg-emerald-50" in body
+            assert "bg-blue-50" in body
+            assert "bg-amber-50" in body
+            assert "bg-purple-50" in body
+            assert "bg-orange-50" in body
+
+    def test_empty_store_dashboard_graceful(self):
+        """Empty DB still renders the dashboard with zeroed KPIs and design-time mock activity."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/dashboard")
+            assert r.status_code == 200
+            body = r.text
+            # The page title and all 4 KPI cards still render
+            assert "Dashboard" in body
+            for title in ("Total Sales", "Active Users", "Orders", "Products"):
+                assert title in body
+            # Quick stats panel still renders
+            assert "Quick Stats" in body
+            assert "Conversion Rate" in body
 
 
 class TestPipelineStatusMapping:
@@ -153,7 +302,7 @@ class TestAdminSectionGracefulEmpty:
         with TestClient(app, raise_server_exceptions=False) as client:
             r = client.get("/admin/section/dashboard")
             assert r.status_code == 200
-            assert "Atelier overview" in r.text
+            assert "Welcome back to your dashboard" in r.text
 
     def test_products_empty_db_shows_empty_state(self):
         app = _make_app_with_routes()

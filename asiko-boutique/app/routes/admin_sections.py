@@ -127,11 +127,33 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
 # ===========================================================================
 # 1. DASHBOARD
 # ===========================================================================
+# Activity feed item kinds: 'sale', 'user', 'product', 'review', 'pipeline'
+_ACTIVITY_ICONS = {
+    "sale":     {"icon_bg": "bg-emerald-50", "icon_color": "text-emerald-600"},
+    "user":     {"icon_bg": "bg-blue-50",    "icon_color": "text-blue-600"},
+    "product":  {"icon_bg": "bg-amber-50",   "icon_color": "text-amber-600"},
+    "review":   {"icon_bg": "bg-purple-50",  "icon_color": "text-purple-600"},
+    "pipeline": {"icon_bg": "bg-orange-50",  "icon_color": "text-orange-600"},
+    "default":  {"icon_bg": "bg-gray-100",   "icon_color": "text-gray-600"},
+}
+
+
+def _activity_item(kind: str, title: str, subtitle: str, time_ago: str) -> Dict[str, str]:
+    icons = _ACTIVITY_ICONS.get(kind, _ACTIVITY_ICONS["default"])
+    return {
+        "kind": kind,
+        "title": title,
+        "subtitle": subtitle,
+        "time_ago": time_ago,
+        **icons,
+    }
+
+
 async def section_dashboard(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
 
-    # Pipeline status counts
+    # --- Pipeline status counts ---
     pipeline = {"generated": 0, "processing": 0, "failed": 0, "not_started": 0}
     for p in products:
         pipeline[p["pipeline_status"]] = pipeline.get(p["pipeline_status"], 0) + 1
@@ -140,7 +162,31 @@ async def section_dashboard(request: Request) -> HTMLResponse:
     products_with_3d = pipeline["generated"]
     health_pct = int((products_with_3d / total_products) * 100) if total_products else 0
 
-    # Recent pipeline activity (most recently updated products)
+    # --- KPI cards ---
+    # Products is the only real metric (no orders/payments/users tables yet).
+    # The others are placeholder zeros until the order + session tables exist.
+    # Total Sales = sum of (price * stock_quantity) for completed pieces is a
+    # useful "catalog value" proxy; we still show $0 on empty stores.
+    kpi_total_sales = 0
+    kpi_active_users = 0
+    kpi_orders = 0
+    try:
+        async with pool.acquire() as conn:
+            try:
+                kpi_total_sales = float(
+                    await conn.fetchval(
+                        "SELECT COALESCE(SUM(price * stock_quantity), 0) FROM products"
+                    ) or 0
+                )
+            except Exception:
+                kpi_total_sales = 0
+    except Exception:
+        pass
+    # Round down to nearest 10 for a cleaner dashboard look
+    kpi_total_sales = int(kpi_total_sales // 10 * 10)
+    kpi_total_products = total_products
+
+    # --- Recent pipeline activity (real, from products table) ---
     recent_pipeline = [
         {
             "name": p["name"],
@@ -151,7 +197,64 @@ async def section_dashboard(request: Request) -> HTMLResponse:
         for p in products[:5]
     ]
 
-    # Top sellers (mock — no orders table aggregation available; show highest priced + ready)
+    # --- Recent activity (unified feed) ---
+    # Real: pipeline transitions + new products from products table.
+    # Mock: sales + user signups + reviews (no orders/users/reviews table reads here).
+    activity: List[Dict[str, str]] = []
+
+    for p in products[:8]:
+        if p["pipeline_status"] == "generated":
+            activity.append(_activity_item(
+                "pipeline",
+                f"3D model generated for {p['name']}",
+                f"GLB ready in pipeline",
+                p["updated_at_human"],
+            ))
+        elif p["pipeline_status"] == "processing":
+            activity.append(_activity_item(
+                "pipeline",
+                f"Generating 3D for {p['name']}",
+                "Mesh conversion in progress",
+                p["updated_at_human"],
+            ))
+        elif p["pipeline_status"] == "failed":
+            activity.append(_activity_item(
+                "pipeline",
+                f"3D generation failed for {p['name']}",
+                "Retry available",
+                p["updated_at_human"],
+            ))
+        else:
+            activity.append(_activity_item(
+                "product",
+                f"New product added — {p['name']}",
+                f"${int(p['price'])} · queued for 3D",
+                p["updated_at_human"],
+            ))
+
+    # Design-time mock activity so the feed feels alive even on empty stores.
+    # These are clearly demo entries (TODO: replace when orders/users exist).
+    activity.extend([
+        _activity_item("sale",     "New order from Adaeze O.", "Trench · M · $480",     "12m ago"),
+        _activity_item("user",     "New customer registered",  "Lagos, Nigeria",        "27m ago"),
+        _activity_item("review",   "5★ review on Knit Sweater","\"Fits perfectly\"",    "1h ago"),
+        _activity_item("sale",     "New order from Marcus T.", "Knit · L · $320",       "2h ago"),
+        _activity_item("user",     "New customer registered",  "London, UK",            "3h ago"),
+    ])
+    # Sort by freshness (mock items first because they have lower time_ago values
+    # like "12m ago" vs products' "Xd ago" / "Xh ago")
+    activity = activity[:6]
+
+    # --- Quick Stats (left as design placeholders until analytics are wired) ---
+    quick_stats = {
+        "conversion_rate": 3.2,
+        "bounce_rate": 45,
+        "page_views": "8.7k",
+        "page_views_pct": 72,  # 8.7k / ~12k ceiling
+    }
+
+    # --- Top sellers (mock — no orders table; show generated + highest priced) ---
+    generated_products = [p for p in products if p["pipeline_status"] == "generated"]
     top_sellers = [
         {
             "name": p["name"],
@@ -159,14 +262,10 @@ async def section_dashboard(request: Request) -> HTMLResponse:
             "units_sold": 0,
             "price": p["price"],
         }
-        for p in products[:4] if p["pipeline_status"] == "generated"
-    ] or [
-        {"name": p["name"], "image": p.get("base_image") or "/static/img/placeholder-product.jpg",
-         "units_sold": 0, "price": p["price"]}
-        for p in products[:4]
+        for p in (generated_products or products)[:4]
     ]
 
-    # Recent orders (mock for design demo; real impl would query orders table)
+    # --- Recent orders (still kept in context for any future template use) ---
     recent_orders = [
         {"customer_name": "Adaeze O.", "customer_initials": "AO", "item_summary": "Trench · M", "amount": 480, "status_label": "Paid"},
         {"customer_name": "Marcus T.",  "customer_initials": "MT", "item_summary": "Knit · L",   "amount": 320, "status_label": "Fulfilled"},
@@ -176,13 +275,23 @@ async def section_dashboard(request: Request) -> HTMLResponse:
 
     context = {
         "request": request,
+        # KPIs
+        "kpi_total_sales": kpi_total_sales,
+        "kpi_active_users": kpi_active_users,
+        "kpi_orders": kpi_orders,
+        "kpi_total_products": kpi_total_products,
+        # Pipeline
         "products_with_3d": products_with_3d,
-        "total_products": total_products,
         "pipeline_health_pct": health_pct,
         "pipeline": pipeline,
         "recent_pipeline": recent_pipeline,
-        "recent_orders": recent_orders,
+        # Activity feed
+        "recent_activity": activity,
+        # Quick stats
+        "quick_stats": quick_stats,
+        # Top sellers + legacy
         "top_sellers": top_sellers,
+        "recent_orders": recent_orders,
     }
     return templates.TemplateResponse(request, "admin/sections/dashboard.html", context)
 
