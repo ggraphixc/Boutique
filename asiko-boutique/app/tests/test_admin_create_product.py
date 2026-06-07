@@ -1,0 +1,172 @@
+# ASIKO Boutique - Admin Create Product Endpoint
+# Tests the POST /admin/products/create endpoint for product creation.
+
+import pytest
+from unittest.mock import MagicMock, AsyncMock
+from contextlib import asynccontextmanager
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
+from starlette.middleware.sessions import SessionMiddleware
+from starlette.testclient import TestClient
+
+from app.routes.admin import routes as admin_crud_routes
+from app.routes.admin_sections import routes as admin_sections_routes
+
+
+def _make_pool_with_insert():
+    """Mock pool that allows insert operations."""
+    pool = MagicMock()
+
+    @asynccontextmanager
+    async def _acquire():
+        conn = MagicMock()
+        conn.fetchval = AsyncMock(return_value=None)  # No duplicate slug
+        conn.execute = AsyncMock(return_value=None)
+        conn.fetch = AsyncMock(return_value=[])  # Empty for product list
+        yield conn
+
+    pool.acquire = _acquire
+    return pool
+
+
+def _make_app_with_admin_routes():
+    """Fresh Starlette app with admin CRUD + section routes + mocked pool."""
+    test_app = Starlette(
+        routes=admin_crud_routes + admin_sections_routes,
+        middleware=[Middleware(SessionMiddleware, secret_key="test-key", session_cookie="asiko_test")],
+    )
+    test_app.state.db_pool = _make_pool_with_insert()
+    return test_app
+
+
+class TestCreateProductEndpoint:
+    """Test the POST /admin/products/create endpoint."""
+
+    def test_create_product_returns_200(self):
+        """POST /admin/products/create returns 200 with valid data."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/admin/products/create",
+            data={
+                "name": "Test Product",
+                "price": "99.99",
+                "category": "Outerwear",
+                "description": "Test description",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+    def test_create_product_has_hx_redirect(self):
+        """POST /admin/products/create returns HX-Redirect header."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/admin/products/create",
+            data={
+                "name": "Test Product",
+                "price": "99.99",
+            },
+            follow_redirects=False,
+        )
+        assert "HX-Redirect" in response.headers
+        assert response.headers["HX-Redirect"] == "/admin/section/products"
+
+    def test_create_product_success_message(self):
+        """POST /admin/products/create returns success message."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/admin/products/create",
+            data={
+                "name": "Test Product",
+                "price": "99.99",
+            },
+            follow_redirects=False,
+        )
+        assert "Product created successfully" in response.text
+
+    def test_create_product_missing_name_returns_400(self):
+        """POST /admin/products/create with empty name returns 400."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/admin/products/create",
+            data={
+                "name": "",
+                "price": "99.99",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 400
+        assert "Product name is required" in response.text
+
+    def test_create_product_whitespace_name_returns_400(self):
+        """POST /admin/products/create with whitespace-only name returns 400."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            "/admin/products/create",
+            data={
+                "name": "   ",
+                "price": "99.99",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 400
+        assert "Product name is required" in response.text
+
+
+class TestProductsSectionForm:
+    """Test that the products section includes the create form."""
+
+    def test_products_section_has_create_form(self):
+        """Products section contains the HTMX form for creating products."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products")
+        assert response.status_code == 200
+        assert 'hx-post="/admin/products/create"' in response.text
+
+    def test_products_section_has_alpine_modal(self):
+        """Products section contains the Alpine modal for new product."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products")
+        assert response.status_code == 200
+        assert 'x-data="{ showNewProduct: false' in response.text
+        assert 'x-show="showNewProduct"' in response.text
+
+    def test_products_section_has_form_fields(self):
+        """Products section form has all required fields."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products")
+        assert response.status_code == 200
+        assert 'name="name"' in response.text
+        assert 'name="price"' in response.text
+        assert 'name="category"' in response.text
+        assert 'name="description"' in response.text
+        assert 'name="source_2d_file"' in response.text
+
+    def test_products_section_has_submit_button(self):
+        """Products section form has submit button."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products")
+        assert response.status_code == 200
+        assert 'type="submit"' in response.text
+        assert "Create Product" in response.text
+
+    def test_products_section_has_new_product_button(self):
+        """Products section has button to open modal."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products")
+        assert response.status_code == 200
+        assert '@click="showNewProduct = true"' in response.text
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
