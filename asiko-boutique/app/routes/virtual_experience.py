@@ -10,7 +10,12 @@ from starlette.routing import Route
 async def update_session_avatar_profile(request: Request) -> JSONResponse:
     """Saves the user's current avatar preference to avoid interface resets during navigation."""
     payload = await request.json()
-    selected_gender = payload.get("gender", "female")
+    # Defensive normalization: missing key → "female"; empty/whitespace
+    # string → "female". This prevents a stale or malformed payload from
+    # storing an empty "preferred_avatar_axis" in the session, which would
+    # later propagate to the frontend loader as a blank query param.
+    raw_gender = payload.get("gender") if isinstance(payload, dict) else None
+    selected_gender = (raw_gender or "female").strip() or "female"
 
     if selected_gender not in ["male", "female"]:
         return JSONResponse(

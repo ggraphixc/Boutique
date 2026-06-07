@@ -19,6 +19,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ============================================================================
 // CONSTANTS
@@ -44,6 +49,14 @@ const GARMENT_CONFIG = {
 
 const AR_CONFIG = {
     glbPath: '/static/models/draped-silhouette-gown.glb',
+};
+
+// Authoritative gender → GLB binding. Single source of truth so the Male
+// Axis and Female Axis never drift out of sync with the model files on disk.
+// `null` means "no GLB for this axis — fall back to procedural form".
+const AVATAR_ASSETS = {
+    male:   '/static/models/avatar_male.glb',
+    female: '/static/models/avatar_female.glb',
 };
 
 // ============================================================================
@@ -79,6 +92,15 @@ export class AtelierEngine {
         this.currentAvatarMesh = null;
         this.currentGender = 'female';
         this.currentUserMeasurements = { ...BASELINE_MEASUREMENTS };
+
+        // ---- In-flight load token (race-condition guard) ----
+        // Each call to loadBaseAvatar increments this counter and captures the
+        // local value. After the async loadAsync resolves, we compare against
+        // the current value; a mismatch means a newer call superseded us and
+        // the result of this load is stale — we must NOT add it to the scene
+        // or it will composite on top of the newer avatar (the "two avatars
+        // stacked on one axis" visual bug).
+        this._loadRequestId = 0;
 
         // ---- Body morph target values ----
         this.targetMorph = { ...BASELINE_MEASUREMENTS };
@@ -150,6 +172,54 @@ export class AtelierEngine {
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.2;
+        // sRGB output color space — required for accurate PBR rendering with
+        // ACES tone mapping. Without this the linear-space output gets gamma
+        // double-applied and the scene looks washed-out / plastic.
+        if ('outputColorSpace' in this.renderer) {
+            this.renderer.outputColorSpace = THREE.SRGBColorSpace;
+        } else if ('outputEncoding' in this.renderer) {
+            this.renderer.outputEncoding = THREE.sRGBEncoding;
+        }
+
+        // --- HDRI ENVIRONMENT (IBL) ---
+        // RoomEnvironment is a procedural studio-rig environment baked by
+        // Three.js — it ships with the library, costs ~0 KB of asset, and
+        // provides the multi-directional soft lighting that PBR materials
+        // (especially skin, eyes, hair) need to read as realistic. Without
+        // scene.environment, MeshStandardMaterial / MeshPhysicalMaterial
+        // surfaces fall back to flat ambient + direct lights only, which is
+        // exactly the "plastic mannequin" look the user reported.
+        const pmrem = new THREE.PMREMGenerator(this.renderer);
+        pmrem.compileEquirectangularShader();
+        this._envTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+        this.scene.environment = this._envTexture;
+        // Note: scene.background is intentionally left null so the cream
+        // CSS page background bleeds through the canvas (matches the
+        // boutique aesthetic). IBL is for reflections only.
+        pmrem.dispose();
+
+        // --- POST-PROCESSING (subtle bloom for catchlights) ---
+        // UnrealBloomPass produces a soft glow on bright pixels (eyes, lip
+        // highlights, skin sheen at glancing angles, jewelry). At low
+        // strength it adds a luxury photo-studio feel without becoming the
+        // "glowing neon" look. Threshold is high (0.95) so only the brightest
+        // highlights bloom — diffuse skin does NOT.
+        this._composer = new EffectComposer(this.renderer);
+        this._composer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        this._composer.setSize(container.clientWidth, container.clientHeight);
+        this._composer.addPass(new RenderPass(this.scene, this.camera));
+        this._bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(container.clientWidth, container.clientHeight),
+            0.18,  // strength
+            0.55,  // radius (soft falloff)
+            0.92   // threshold (only the brightest pixels)
+        );
+        this._composer.addPass(this._bloomPass);
+        // OutputPass performs tone mapping + sRGB conversion at the end of
+        // the post-processing chain (required when RenderPass is wrapped by
+        // a composer — otherwise the linear-space intermediate buffer is
+        // displayed directly and the scene looks blown out / wrong).
+        this._composer.addPass(new OutputPass());
 
         // --- CONTROLS ---
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -212,6 +282,7 @@ export class AtelierEngine {
         // 2. Hemisphere ambient — soft sky/ground gradient fills shadowed crevices
         const hemi = new THREE.HemisphereLight(0xffffff, 0x444444, 1.2);
         this.scene.add(hemi);
+        this.hemi = hemi;
 
         // 3. Key light — warm neutral, casts shadows from front-right
         const key = new THREE.DirectionalLight(0xfffdf6, 1.8);
@@ -223,11 +294,18 @@ export class AtelierEngine {
         key.shadow.camera.near = 0.1;
         key.shadow.camera.far = 20;
         this.scene.add(key);
+        this.key = key;
 
         // 4. Rim light — brand-gold (#D4AF37) accent from back-left for luxury edge glow
         const rim = new THREE.DirectionalLight(0xd4af37, 1.0);
         rim.position.set(-2, 3, -3);
         this.scene.add(rim);
+        this.rim = rim;
+        // Expose the brand-gold rim as the accent light the animation loop pulses.
+        // (Without this assignment the loop dies on frame 1 with a TypeError and
+        // the canvas never renders — the avatar, mannequin, and garments are all
+        // in the scene graph but no frame is ever submitted to the GPU.)
+        this.accentLight = rim;
     }
 
     /**
@@ -404,6 +482,11 @@ export class AtelierEngine {
             this.camera.aspect = w / h;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(w, h);
+            // Resize the post-processing composer + bloom pass to match;
+            // otherwise the bloom buffer stays at the old size and the
+            // scene renders into a stretched sub-region of the canvas.
+            if (this._composer) this._composer.setSize(w, h);
+            if (this._bloomPass) this._bloomPass.setSize(w, h);
         };
         window.addEventListener('resize', onResize);
         new ResizeObserver(() => onResize()).observe(this.container);
@@ -965,6 +1048,15 @@ this._emitLayerState();
         // 2. Identify the peak dimension scale factor to check for oversized assets
         const maxDimension = Math.max(meshSize.x, meshSize.y, meshSize.z);
 
+        // 2a. Defensive guard: degenerate bounding box (NaN, 0, or empty asset
+        //     load) — bail out before mutating mesh.position or the orbit
+        //     controls target. The procedural fallback is responsible for
+        //     installing a valid form, so we just preserve existing framing.
+        if (!Number.isFinite(maxDimension) || maxDimension <= 0) {
+            console.warn('[Atelier3D] adjustModelToFitViewport: degenerate bounding box, skipping framing');
+            return;
+        }
+
         // 3. Normalization Pass: scale to 1.6 (avatar) or 1.2 (garment) peak dimension
         const targetPeak = isAvatar ? 1.6 : 1.2;
         if (maxDimension > 0) {
@@ -977,28 +1069,61 @@ this._emitLayerState();
             boundsBox.getCenter(meshCenter);
         }
 
-        // 4. Center horizontal coordinates perfectly over the scene's central origin
-        incomingMesh.position.x -= meshCenter.x;
-        incomingMesh.position.z -= meshCenter.z;
+        // 3a. Secondary guard: post-scale meshSize must still be finite before
+        //     we mutate controls.target — otherwise a 0/NaN would corrupt the
+        //     OrbitControls matrix and throw the camera out of frame.
+        if (!Number.isFinite(meshSize.y) || meshSize.y <= 0) {
+            console.warn('[Atelier3D] adjustModelToFitViewport: post-scale meshSize invalid, skipping reframe');
+            return;
+        }
 
-        // 5. Force the base of the garment vertices to sit 0.06 units above
-        //    the pedestal floor line (y = 0). The 0.06 lift prevents shoe
-        //    hems from sinking into the floor and produces a luxury
-        //    "floating on a display form" aesthetic.
-        incomingMesh.position.y = -boundsBox.min.y + 0.06;
+        // 4. Center horizontal coordinates perfectly over the scene's central origin
+        if (Number.isFinite(meshCenter.x)) incomingMesh.position.x -= meshCenter.x;
+        if (Number.isFinite(meshCenter.z)) incomingMesh.position.z -= meshCenter.z;
+
+        // 5. Force the base of the garment/avatar vertices to sit 0.06 units
+        //    above the pedestal TOP. The pedestal is the visual floor of the
+        //    scene (white cylinder, top surface at y ≈ 0.125), not the
+        //    world-origin y = 0 — so we compute the pedestal top dynamically
+        //    from `this.pedestal` and lift the model to that height + 0.06.
+        //
+        //    For avatars specifically, this prevents the shoe hems from
+        //    sinking INTO the pedestal disc (the previous constant 0.06 lift
+        //    placed feet 0.065 units BELOW the pedestal top — the "feet
+        //    beneath the white base" visual bug).
+        //
+        //    For garments (isAvatar=false) the same lift is harmless — the
+        //    garment hems simply hover slightly above the pedestal surface.
+        if (Number.isFinite(boundsBox.min.y)) {
+            let floorY = 0; // default if pedestal isn't initialized yet
+            if (this.pedestal && this.pedestal.geometry && this.pedestal.geometry.parameters) {
+                const pedHeight = this.pedestal.geometry.parameters.height || 0.15;
+                const pedCenterY = this.pedestal.position?.y ?? 0.05;
+                floorY = pedCenterY + pedHeight / 2;
+            }
+            incomingMesh.position.y = -boundsBox.min.y + floorY + 0.06;
+        }
 
         // 6. Apply luxury textile PBR baseline to all child meshes.
         //    Guarded by isMeshStandardMaterial so the procedural fallback
         //    (which uses MeshPhysicalMaterial) is not mutated.
-        incomingMesh.traverse((node) => {
-            if (node.isMesh && node.material && node.material.isMeshStandardMaterial) {
-                node.material.roughness = 0.85;
-                node.material.metalness = 0.0;
-                node.material.sheen = 0.6;
-                node.material.sheenRoughness = 0.4;
-                node.material.needsUpdate = true;
-            }
-        });
+        //
+        //    For the avatar path, the realistic human shader is applied
+        //    separately by `applyAvatarRealismShader` (see loadBaseAvatar /
+        //    loadHumanAvatar) — that pass classifies skin/hair/eye/clothing
+        //    and applies per-surface PBR, replacing the old "all matte cloth"
+        //    baseline that produced the plastic look.
+        if (!isAvatar) {
+            incomingMesh.traverse((node) => {
+                if (node.isMesh && node.material && node.material.isMeshStandardMaterial) {
+                    node.material.roughness = 0.85;
+                    node.material.metalness = 0.0;
+                    node.material.sheen = 0.6;
+                    node.material.sheenRoughness = 0.4;
+                    node.material.needsUpdate = true;
+                }
+            });
+        }
 
         // 7. Anchor camera OrbitControls to frame the waist/midsection instead of staring at the base
         if (this.controls) {
@@ -1115,6 +1240,44 @@ this._emitLayerState();
     }
 
     /**
+     * Unified avatar cleanup used by BOTH `loadBaseAvatar` and `loadHumanAvatar`.
+     *
+     * Mount paths vary across the engine:
+     *  - `loadBaseAvatar` mounts the GLB into `avatarWrapperGroup` (a Group child of
+     *    the scene), so `currentAvatarMesh.parent` is the wrapper.
+     *  - `loadHumanAvatar` mounts the GLB directly under `this.scene`, so
+     *    `currentAvatarMesh.parent` is the scene.
+     *
+     * The previous cleanup unconditionally called `this.scene.remove(currentAvatarMesh)`,
+     * which is a no-op for wrapper-mounted avatars — leaving the previous GLB
+     * stranded in the wrapper and producing the "two avatars stacked" visual bug.
+     *
+     * This helper uses `parent.remove(node)` so the cleanup works for BOTH
+     * mount paths. It also unconditionally removes `avatarWrapperGroup` from
+     * the scene before nulling it, so a leftover wrapper cannot host a
+     * future load.
+     */
+    _purgePreviousAvatar() {
+        if (this.currentAvatarMesh) {
+            const mesh = this.currentAvatarMesh;
+            this.safelyPurgeThreeAsset(mesh);
+            if (mesh.parent) {
+                mesh.parent.remove(mesh);
+            } else {
+                this.scene.remove(mesh);
+            }
+            this.currentAvatarMesh = null;
+        }
+        if (this.avatarWrapperGroup) {
+            const wrapper = this.avatarWrapperGroup;
+            if (wrapper.parent) wrapper.parent.remove(wrapper);
+            else this.scene.remove(wrapper);
+            this.safelyPurgeThreeAsset(wrapper);
+            this.avatarWrapperGroup = null;
+        }
+    }
+
+    /**
      * Dispose a single material and flush all its texture maps from hardware.
      * @param {THREE.Material} material
      */
@@ -1139,6 +1302,173 @@ this._emitLayerState();
      */
     _safeDispose(node) {
         this.safelyPurgeThreeAsset(node);
+    }
+
+    // ========================================================================
+    // AVATAR REALISM SHADER
+    // ========================================================================
+    //
+    // The previous `adjustModelToFitViewport(isAvatar=true)` applied a single
+    // textile PBR baseline (roughness 0.85, metalness 0, sheen 0.6) to EVERY
+    // MeshStandardMaterial in the avatar. That forced skin, hair, and eyes to
+    // share the same matte/cloth shader — producing the "flat plastic" look
+    // the user reported.
+    //
+    // This pass replaces that for the avatar path with a classifier that
+    // applies per-surface shaders:
+    //
+    //   SKIN  — low roughness (0.42), subtle clearcoat (0.18), warm subsurface
+    //           tint via emissive boost on the red channel, faint sheen.
+    //           Reads as soft human skin under the studio lights.
+    //
+    //   HAIR  — high roughness (0.65) on the strand body, anisotropy (0.5)
+    //           so highlights rake along the hair direction rather than
+    //           producing plastic-looking specular blobs. Slight sheen.
+    //
+    //   EYE   — near-mirror clearcoat (0.7), very low roughness (0.12), a
+    //           touch of metalness to give the iris its characteristic depth
+    //           and catch a sharp studio highlight.
+    //
+    //   OTHER — keeps the existing textile PBR (clothing, accessories).
+    //
+    // Classification uses mesh.name + material.name keywords — robust for
+    // the typical Mixamo/Ready Player Me/GLB exporter naming conventions.
+    // Anything that doesn't match a body-part keyword falls through to the
+    // clothing path so we never accidentally skin-shader a piece of fabric.
+
+    static AVATAR_SURFACE_PATTERNS = {
+        eye:   [/\beye\b/i, /cornea/i, /pupil/i, /iris/i, /lash/i],
+        hair:  [/\bhair\b/i, /eyebrow/i, /brow/i, /strand/i, /scalp/i],
+        skin:  [/\bskin\b/i, /\bbody\b/i, /\bface\b/i, /\bhead\b/i, /\bneck\b/i,
+                /\btorso\b/i, /\bchest\b/i, /\barm\b/i, /\bleg\b/i, /\bhand\b/i,
+                /\bfoot\b/i, /\bhip\b/i, /\bshoulder\b/i, /\bback\b/i,
+                /\bbelly\b/i, /\bthigh\b/i, /\bcalf\b/i],
+    };
+
+    /**
+     * Classify a single mesh by its name + material name into one of:
+     * `eye`, `hair`, `skin`, or `clothing`. The classifier is conservative
+     * — anything that fails the body-part pattern tests is treated as
+     * clothing so we never accidentally plasticize a real fabric mesh.
+     */
+    _classifyAvatarSurface(node) {
+        const haystack = `${node?.name || ''} ${node?.material?.name || ''}`;
+        if (!haystack.trim()) return 'clothing';
+        for (const [surface, patterns] of Object.entries(AtelierEngine.AVATAR_SURFACE_PATTERNS)) {
+            if (patterns.some((re) => re.test(haystack))) return surface;
+        }
+        return 'clothing';
+    }
+
+    /**
+     * Apply realistic PBR shaders to a loaded avatar GLB based on the
+     * surface classification above. Mutates existing materials in place
+     * (does not allocate new MeshPhysicalMaterial instances) so the GLB's
+     * textures / color maps are preserved.
+     */
+    applyAvatarRealismShader(rootMesh) {
+        if (!rootMesh) return;
+        rootMesh.traverse((node) => {
+            if (!node.isMesh || !node.material) return;
+            const mat = node.material;
+            const isStandard = mat.isMeshStandardMaterial === true;
+            const isPhysical = mat.isMeshPhysicalMaterial === true;
+            if (!isStandard && !isPhysical) return; // leave Basic/Phong/Toon alone
+
+            const surface = this._classifyAvatarSurface(node);
+
+            switch (surface) {
+                case 'eye':
+                    // Sharp specular, near-mirror clearcoat, slight metalness for iris depth.
+                    if (isStandard || isPhysical) {
+                        mat.roughness = 0.12;
+                        mat.metalness = 0.25;
+                        if (isPhysical) {
+                            mat.clearcoat = 0.7;
+                            mat.clearcoatRoughness = 0.05;
+                        }
+                    }
+                    break;
+
+                case 'hair':
+                    // Strand body rough, anisotropic highlights rake along hair.
+                    if (isStandard || isPhysical) {
+                        mat.roughness = 0.65;
+                        mat.metalness = 0.0;
+                        if (isPhysical) {
+                            mat.anisotropy = 0.5;
+                            mat.anisotropyRotation = Math.PI / 2;
+                            mat.sheen = 0.35;
+                            mat.sheenRoughness = 0.5;
+                        }
+                    }
+                    break;
+
+                case 'skin':
+                    // Soft human skin — approximated subsurface scattering:
+                    //
+                    //  - Low roughness (0.42) so highlights are soft & broad,
+                    //    like the way real skin scatters light across the
+                    //    surface rather than producing a sharp specular dot.
+                    //  - `transmission` (0.18) on MeshPhysicalMaterial lets
+                    //    light pass slightly through the skin layer, which is
+                    //    the cheapest physically-plausible approximation of
+                    //    subsurface scattering we can do without a custom
+                    //    shader. Combined with `thickness` (0.5) it produces
+                    //    the warm backlight bleed you see on real ears / nose
+                    //    rims / fingertips.
+                    //  - Warm emissive (0.06, 0.025, 0.015) at low intensity
+                    //    gives shadowed skin a faint reddish glow — fakes the
+                    //    hemoglobin back-scatter that real skin shows.
+                    //  - Subtle sheen (0.25) catches the velvety look of skin
+                    //    at glancing angles (jawline, cheekbone, shoulder).
+                    if (isStandard || isPhysical) {
+                        mat.roughness = 0.42;
+                        mat.metalness = 0.0;
+                        if (isPhysical) {
+                            mat.clearcoat = 0.18;
+                            mat.clearcoatRoughness = 0.55;
+                            mat.sheen = 0.25;
+                            mat.sheenRoughness = 0.6;
+                            // Subsurface approximation via transmission.
+                            // Higher ior (1.4) matches human skin refractive
+                            // index; attenuationColor is the warm tint that
+                            // shows through the thin parts (ears, nose).
+                            mat.transmission = 0.18;
+                            mat.thickness = 0.5;
+                            mat.ior = 1.4;
+                            if (mat.attenuationColor) {
+                                mat.attenuationColor.setRGB(0.85, 0.55, 0.45);
+                            }
+                            if (mat.attenuationDistance !== undefined) {
+                                mat.attenuationDistance = 1.2;
+                            }
+                            if (mat.emissive) {
+                                mat.emissive.setRGB(0.06, 0.025, 0.015);
+                                mat.emissiveIntensity = 0.35;
+                            }
+                        } else {
+                            // MeshStandardMaterial fallback: no transmission
+                            // available, so we lean on sheen + warm emissive
+                            // for the soft-skin read.
+                            if (mat.sheen !== undefined) mat.sheen = 0.2;
+                            if (mat.emissive) {
+                                mat.emissive.setRGB(0.04, 0.02, 0.01);
+                                mat.emissiveIntensity = 0.4;
+                            }
+                        }
+                    }
+                    break;
+
+                case 'clothing':
+                default:
+                    // Keep the textile PBR that `adjustModelToFitViewport` already
+                    // applied (roughness 0.85, sheen 0.6) — clothing should
+                    // remain soft and matte to read as fabric.
+                    break;
+            }
+            mat.needsUpdate = true;
+        });
     }
 
     _hideLayerGarments() {
@@ -1263,6 +1593,42 @@ this._emitLayerState();
     }
 
     /**
+     * Resolve the GLB asset path for a given gender using the AVATAR_ASSETS
+     * config. Returns null if the axis has no model — the caller should then
+     * invoke the procedural fallback.
+     * @param {'female'|'male'|'unisex'} gender
+     * @returns {string|null}
+     */
+    resolveAvatarAssetPath(gender) {
+        if (!gender) return null;
+        return Object.prototype.hasOwnProperty.call(AVATAR_ASSETS, gender)
+            ? AVATAR_ASSETS[gender]
+            : null;
+    }
+
+    /**
+     * Public helper: load the avatar bound to a gender axis. This is the
+     * canonical entry point used by the UI gender toggle — it routes through
+     * AVATAR_ASSETS so the Male Axis always resolves to avatar_male.glb and
+     * the Female Axis always resolves to avatar_female.glb.
+     * @param {'female'|'male'|'unisex'} gender
+     * @returns {Promise<boolean>} true if the GLB loaded, false on fallback
+     */
+    async loadAvatarByGender(gender) {
+        const assetPath = this.resolveAvatarAssetPath(gender);
+        if (!assetPath) {
+            // No GLB for this axis (e.g. unisex) — fall through to procedural form
+            console.warn(`[Atelier3D] No GLB bound to gender axis "${gender}", using procedural fallback`);
+            this.loadProceduralAvatarFallback();
+            this.currentGender = gender || this.currentGender;
+            return false;
+        }
+        await this.loadBaseAvatar(assetPath);
+        this.currentGender = gender;
+        return true;
+    }
+
+    /**
      * Load a human avatar GLB model for the given gender.
      * Handles recursive memory disposal before loading.
      * Enforces strict 1.6-unit height normalization to eliminate scale blowouts.
@@ -1270,15 +1636,15 @@ this._emitLayerState();
      * @param {'female'|'male'} gender
      */
     async loadHumanAvatar(gender) {
-        const assetPath = `/static/models/avatar_${gender}.glb`;
+        // Resolve through AVATAR_ASSETS so the binding is centralized.
+        const assetPath = this.resolveAvatarAssetPath(gender) || `/static/models/avatar_${gender}.glb`;
         this.setViewportLoadingState(true);
 
         // 1. CRITICAL CONTEXT SAFETY: Recursive Memory Disposal
-        if (this.currentAvatarMesh) {
-            this.safelyPurgeThreeAsset(this.currentAvatarMesh);
-            this.scene.remove(this.currentAvatarMesh);
-            this.currentAvatarMesh = null;
-        }
+        //    Use the unified helper so a previously wrapper-mounted avatar
+        //    (from loadBaseAvatar) is purged correctly — `scene.remove()` alone
+        //    is a no-op for nodes whose parent is the wrapper.
+        this._purgePreviousAvatar();
 
         // Also hide the procedural mannequin if present
         if (this.mannequin && this.mannequin.parent) {
@@ -1295,6 +1661,7 @@ this._emitLayerState();
             // Delegates to adjustModelToFitViewport(isAvatar=true) which applies:
             //   1.6/rawHeight scale → center X/Z → +0.06 foot lift → textile PBR
             this.adjustModelToFitViewport(this.currentAvatarMesh, true);
+            this.applyAvatarRealismShader(this.currentAvatarMesh);
 
             // Traverse and map shadows across the photogrammetry layout structure
             // (Textile PBR is already applied by adjustModelToFitViewport, so we
@@ -1346,18 +1713,72 @@ this._emitLayerState();
         const uiLoader = document.getElementById('canvas-loader') || document.querySelector('.loader');
         if (uiLoader) uiLoader.style.display = 'flex'; // Enforce visible initialization states
 
+        // ---- Race-condition guard: claim a request token ----
+        // Increment the counter and capture the local id. If a later call
+        // supersedes us while the loadAsync is in flight, its token will be
+        // higher and our post-await work will be discarded.
+        const myRequestId = ++this._loadRequestId;
+
         try {
-            if (this.avatarWrapperGroup) {
-                this.safelyPurgeThreeAsset(this.avatarWrapperGroup);
+            // 1. CRITICAL CONTEXT SAFETY: Recursive Memory Disposal
+            //    Purge any previous avatar (both wrapper-mounted GLBs and standalone
+            //    meshes from loadHumanAvatar) so we never stack two avatars in the scene.
+            //
+            //    IMPORTANT: `currentAvatarMesh` may be a child of `avatarWrapperGroup`
+            //    (loadBaseAvatar) OR a direct child of `this.scene` (loadHumanAvatar).
+            //    `scene.remove()` is a NO-OP for nodes that are not direct children of
+            //    the scene, so we must use `parent.remove(node)` (or `removeFromParent`)
+            //    to handle BOTH mount paths. The previous implementation called
+            //    `scene.remove(currentAvatarMesh)` unconditionally, which silently
+            //    failed for wrapper-mounted avatars — leaving the previous GLB in
+            //    the scene and producing the "two avatars stacked on one axis" bug.
+            this._purgePreviousAvatar();
+
+            // 2. Hide the parametric mannequin + layer garments BEFORE mounting the GLB.
+            //    _initMannequin() added a procedural body to the scene during engine
+            //    construction; without this removal it composites on top of the GLB and
+            //    produces the "two avatars stacked" artifact on the canvas.
+            if (this.mannequin && this.mannequin.parent) {
+                this.scene.remove(this.mannequin);
             }
+            this._hideLayerGarments();
+
+            // 3. Fresh wrapper group for the incoming avatar
             this.avatarWrapperGroup = new THREE.Group();
             this.scene.add(this.avatarWrapperGroup);
 
             const gltf = await this.gltfLoader.loadAsync(avatarUrl);
+
+            // ---- Stale-load check: a newer call superseded us while we were
+            //      awaiting the network/parse. Dispose the just-loaded scene
+            //      so it does not pollute the wrapper that the newer call has
+            //      since created.
+            if (myRequestId !== this._loadRequestId) {
+                console.warn(`[Atelier3D] Discarding stale avatar load (request #${myRequestId}, current #${this._loadRequestId})`);
+                this.safelyPurgeThreeAsset(gltf.scene);
+                if (this.avatarWrapperGroup) {
+                    this.scene.remove(this.avatarWrapperGroup);
+                    this.safelyPurgeThreeAsset(this.avatarWrapperGroup);
+                    this.avatarWrapperGroup = null;
+                }
+                return;
+            }
+
             const rawModel = gltf.scene;
+            this.currentAvatarMesh = rawModel; // Track for future swap/cleanup
+
+            // Defensive: the freshly-minted wrapper should be empty, but if a
+            // race somehow let another mesh in (legacy code path, manual
+            // injection), purge anything already attached before we mount.
+            while (this.avatarWrapperGroup.children.length > 0) {
+                const stale = this.avatarWrapperGroup.children[0];
+                this.avatarWrapperGroup.remove(stale);
+                this.safelyPurgeThreeAsset(stale);
+            }
 
             // Perform dynamic bounding calculations to normalize sizing matrices
             this.adjustModelToFitViewport(rawModel, true);
+            this.applyAvatarRealismShader(rawModel);
             this.avatarWrapperGroup.add(rawModel);
 
             // Reset camera positions cleanly without projection clipping anomalies
@@ -1374,9 +1795,17 @@ this._emitLayerState();
             }
 
         } catch (error) {
-            console.error("Critical core error handled during 3D scene asset ingestion:", error);
+            console.error("Avatar asset parse failure, forcing procedural fallback:", error);
+
+            // Fallback safety net — guarantees a non-blank canvas even when
+            // the GLB is 404, malformed, or fails mid-parse. The procedural
+            // fallback form becomes the visible avatar in place of the GLB.
+            if (typeof this.loadProceduralAvatarFallback === 'function') {
+                this.loadProceduralAvatarFallback();
+            }
         } finally {
-            // DEFENSIVE FIX: This block always fires, preventing infinite canvas freezing
+            // 300ms loader fade-out (opacity → display:none) — always fires,
+            // preventing infinite canvas freezing on both success and failure.
             if (uiLoader) {
                 uiLoader.style.opacity = '0';
                 setTimeout(() => { uiLoader.style.display = 'none'; }, 300);
@@ -1570,37 +1999,57 @@ this._emitLayerState();
     _startLoop() {
         const animate = () => {
             requestAnimationFrame(animate);
-            const time = performance.now() / 1000;
+            try {
+                const time = performance.now() / 1000;
 
-            // Morph animation
-            this._updateMorphAnimation();
+                // Morph animation
+                this._updateMorphAnimation();
 
-            // Auto-rotate in showroom mode
-            if (this.controls.autoRotate) {
-                this.controls.update();
-            }
+                // Auto-rotate in showroom mode
+                if (this.controls && this.controls.autoRotate) {
+                    this.controls.update();
+                }
 
-            // Gentle float
-            if (this.mannequin) {
-                this.mannequin.position.y = Math.sin(time * 0.3) * 0.02;
-            }
-            for (const layer of LAYER_ORDER) {
-                const mesh = this.layerRegistry[layer];
-                if (mesh) {
-                    mesh.position.y = Math.sin(time * 0.3 + LAYER_ORDER.indexOf(layer) * 0.5) * 0.02;
+                // Gentle float
+                if (this.mannequin) {
+                    this.mannequin.position.y = Math.sin(time * 0.3) * 0.02;
+                }
+                for (const layer of LAYER_ORDER) {
+                    const mesh = this.layerRegistry[layer];
+                    if (mesh) {
+                        mesh.position.y = Math.sin(time * 0.3 + LAYER_ORDER.indexOf(layer) * 0.5) * 0.02;
+                    }
+                }
+
+                // Particle rotation
+                if (this.particles) {
+                    this.particles.rotation.y += 0.0003;
+                }
+
+                // Accent light pulse (brand-gold rim, set up in initStudioLighting)
+                if (this.accentLight) {
+                    const pulse = 0.5 + 0.5 * Math.sin(time * 0.5);
+                    this.accentLight.intensity = 0.2 + pulse * 0.2;
+                }
+
+                this.renderer.render(this.scene, this.camera);
+                // Route through the post-processing composer (RenderPass +
+                // UnrealBloomPass + OutputPass) when initialized. Falls back
+                // to direct renderer.render so the loop keeps working on
+                // browsers / devices where EffectComposer fails to compile.
+                if (this._composer) {
+                    this._composer.render();
+                } else {
+                    this.renderer.render(this.scene, this.camera);
+                }
+            } catch (err) {
+                // Never let a single per-frame mutation kill the entire render loop.
+                // Log and continue — the next frame will be retried fresh.
+                if (!this._loopErrorLogged) {
+                    console.error('[Atelier3D] render loop iteration failed:', err);
+                    this._loopErrorLogged = true;
                 }
             }
-
-            // Particle rotation
-            if (this.particles) {
-                this.particles.rotation.y += 0.0003;
-            }
-
-            // Accent light pulse
-            const pulse = 0.5 + 0.5 * Math.sin(time * 0.5);
-            this.accentLight.intensity = 0.2 + pulse * 0.2;
-
-            this.renderer.render(this.scene, this.camera);
         };
         animate();
     }

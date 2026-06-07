@@ -19,7 +19,12 @@ async def set_avatar_profile(request: Request) -> JSONResponse:
             status_code=400,
         )
 
-    gender = data.get("gender", "female")
+    # Defensive read: missing key defaults to "female", but the .get() default
+    # does NOT protect against {"gender": ""} or whitespace-only strings. We
+    # normalize + guard here so an empty value can never reach the validator
+    # (which would 400 unnecessarily) or be persisted to the session.
+    raw_gender = data.get("gender") if isinstance(data, dict) else None
+    gender = (raw_gender or "female").strip() or "female"
 
     if gender not in VALID_GENDERS:
         return JSONResponse(

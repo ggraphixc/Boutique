@@ -64,13 +64,18 @@ class TestAvatarProfileBinding:
             assert data.get("avatar_profile") == "female"
 
     def test_avatar_profile_binding_empty_gender(self):
-        """Returns 400 when gender is empty string."""
+        """Empty/whitespace gender defaults to female (defensive normalization).
+        The route's defensive read chain treats empty strings as missing values
+        and binds the default "female" rather than 400ing — this is safer for
+        a session-bound preference that the rest of the system reads from."""
         with TestClient(app, raise_server_exceptions=False) as client:
             response = client.post(
                 "/api/virtual/profile/set",
                 json={"gender": ""},
             )
-            assert response.status_code == 400
+            assert response.status_code == 200
+            data = response.json()
+            assert data.get("avatar_profile") == "female"
 
 
 class TestGenderValidationLogic:

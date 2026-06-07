@@ -206,6 +206,7 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.sse_streams import sse_routes
     from app.routes.admin_inventory import routes as admin_inventory_routes
     from app.routes.admin_dashboard import routes as admin_dashboard_routes
+    from app.routes.admin_sections import routes as admin_sections_routes
     from app.routes.admin import routes as admin_crud_routes
     from app.routes.waitlist import routes as waitlist_routes
     from app.routes.virtual import routes as virtual_routes
@@ -221,6 +222,7 @@ def _register_route_modules(app: Starlette) -> None:
         sse_routes,
         admin_inventory_routes,
         admin_dashboard_routes,
+        admin_sections_routes,
         admin_crud_routes,
         waitlist_routes,
         virtual_routes,

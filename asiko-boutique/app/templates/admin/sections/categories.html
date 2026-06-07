@@ -1,0 +1,109 @@
+<!-- Categories section: CRUD list with colored category tags -->
+<section class="space-y-6" data-section="categories">
+
+    <div class="flex items-end justify-between">
+        <div>
+            <h2 class="font-display text-xl text-gray-900">Categories</h2>
+            <p class="text-sm text-gray-500 mt-1">Organize the collection by silhouette, occasion, and craft.</p>
+        </div>
+        <button class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Category
+        </button>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Total categories</div>
+            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ categories|length if categories else 0 }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Most populated</div>
+            <div class="mt-2 text-2xl font-semibold text-gray-900 truncate">
+                {% if categories %}{{ (categories|sort(attribute='product_count', reverse=true))[0].name }}{% else %}—{% endif %}
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5">
+            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Uncategorized products</div>
+            <div class="mt-2 text-2xl font-semibold text-gray-900">{{ uncategorized_count or 0 }}</div>
+        </div>
+    </div>
+
+    <!-- Category grid -->
+    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="font-medium text-gray-900">All categories</h3>
+            <div class="relative">
+                <input type="text" placeholder="Filter categories..."
+                       class="text-sm pl-9 pr-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:bg-white transition-colors w-56">
+                <svg class="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </div>
+        </div>
+
+        {% if categories and categories|length > 0 %}
+        <div class="divide-y divide-gray-100">
+            {% for c in categories %}
+            <div class="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors group">
+                <!-- Color chip -->
+                <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                     style="background-color: {{ c.color or '#D4AF37' }}15; color: {{ c.color or '#D4AF37' }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                </div>
+
+                <!-- Name + slug -->
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-semibold text-gray-900">{{ c.name }}</div>
+                    <div class="text-xs text-gray-500 mt-0.5">/{{ c.slug or c.name|lower|replace(' ', '-') }}</div>
+                </div>
+
+                <!-- Product count -->
+                <div class="text-right">
+                    <div class="text-sm font-semibold text-gray-900">{{ c.product_count or 0 }}</div>
+                    <div class="text-[11px] text-gray-500">products</div>
+                </div>
+
+                <!-- Status -->
+                <div>
+                    {% if c.is_active %}
+                        <span class="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+                    {% else %}
+                        <span class="text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">Hidden</span>
+                    {% endif %}
+                </div>
+
+                <!-- Actions -->
+                <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button class="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                    </button>
+                    <button class="p-1.5 rounded hover:bg-rose-50 text-gray-500 hover:text-rose-600">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                </svg>
+            </div>
+            <h4 class="text-sm font-semibold text-gray-900">No categories yet</h4>
+            <p class="text-xs text-gray-500 mt-1">Create your first category to organize the collection.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>

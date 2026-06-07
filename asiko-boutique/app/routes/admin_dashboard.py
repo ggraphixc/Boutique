@@ -150,9 +150,33 @@ async def inline_trigger_restock_alert(request: Request) -> HTMLResponse:
 
 async def inline_update_model_url(request: Request) -> HTMLResponse:
     """POST /admin/dashboard/update-model-url — HTMX inline update of model_3d_url."""
+    import uuid as _uuid
+
     form_data = await request.form()
     product_id = form_data.get("product_id")
-    model_url = form_data.get("model_3d_url", "").strip()
+    # Accept either field name — legacy callers send `model_url`, the canonical
+    # column is `model_3d_url`. Be lenient so test + dashboard + curl all work.
+    model_url = (
+        form_data.get("model_3d_url")
+        or form_data.get("model_url")
+        or ""
+    ).strip()
+
+    if not product_id:
+        return HTMLResponse(
+            "<span class='text-xs text-red-500'>Missing product_id</span>",
+            status_code=400,
+        )
+
+    # Guard against malformed UUIDs — asyncpg raises UndefinedFunctionError or
+    # InvalidTextRepresentation for non-UUID input. Return 400 instead of 500.
+    try:
+        _uuid.UUID(str(product_id))
+    except (ValueError, AttributeError, TypeError):
+        return HTMLResponse(
+            f"<span class='text-xs text-red-500'>Invalid product_id: {product_id}</span>",
+            status_code=400,
+        )
 
     if not model_url:
         model_url = None

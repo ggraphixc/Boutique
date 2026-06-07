@@ -279,9 +279,16 @@
                 selectedVariant: null,
                 wardrobeItems: wardrobeItems,
                 switchGender(g) {
+                    // Idempotent guard: clicking the already-active axis must
+                    // not kick off another loadAsync, otherwise two in-flight
+                    // loads can race and both GLBs end up mounted in the same
+                    // wrapper group ("two avatars stacked on one axis").
+                    if (this.currentGender === g) return;
                     this.currentGender = g;
                     if (window.__atelierEngine) {
-                        window.__atelierEngine.loadBaseAvatar(`/static/models/avatar_${g}.glb`);
+                        // Routes through AVATAR_ASSETS so male→avatar_male.glb
+                        // and female→avatar_female.glb stay bound in one place.
+                        window.__atelierEngine.loadAvatarByGender(g);
                     }
                 },
             }));
@@ -298,8 +305,9 @@
             const parentContainer = document.querySelector('.atelier-canvas-wrap');
             if (parentContainer) {
                 window.__atelierEngine = initAtelierEngine(parentContainer);
-                // Default avatar fallback instantiation target
-                window.__atelierEngine.loadBaseAvatar('/static/models/avatar_female.glb');
+                // Default avatar instantiation — resolves through AVATAR_ASSETS
+                // (male → avatar_male.glb, female → avatar_female.glb).
+                window.__atelierEngine.loadAvatarByGender('female');
 
                 // Apply saved measurements from session if available
                 {% if saved_measurements %}

@@ -1,179 +1,296 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-[#050B0A] text-white">
+<html lang="en" class="h-full bg-gray-50 text-gray-900"
+      x-data="{ sidebarOpen: true, sidebarCollapsed: false }"
+      x-init="sidebarOpen = (localStorage.getItem('asiko:sidebarOpen') ?? 'true') === 'true'"
+      :class="{ 'sidebar-collapsed': !sidebarOpen }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ÀSÌKÒ Control Center</title>
+    <title>{% block title %}ÀSÌKÒ Control Center{% endblock %}</title>
+
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://unpkg.com/alpinejs" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['"Playfair Display"', 'Georgia', 'serif'],
+                    },
+                    colors: {
+                        asiko: {
+                            gold: '#D4AF37',
+                            emerald: '#0D2A22',
+                            cream: '#FBF9F6',
+                            ink: '#050B0A',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
         body { font-family: 'Inter', system-ui, sans-serif; }
         .font-display { font-family: 'Playfair Display', Georgia, serif; }
-        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
-
-        .panel-scroll::-webkit-scrollbar { width: 3px; }
-        .panel-scroll::-webkit-scrollbar-track { background: transparent; }
-        .panel-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 99px; }
-
         [x-cloak] { display: none !important; }
 
-        /* Loading skeleton animation */
+        /* Scrollbar */
+        .panel-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+        .panel-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 99px; }
+        .panel-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.24); }
+
+        /* Skeleton */
         @keyframes shimmer {
             0% { background-position: -200% 0; }
             100% { background-position: 200% 0; }
         }
         .skeleton-loading {
-            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 75%);
+            background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s ease-in-out infinite;
         }
 
-        /* HTMX transitions */
-        .htmx-request { opacity: 0.6; pointer-events: none; }
-        .htmx-request .skeleton-loading { display: block; }
+        /* HTMX */
+        .htmx-request { opacity: 0.7; pointer-events: none; transition: opacity 200ms; }
+        .htmx-indicator { opacity: 0; transition: opacity 200ms; }
+        .htmx-request .htmx-indicator { opacity: 1; }
+
+        /* Sidebar collapse */
+        .sidebar-collapsed aside { width: 5rem !important; }
+        .sidebar-collapsed .nav-label { display: none; }
+        .sidebar-collapsed .sidebar-header-text { display: none; }
+        .sidebar-collapsed .sidebar-section-label { display: none; }
+        .sidebar-collapsed .sidebar-profile-meta { display: none; }
+        .sidebar-collapsed .sidebar-hide-label { display: none; }
+        .sidebar-collapsed aside .nav-item { justify-content: center; padding-left: 0; padding-right: 0; }
+        .sidebar-collapsed aside .sidebar-profile { justify-content: center; padding-left: 0; padding-right: 0; }
+
+        /* Nav item */
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.875rem;
+            border-radius: 0.625rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgb(75, 85, 99);
+            transition: all 180ms;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background-color: rgb(243, 244, 246);
+            color: rgb(17, 24, 39);
+        }
+        .nav-item.is-active {
+            background-color: #0D2A22;
+            color: #FBF9F6;
+        }
+        .nav-item.is-active .nav-icon {
+            background-color: rgba(212, 175, 55, 0.15);
+            color: #D4AF37;
+        }
+        .nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.5rem;
+            background-color: rgb(243, 244, 246);
+            color: rgb(107, 114, 128);
+            flex-shrink: 0;
+            transition: all 180ms;
+        }
+        .nav-item:hover .nav-icon {
+            background-color: rgb(229, 231, 235);
+            color: #0D2A22;
+        }
+
+        /* Workspace content */
+        #workspace-content { animation: fadeIn 280ms ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
+
+    {% block head_extra %}{% endblock %}
 </head>
 <body class="h-full flex overflow-hidden antialiased">
 
     <!-- ============================================================== -->
-    <!-- PERSISTENT EDITORIAL SIDEBAR                                    -->
+    <!-- LIGHT-THEME SIDEBAR (21st.dev style)                             -->
     <!-- ============================================================== -->
-    <aside class="w-64 flex-shrink-0 bg-[#0A1211] border-r border-white/[0.05] flex flex-col justify-between h-full overflow-hidden">
-        <div class="flex flex-col h-full">
+    <aside class="w-64 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden transition-all duration-300">
 
-            <!-- Brand Header -->
-            <div class="px-6 pt-7 pb-5 border-b border-white/[0.04]">
-                <div class="flex items-center gap-3">
-                    <span class="font-display text-xl font-light tracking-[0.25em] text-white uppercase">ÀSÌKÒ</span>
-                    <span class="text-[9px] font-mono tracking-[0.3em] text-[#D4AF37] uppercase">Engine</span>
-                </div>
-                <p class="text-[9px] font-mono text-white/30 mt-2 tracking-wider">Supply Chain Ledger v2.0</p>
+        <!-- Brand header -->
+        <div class="px-5 pt-5 pb-4 border-b border-gray-100 flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-asiko-emerald to-black flex items-center justify-center flex-shrink-0">
+                <span class="font-display text-base font-medium text-asiko-gold">À</span>
             </div>
+            <div class="sidebar-header-text overflow-hidden">
+                <div class="font-display text-base font-medium tracking-wider text-gray-900 leading-tight">ÀSÌKÒ</div>
+                <div class="text-[10px] uppercase tracking-[0.18em] text-gray-400 font-medium">Control Center</div>
+            </div>
+        </div>
 
-            <!-- Core Navigation Group -->
-            <nav class="flex-1 overflow-y-auto panel-scroll px-4 pt-6 pb-4 space-y-6">
+        <!-- User profile (collapses to avatar only) -->
+        <div class="sidebar-profile flex items-center gap-3 px-5 py-4 border-b border-gray-100">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-asiko-gold to-yellow-700 flex items-center justify-center text-white text-sm font-semibold flex-shrink-0">
+                {{ (request.session.get('owner_name') or 'A')[:1] | upper }}
+            </div>
+            <div class="sidebar-profile-meta overflow-hidden">
+                <div class="text-sm font-semibold text-gray-900 truncate">{{ request.session.get('owner_name') or 'Atelier Admin' }}</div>
+                <div class="text-[11px] text-gray-500 truncate">{{ request.session.get('owner_email') or 'admin@asiko.boutique' }}</div>
+            </div>
+        </div>
 
-                <!-- Management Section -->
-                <div>
-                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">Management</span>
-                    <div class="space-y-0.5">
-                        <button hx-get="/admin/products" hx-target="#workspace" hx-push-url="true"
-                                id="nav-products"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View Catalog Assets">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto panel-scroll px-3 py-5 space-y-6">
+
+            <!-- =========================================== -->
+            <!-- MAIN                                          -->
+            <!-- =========================================== -->
+            <div>
+                <div class="sidebar-section-label text-[10px] uppercase tracking-[0.15em] text-gray-400 font-semibold px-2.5 mb-2.5">Main</div>
+                <div class="space-y-1">
+
+                    <button hx-get="/admin/section/dashboard" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-dashboard"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
-                            <span>Catalog Assets</span>
-                        </button>
-
-                        <button hx-get="/admin/vendors" hx-target="#workspace" hx-push-url="true"
-                                id="nav-vendors"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View Store Owners">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                            </svg>
-                            <span>Store Owners</span>
-                        </button>
-
-                        <button hx-get="/admin/passports" hx-target="#workspace" hx-push-url="true"
-                                id="nav-passports"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View DPP Ledgers">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            <span>DPP Ledgers</span>
-                        </button>
-
-                        <button hx-get="/admin/orders" hx-target="#workspace" hx-push-url="true"
-                                id="nav-orders"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View Order Pipeline">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
-                            </svg>
-                            <span>Order Pipeline</span>
-                        </button>
-
-                        <button hx-get="/admin/dashboard" hx-target="#workspace" hx-push-url="true"
-                                id="nav-dashboard"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View Executive Dashboard">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
-                            </svg>
-                            <span>Executive Dashboard</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- System Config Section -->
-                <div>
-                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">System Config</span>
-                    <div class="space-y-0.5">
-                        <button hx-get="/admin/settings/general" hx-target="#workspace" hx-push-url="true"
-                                id="nav-settings-general"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="Core Tuning settings">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span>Core Tuning</span>
-                        </button>
-
-                        <button hx-get="/admin/settings/shipping" hx-target="#workspace" hx-push-url="true"
-                                id="nav-settings-shipping"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="Shipping Matrix settings">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                            </svg>
-                            <span>Shipping Matrix</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Administration Section -->
-                <div>
-                    <span class="text-[9px] uppercase tracking-widest text-white/30 font-mono block px-3 mb-2">Administration</span>
-                    <div class="space-y-0.5">
-                        <button hx-get="/admin/reservations" hx-target="#workspace" hx-push-url="true"
-                                id="nav-reservations"
-                                class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-mono text-white/60 hover:bg-white/[0.03] hover:text-white transition-all duration-200 cursor-pointer group"
-                                aria-label="View Stock Sentinel">
-                            <svg class="w-4 h-4 text-white/30 group-hover:text-[#D4AF37] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                            </svg>
-                            <span>Stock Sentinel</span>
-                        </button>
-                    </div>
-                </div>
-            </nav>
-
-            <!-- Infrastructure Connection Pulse -->
-            <div class="flex-shrink-0 border-t border-white/[0.04] px-6 py-4">
-                <div class="flex items-center justify-between text-[11px] font-mono text-white/40">
-                    <div class="flex items-center gap-2">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                         </span>
-                        <span class="text-white/50">DB Cluster</span>
-                    </div>
-                    <span class="text-emerald-400/80 text-[10px]">Active</span>
-                </div>
-                <div class="mt-2 flex items-center justify-between text-[9px] font-mono text-white/20">
-                    <span>Neon PostgreSQL</span>
-                    <span>0.3ms latency</span>
+                        <span class="nav-label">Dashboard</span>
+                    </button>
+
+                    <button hx-get="/admin/section/products" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-products"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Products</span>
+                    </button>
+
+                    <button hx-get="/admin/section/categories" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-categories"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Categories</span>
+                    </button>
+
+                    <button hx-get="/admin/section/all-products" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-all-products"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">All Products</span>
+                    </button>
+
                 </div>
             </div>
+
+            <!-- =========================================== -->
+            <!-- INSIGHTS                                      -->
+            <!-- =========================================== -->
+            <div>
+                <div class="sidebar-section-label text-[10px] uppercase tracking-[0.15em] text-gray-400 font-semibold px-2.5 mb-2.5">Insights</div>
+                <div class="space-y-1">
+
+                    <button hx-get="/admin/section/reviews" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-reviews"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Reviews</span>
+                    </button>
+
+                    <button hx-get="/admin/section/ads" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-ads"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Ads</span>
+                    </button>
+
+                </div>
+            </div>
+
+            <!-- =========================================== -->
+            <!-- CONFIG                                        -->
+            <!-- =========================================== -->
+            <div>
+                <div class="sidebar-section-label text-[10px] uppercase tracking-[0.15em] text-gray-400 font-semibold px-2.5 mb-2.5">Config</div>
+                <div class="space-y-1">
+
+                    <button hx-get="/admin/section/settings" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-settings"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">Settings</span>
+                    </button>
+
+                    <button hx-get="/admin/section/about" hx-target="#workspace-content" hx-push-url="true"
+                            id="nav-about"
+                            class="nav-item group">
+                        <span class="nav-icon">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                        </span>
+                        <span class="nav-label">About Me</span>
+                    </button>
+
+                </div>
+            </div>
+
+        </nav>
+
+        <!-- Bottom: Hide button -->
+        <div class="flex-shrink-0 border-t border-gray-100 px-3 py-3">
+            <button @click="sidebarOpen = !sidebarOpen; localStorage.setItem('asiko:sidebarOpen', sidebarOpen); $root.setAttribute('data-sidebar-open', sidebarOpen); document.documentElement.classList.toggle('sidebar-collapsed', !sidebarOpen)"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors group">
+                <span class="nav-icon group-hover:bg-gray-200">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" :d="sidebarOpen ? 'M11 19l-7-7 7-7M21 19l-7-7 7-7' : 'M13 5l7 7-7 7M3 5l7 7-7 7'"/>
+                    </svg>
+                </span>
+                <span class="sidebar-hide-label" x-text="sidebarOpen ? 'Hide' : 'Show'">Hide</span>
+            </button>
         </div>
     </aside>
 
@@ -182,77 +299,122 @@
     <!-- ============================================================== -->
     <main id="workspace"
           hx-trigger="load"
-          hx-get="/admin/products"
+          hx-get="/admin/section/dashboard"
           hx-indicator="#workspace-indicator"
-          class="flex-1 overflow-y-auto bg-[#050B0A] panel-scroll relative"
+          class="flex-1 overflow-y-auto bg-gray-50 panel-scroll relative"
           role="main"
           aria-label="Admin workspace">
 
-        <!-- Loading indicator -->
-        <div id="workspace-indicator" class="fixed top-0 left-64 right-0 h-0.5 z-50 bg-[#0A1211] overflow-hidden opacity-0 transition-opacity duration-200">
-            <div class="h-full w-full bg-[#D4AF37] origin-left scale-x-0 transition-transform duration-500 ease-out htmx-request:scale-x-100 htmx-request:opacity-100"></div>
+        <!-- Loading bar -->
+        <div id="workspace-indicator" class="htmx-indicator fixed top-0 left-64 right-0 h-0.5 z-50 bg-transparent overflow-hidden">
+            <div class="h-full w-full bg-asiko-gold origin-left scale-x-0 transition-transform duration-500 ease-out htmx-request:scale-x-100"></div>
         </div>
 
-        <!-- Content area with padding -->
-        <div class="p-8 lg:p-10 min-h-full" id="workspace-content">
+        <!-- Page header (always present, title updated via JS) -->
+        <header class="bg-white border-b border-gray-200 px-8 py-5 flex items-center justify-between sticky top-0 z-10 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+            <div>
+                <h1 id="page-title" class="font-display text-2xl font-medium text-gray-900">Dashboard</h1>
+                <p id="page-subtitle" class="text-sm text-gray-500 mt-0.5">Welcome back to the atelier</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <input type="text" placeholder="Search products, orders..."
+                           class="w-72 pl-10 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold transition-colors">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <button class="relative p-2 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                    </svg>
+                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-asiko-gold rounded-full"></span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Content area -->
+        <div class="p-8 min-h-full" id="workspace-content">
             <!-- HTMX content renders here -->
         </div>
     </main>
 
     <!-- ============================================================== -->
-    <!-- GLOBAL ALPINE STATE                                             -->
+    <!-- GLOBAL JS                                                        -->
     <!-- ============================================================== -->
     <script>
-        document.addEventListener('alpine:init', () => {
-            // Global admin state
-            Alpine.data('adminState', () => ({
-                sidebarCollapsed: false,
-                activePanel: 'catalog',
-                lastRefresh: null,
+        // Restore sidebar state on init
+        (function() {
+            const stored = localStorage.getItem('asiko:sidebarOpen');
+            if (stored === 'false') {
+                document.documentElement.classList.add('sidebar-collapsed');
+            }
+        })();
 
-                toggleSidebar() {
-                    this.sidebarCollapsed = !this.sidebarCollapsed;
-                }
-            }));
+        // Active nav highlight (light-theme friendly)
+        const PAGE_META = {
+            'nav-dashboard':    { title: 'Dashboard',    subtitle: 'Welcome back to the atelier' },
+            'nav-products':     { title: 'Products',     subtitle: 'Manage your collection and 3D pipeline' },
+            'nav-categories':   { title: 'Categories',   subtitle: 'Organize the collection' },
+            'nav-all-products': { title: 'All Products', subtitle: 'Complete inventory with 3D status' },
+            'nav-reviews':      { title: 'Reviews',      subtitle: 'Customer feedback and ratings' },
+            'nav-ads':          { title: 'Ads',          subtitle: 'Campaigns and banners' },
+            'nav-settings':     { title: 'Settings',     subtitle: 'Store configuration' },
+            'nav-about':        { title: 'About Me',     subtitle: 'Owner profile and store story' },
+        };
 
-            // Notification toast system
-            Alpine.data('notificationToast', () => ({
-                visible: false,
-                message: '',
-                type: 'success',
+        function setActiveNav(triggerId) {
+            if (!triggerId || !triggerId.startsWith('nav-')) return;
+            document.querySelectorAll('aside .nav-item').forEach(btn => btn.classList.remove('is-active'));
+            const trigger = document.getElementById(triggerId);
+            if (trigger) trigger.classList.add('is-active');
+            const meta = PAGE_META[triggerId];
+            if (meta) {
+                const t = document.getElementById('page-title');
+                const s = document.getElementById('page-subtitle');
+                if (t) t.textContent = meta.title;
+                if (s) s.textContent = meta.subtitle;
+            }
+        }
 
-                show(msg, type = 'success') {
-                    this.message = msg;
-                    this.type = type;
-                    this.visible = true;
-                    setTimeout(() => { this.visible = false; }, 4000);
-                }
-            }));
-        });
+        // Initial active state from URL
+        (function() {
+            const path = window.location.pathname;
+            const match = path.match(/\/admin\/section\/(\w[\w-]*)/);
+            if (match) {
+                const slug = match[1];
+                const idMap = {
+                    'dashboard': 'nav-dashboard', 'products': 'nav-products',
+                    'categories': 'nav-categories', 'all-products': 'nav-all-products',
+                    'reviews': 'nav-reviews', 'ads': 'nav-ads',
+                    'settings': 'nav-settings', 'about': 'nav-about',
+                };
+                if (idMap[slug]) setActiveNav(idMap[slug]);
+            } else {
+                setActiveNav('nav-dashboard');
+            }
+        })();
 
-        // Listen for HTMX after-swap to update active nav item
         document.addEventListener('htmx:afterSwap', (e) => {
             const triggerId = e.detail?.elt?.id;
-            if (!triggerId || !triggerId.startsWith('nav-')) return;
-
-            // Remove active state from all nav items
-            document.querySelectorAll('aside [id^="nav-"]').forEach(btn => {
-                btn.classList.remove('bg-white/[0.04]', 'text-white');
-                btn.classList.add('text-white/60');
-            });
-
-            // Highlight the clicked nav item
-            const trigger = document.getElementById(triggerId);
-            if (trigger) {
-                trigger.classList.remove('text-white/60');
-                trigger.classList.add('bg-white/[0.04]', 'text-white');
-            }
+            setActiveNav(triggerId);
+            // Scroll to top on navigation
+            const ws = document.getElementById('workspace');
+            if (ws) ws.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
-        // HTMX error handling
         document.addEventListener('htmx:responseError', (e) => {
             console.error('[Admin] HTMX request failed:', e.detail);
         });
+
+        // Re-run after HTMX swaps in case a section needs to attach extra JS
+        document.addEventListener('htmx:afterSwap', (e) => {
+            if (e.target.id === 'workspace-content' || e.target.closest('#workspace-content')) {
+                window.dispatchEvent(new CustomEvent('asiko:section-loaded', { detail: { path: e.detail?.path?.requestPath } }));
+            }
+        });
     </script>
+
+    {% block body_extra %}{% endblock %}
 </body>
 </html>

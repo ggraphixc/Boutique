@@ -154,9 +154,18 @@ async def capsule_layers_fragment(request: Request) -> HTMLResponse:
             status_code=400,
         )
 
-    gender_axis = request.query_params.get(
-        "gender", request.session.get("preferred_avatar_axis", "female")
-    )
+    # Defensive fallback chain: explicit query param → session value → "female".
+    # .get() with a default only handles *missing* keys; we must also guard against
+    # keys that exist but are empty strings (which would otherwise propagate "" down
+    # to the frontend loader and break the skeleton fit filter).
+    _query_gender = request.query_params.get("gender")
+    _session_gender = request.session.get("preferred_avatar_axis")
+    if _query_gender and _query_gender.strip():
+        gender_axis = _query_gender.strip()
+    elif _session_gender and _session_gender.strip():
+        gender_axis = _session_gender.strip()
+    else:
+        gender_axis = "female"
 
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
