@@ -5,62 +5,62 @@
 
     <!-- Page header -->
     <div>
-        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Operations</h1>
-        <p class="text-sm text-gray-500 mt-1">Production ledger, waitlist dispatch, and reservation feed</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Operations</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Production ledger, waitlist dispatch, and reservation feed</p>
     </div>
 
     <!-- KPI cards row -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
         <!-- Verified Revenue -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5">
             <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500">Verified Revenue</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1 mono-nums">&#8358;{{ "{:,.2f}".format(metrics.revenue) }}</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Verified Revenue</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1 mono-nums">&#8358;{{ "{:,.2f}".format(metrics.revenue) }}</div>
             </div>
         </div>
 
         <!-- Unfulfilled Backlogs -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5">
             <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
                 </svg>
             </div>
             <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500">Unfulfilled Backlogs</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ metrics.pending_orders }} <span class="text-base font-medium text-gray-500">Orders</span></div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Unfulfilled Backlogs</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ metrics.pending_orders }} <span class="text-base font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Orders</span></div>
             </div>
         </div>
 
         <!-- Active Holds -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5">
             <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
             <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500">Active Holds</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ metrics.active_holds }} <span class="text-base font-medium text-gray-500">Holds</span></div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Active Holds</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ metrics.active_holds }} <span class="text-base font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Holds</span></div>
             </div>
         </div>
 
         <!-- Waitlist Demand -->
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5">
             <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                 </svg>
             </div>
             <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500">Waitlist Demand</div>
-                <div class="text-2xl font-bold text-gray-900 mt-1">{{ metrics.waitlist_volume }} <span class="text-base font-medium text-gray-500">Enrolled</span></div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Waitlist Demand</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ metrics.waitlist_volume }} <span class="text-base font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Enrolled</span></div>
             </div>
         </div>
 
@@ -70,10 +70,10 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
         <!-- Atelier Production Ledger (col-span-2) -->
-        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-card p-6">
-            <div class="border-b border-gray-100 pb-4 mb-5">
-                <h3 class="text-lg font-bold text-gray-900">Atelier Production Ledger</h3>
-                <p class="text-xs text-gray-500 mt-1">Modify apparel drops and adjust size variant balances via async HTMX inputs.</p>
+        <div class="lg:col-span-2 bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+            <div class="border-b border-gray-100 dark:border-gray-800 pb-4 mb-5">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Atelier Production Ledger</h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Modify apparel drops and adjust size variant balances via async HTMX inputs.</p>
             </div>
 
             <div class="space-y-3">
@@ -82,20 +82,20 @@
                 {% set is_first_variant = (item.product_id != ns.last_product_id) %}
                 {% if is_first_variant %}{% set ns.last_product_id = item.product_id %}{% endif %}
 
-                <div class="p-5 bg-white border border-gray-200 rounded-lg hover:border-blue-200 transition-colors">
+                <div class="p-5 bg-white dark:bg-[#111114] border border-gray-200 dark:border-gray-800 rounded-lg hover:border-blue-200 transition-colors">
                     <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
                         <!-- Brand / Product Identity -->
                         <div class="flex items-center gap-4 min-w-0">
-                            <div class="w-12 h-12 bg-gray-50 border border-gray-200 flex items-center justify-center text-sm text-gray-400 flex-shrink-0 rounded">
+                            <div class="w-12 h-12 bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-800 flex items-center justify-center text-sm text-gray-400 dark:text-gray-500 flex-shrink-0 rounded">
                                 {{ loop.index }}
                             </div>
                             <div class="min-w-0">
                                 <span class="text-[10px] uppercase tracking-wider text-blue-600 font-semibold block mb-0.5">
                                     {% if is_first_variant %}Active Capsule Collection{% else %}Variant Drop · Same Capsule{% endif %}
                                 </span>
-                                <h4 class="font-semibold text-base text-gray-900 truncate">{{ item.name }}</h4>
-                                <p class="text-xs text-gray-500 mt-0.5">
+                                <h4 class="font-semibold text-base text-gray-900 dark:text-gray-100 truncate">{{ item.name }}</h4>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">
                                     Size {{ item.size }} · {{ item.color }} · {{ item.stock_qty }} units
                                     {% if is_first_variant and item.model_3d_url %}
                                     <span class="ml-2 inline-flex items-center px-1.5 py-0.5 bg-blue-50 text-blue-700 text-[10px] font-bold uppercase tracking-wider rounded">3D</span>
@@ -109,11 +109,11 @@
 
                             <!-- Inline Stock Control -->
                             <form hx-post="/admin/dashboard/update-stock" hx-trigger="submit"
-                                  class="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white">
+                                  class="flex items-center border border-gray-200 dark:border-gray-800 rounded-md overflow-hidden bg-white dark:bg-[#111114]">
                                 <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
-                                <span class="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-r border-gray-200 font-semibold">Stock</span>
+                                <span class="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 border-r border-gray-200 dark:border-gray-800 font-semibold">Stock</span>
                                 <input type="number" name="stock_quantity" value="{{ item.stock_qty }}"
-                                       class="w-16 bg-transparent text-center text-sm text-gray-900 focus:outline-none px-2 py-1.5">
+                                       class="w-16 bg-transparent text-center text-sm text-gray-900 dark:text-gray-100 focus:outline-none px-2 py-1.5">
                                 <button type="submit"
                                         class="bg-gray-900 hover:bg-gray-800 text-white transition-colors px-3 py-1.5 text-[10px] uppercase tracking-wider font-semibold">
                                     Save
@@ -123,12 +123,12 @@
                             <!-- 3D Path Assignment (first variant only) -->
                             {% if is_first_variant %}
                             <form hx-post="/admin/dashboard/update-model-url" hx-trigger="submit"
-                                  class="flex items-center border border-gray-200 rounded-md overflow-hidden bg-white">
+                                  class="flex items-center border border-gray-200 dark:border-gray-800 rounded-md overflow-hidden bg-white dark:bg-[#111114]">
                                 <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                                <span class="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 border-r border-gray-200 font-semibold">3D Path</span>
+                                <span class="px-2.5 py-1.5 text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 border-r border-gray-200 dark:border-gray-800 font-semibold">3D Path</span>
                                 <input type="text" name="model_3d_url" value="{{ item.model_3d_url or '' }}"
                                        placeholder="/static/models/foo.glb"
-                                       class="w-56 bg-transparent px-2.5 text-xs text-gray-900 focus:outline-none py-1.5">
+                                       class="w-56 bg-transparent px-2.5 text-xs text-gray-900 dark:text-gray-100 focus:outline-none py-1.5">
                                 <button type="submit"
                                         class="bg-blue-600 hover:bg-blue-700 text-white transition-colors px-3 py-1.5 text-[10px] uppercase tracking-wider font-semibold">
                                     Save Path
@@ -147,7 +147,7 @@
                     <!-- HTMX response target containers -->
                     <div id="status-variant-{{ item.variant_id }}" class="text-[10px] mt-2 text-emerald-600 font-mono"></div>
                     {% if is_first_variant %}
-                    <div id="model-status-{{ item.product_id }}" class="text-[10px] mt-1 font-mono text-gray-500">
+                    <div id="model-status-{{ item.product_id }}" class="text-[10px] mt-1 font-mono text-gray-500 dark:text-gray-400 dark:text-gray-500">
                         {% if item.model_3d_url %}
                         Current asset: {{ item.model_3d_url.rsplit('/', 1)[-1] }}
                         {% endif %}
@@ -155,7 +155,7 @@
                     {% endif %}
                 </div>
                 {% else %}
-                <div class="text-sm text-gray-500 text-center py-6">No products yet. Add a product to populate the production ledger.</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-6">No products yet. Add a product to populate the production ledger.</div>
                 {% endfor %}
             </div>
         </div>
@@ -164,17 +164,17 @@
         <div class="space-y-5">
 
             <!-- Out-of-Stock Queues -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
-                <div class="border-b border-gray-100 pb-3 mb-4">
-                    <h3 class="text-base font-bold text-gray-900">Out-of-Stock Queues</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Live backlog demand on sold-out sizes.</p>
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+                <div class="border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
+                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Out-of-Stock Queues</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Live backlog demand on sold-out sizes.</p>
                 </div>
 
                 <div class="space-y-3">
                     {% for wait in waitlists %}
-                    <div class="border-b border-gray-100 pb-3 last:border-0">
-                        <h4 class="text-sm font-semibold text-gray-900">{{ wait.product_name }}</h4>
-                        <p class="text-[11px] text-gray-500 mt-0.5">Size {{ wait.size }} · {{ wait.color }}</p>
+                    <div class="border-b border-gray-100 dark:border-gray-800 pb-3 last:border-0">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ wait.product_name }}</h4>
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Size {{ wait.size }} · {{ wait.color }}</p>
                         <div class="flex items-center justify-between mt-2">
                             <span class="text-[11px] font-semibold inline-block bg-amber-50 text-amber-700 border border-amber-200/50 px-2 py-0.5 rounded">
                                 {{ wait.demand_count }} unnotified
@@ -186,33 +186,33 @@
                         </div>
                     </div>
                     {% else %}
-                    <p class="text-sm text-gray-500 text-center py-4">No waiting buyers backlogged.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-4">No waiting buyers backlogged.</p>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Stock Sentinel Feed -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
-                <div class="border-b border-gray-100 pb-3 mb-4">
-                    <h3 class="text-base font-bold text-gray-900">Stock Sentinel Feed</h3>
-                    <p class="text-xs text-gray-500 mt-0.5">Real-time trace of rolling checkout locks.</p>
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+                <div class="border-b border-gray-100 dark:border-gray-800 pb-3 mb-4">
+                    <h3 class="text-base font-bold text-gray-900 dark:text-gray-100">Stock Sentinel Feed</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Real-time trace of rolling checkout locks.</p>
                 </div>
 
                 <div class="space-y-2.5">
                     {% for res in reservations %}
-                    <div class="bg-gray-50 border border-gray-200 p-3 rounded-md text-xs flex justify-between items-center">
+                    <div class="bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-800 p-3 rounded-md text-xs flex justify-between items-center">
                         <div class="min-w-0">
-                            <span class="font-medium text-gray-900 block truncate">{{ res.name }}</span>
-                            <span class="text-[10px] text-gray-500 block mt-0.5">{{ res.quantity }} units hold · {{ res.created_at_human }}</span>
+                            <span class="font-medium text-gray-900 dark:text-gray-100 block truncate">{{ res.name }}</span>
+                            <span class="text-[10px] text-gray-500 dark:text-gray-400 dark:text-gray-500 block mt-0.5">{{ res.quantity }} units hold · {{ res.created_at_human }}</span>
                         </div>
                         <span class="text-[10px] uppercase px-1.5 py-0.5 font-semibold rounded
                             {% if res.status == 'staged' %}text-amber-700 bg-amber-50 border border-amber-200
-                            {% else %}text-gray-600 bg-gray-100 border border-gray-200{% endif %}">
+                            {% else %}text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#27272A] border border-gray-200 dark:border-gray-800{% endif %}">
                             {{ res.status }}
                         </span>
                     </div>
                     {% else %}
-                    <p class="text-sm text-gray-500 text-center py-4">Zero rolling locks outstanding.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-4">Zero rolling locks outstanding.</p>
                     {% endfor %}
                 </div>
             </div>

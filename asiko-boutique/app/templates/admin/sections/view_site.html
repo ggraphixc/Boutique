@@ -3,8 +3,8 @@
 
     <div class="flex flex-wrap items-start justify-between gap-3">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">View Site</h1>
-            <p class="text-sm text-gray-500 mt-1">Live preview of your public storefront</p>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">View Site</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Live preview of your public storefront</p>
         </div>
         <a href="{{ public_url }}" target="_blank" rel="noopener" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,40 +16,40 @@
 
     <!-- Status counts -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-4">
-            <div class="text-xs font-medium text-gray-500">Products live</div>
-            <div class="text-xl font-bold text-gray-900 mt-1">{{ '{:,}'.format(counts.products) }}</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-4">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Products live</div>
+            <div class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(counts.products) }}</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-4">
-            <div class="text-xs font-medium text-gray-500">Categories</div>
-            <div class="text-xl font-bold text-gray-900 mt-1">{{ '{:,}'.format(counts.categories) }}</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-4">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Categories</div>
+            <div class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(counts.categories) }}</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-4">
-            <div class="text-xs font-medium text-gray-500">Stores</div>
-            <div class="text-xl font-bold text-gray-900 mt-1">{{ '{:,}'.format(counts.stores) }}</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-4">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Stores</div>
+            <div class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(counts.stores) }}</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-4">
-            <div class="text-xs font-medium text-gray-500">Orders</div>
-            <div class="text-xl font-bold text-gray-900 mt-1">{{ '{:,}'.format(counts.orders) }}</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-4">
+            <div class="text-xs font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Orders</div>
+            <div class="text-xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(counts.orders) }}</div>
         </div>
     </div>
 
     <!-- Preview iframe -->
-    <div class="bg-white rounded-xl border border-gray-200 shadow-card overflow-hidden">
-        <div class="border-b border-gray-100 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card overflow-hidden">
+        <div class="border-b border-gray-100 dark:border-gray-800 px-5 py-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2">
                 <div class="flex gap-1.5">
                     <span class="w-3 h-3 rounded-full bg-rose-400"></span>
                     <span class="w-3 h-3 rounded-full bg-amber-400"></span>
                     <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
                 </div>
-                <span class="ml-3 text-sm font-mono text-gray-600">{{ public_url }}</span>
+                <span class="ml-3 text-sm font-mono text-gray-600 dark:text-gray-300">{{ public_url }}</span>
             </div>
             <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Live
             </span>
         </div>
-        <iframe src="{{ public_url }}" class="w-full bg-white" style="height: 70vh; min-height: 480px; border: 0;" title="Storefront preview"></iframe>
+        <iframe src="{{ public_url }}" class="w-full bg-white dark:bg-[#111114]" style="height: 70vh; min-height: 480px; border: 0;" title="Storefront preview"></iframe>
     </div>
 
     <!-- Help card -->

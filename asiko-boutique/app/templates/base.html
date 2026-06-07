@@ -1,12 +1,21 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en" class="h-full" x-data="{ darkMode: (localStorage.getItem('asiko:darkMode') ?? 'false') === 'true' }" x-init="$root.classList.toggle('dark', darkMode)" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ASIKO Boutique{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
+        // Apply persisted theme synchronously to prevent FOUC.
+        (function() {
+            try {
+                if ((localStorage.getItem('asiko:darkMode') ?? 'false') === 'true') {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
@@ -33,38 +42,51 @@
         .font-display { font-family: 'Playfair Display', Georgia, serif; }
     </style>
 </head>
-<body class="h-full bg-[#FBF9F6] text-[#1A1A1A] antialiased">
+<body class="h-full bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100 antialiased">
     <div class="min-h-full flex flex-col">
-        <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-[#D4AF37]/20">
+        <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#0E0E10]/80 backdrop-blur-md border-b border-[#D4AF37]/20 dark:border-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-3">
-                        <a href="/" class="font-display text-2xl font-light text-[#0D2A22] tracking-wider">ASIKO</a>
-                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-[#D4AF37]/40 text-[#0D2A22]">Boutique</span>
+                        <a href="/" class="font-display text-2xl font-light text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">ASIKO</a>
+                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 text-[#0D2A22] dark:text-[#D4AF37]">Boutique</span>
                     </div>
                     <nav class="hidden md:flex items-center gap-6">
-                        <a href="/" class="text-sm font-medium text-[#0D2A22] hover:text-[#D4AF37] transition-colors">Home</a>
-                        <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 hover:text-[#0D2A22] transition-colors">Lookbook</a>
-                        <a href="/virtual-experience" class="text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] transition-colors">
+                        <a href="/" class="text-sm font-medium text-[#0D2A22] dark:text-gray-200 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors">Home</a>
+                        <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Lookbook</a>
+                        <a href="/virtual-experience" class="text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
                             <span class="inline-flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/></svg>
                                 3D Atelier
                             </span>
                         </a>
                     </nav>
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-3">
+                        <button
+                            @click="darkMode = !darkMode; localStorage.setItem('asiko:darkMode', darkMode); $root.classList.toggle('dark', darkMode); document.dispatchEvent(new CustomEvent('asiko:theme-changed', { detail: { dark: darkMode } }))"
+                            class="relative w-9 h-9 inline-flex items-center justify-center text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors"
+                            title="Toggle theme"
+                            aria-label="Toggle dark mode"
+                        >
+                            <svg x-show="!darkMode" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                            </svg>
+                            <svg x-show="darkMode" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                            </svg>
+                        </button>
                         <button
                             hx-get="/cart/drawer"
                             hx-target="#cart-drawer-content"
                             hx-swap="innerHTML"
                             onclick="document.getElementById('cart-drawer').classList.remove('hidden')"
-                            class="relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#0D2A22] border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10 transition-colors"
+                            class="relative inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors"
                         >
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                             <span class="hidden sm:inline">Cart</span>
                             <span id="cart-counter" class="font-mono text-xs tracking-widest">
                                 {% if cart and cart.item_count > 0 %}
-                                <span class="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-[#0D2A22] text-white text-xs flex items-center justify-center">{{ cart.item_count }}</span>
+                                <span class="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-black text-xs flex items-center justify-center">{{ cart.item_count }}</span>
                                 {% endif %}
                             </span>
                         </button>
@@ -75,11 +97,11 @@
 
         <main class="flex-1">{% block content %}{% endblock %}</main>
 
-        <footer class="border-t border-[#D4AF37]/20 bg-white mt-12">
+        <footer class="border-t border-[#D4AF37]/20 dark:border-gray-800 bg-white dark:bg-[#0E0E10] mt-12">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div class="text-center">
-                    <span class="font-display text-xl text-[#0D2A22] tracking-wider">ASIKO</span>
-                    <p class="text-sm text-[#1A1A1A]/50 mt-2">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
+                    <span class="font-display text-xl text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">ASIKO</span>
+                    <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-500 mt-2">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
                 </div>
             </div>
         </footer>
@@ -87,14 +109,14 @@
         <!-- Cart Drawer -->
         <div id="cart-drawer" class="hidden fixed inset-0 z-50" x-data="{ open: true }" x-show="open" x-cloak>
             <div class="absolute inset-0 bg-[#0D2A22]/80" onclick="document.getElementById('cart-drawer').classList.add('hidden')"></div>
-            <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl overflow-y-auto">
-                <div class="flex items-center justify-between p-4 border-b border-[#D4AF37]/20">
-                    <h2 class="font-display text-lg text-[#0D2A22]">Shopping Cart</h2>
-                    <button onclick="document.getElementById('cart-drawer').classList.add('hidden')" class="p-2 hover:bg-[#D4AF37]/10 rounded-md">
+            <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white dark:bg-[#0E0E10] shadow-xl overflow-y-auto">
+                <div class="flex items-center justify-between p-4 border-b border-[#D4AF37]/20 dark:border-gray-800">
+                    <h2 class="font-display text-lg text-[#0D2A22] dark:text-[#D4AF37]">Shopping Cart</h2>
+                    <button onclick="document.getElementById('cart-drawer').classList.add('hidden')" class="p-2 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 rounded-md text-[#1A1A1A] dark:text-gray-200">
                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
-                <div id="cart-drawer-content" class="p-4"><p class="text-center text-[#1A1A1A]/50 py-8">Loading...</p></div>
+                <div id="cart-drawer-content" class="p-4"><p class="text-center text-[#1A1A1A]/50 dark:text-gray-500 py-8">Loading...</p></div>
             </div>
         </div>
     </div>

@@ -3,8 +3,8 @@
 
     <div class="flex items-end justify-between">
         <div>
-            <h2 class="font-display text-xl text-gray-900">Ads &amp; campaigns</h2>
-            <p class="text-sm text-gray-500 mt-1">Manage banners, seasonal campaigns, and homepage features.</p>
+            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100">Ads &amp; campaigns</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Manage banners, seasonal campaigns, and homepage features.</p>
         </div>
         <button class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,41 +16,41 @@
 
     <!-- Performance summary -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Active campaigns</div>
-            <div class="mt-2 text-3xl font-semibold text-gray-900">{{ ads|selectattr('status', 'equalto', 'active')|list|length if ads else 0 }}</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">Active campaigns</div>
+            <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">{{ ads|selectattr('status', 'equalto', 'active')|list|length if ads else 0 }}</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Impressions · 30d</div>
-            <div class="mt-2 text-3xl font-semibold text-gray-900">142.8k</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">Impressions · 30d</div>
+            <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">142.8k</div>
             <div class="mt-2 text-xs text-emerald-600 font-medium">+18.2%</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">CTR · 30d</div>
-            <div class="mt-2 text-3xl font-semibold text-gray-900">3.4%</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">CTR · 30d</div>
+            <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">3.4%</div>
         </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-5">
-            <div class="text-xs text-gray-500 uppercase tracking-wider font-semibold">Revenue from ads</div>
-            <div class="mt-2 text-3xl font-semibold text-gray-900">$24,180</div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+            <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">Revenue from ads</div>
+            <div class="mt-2 text-3xl font-semibold text-gray-900 dark:text-gray-100">$24,180</div>
         </div>
     </div>
 
     <!-- Campaign list -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h3 class="font-medium text-gray-900">All campaigns</h3>
+    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100">All campaigns</h3>
             <div class="flex items-center gap-2">
                 <button class="text-xs font-medium px-2.5 py-1 rounded bg-asiko-emerald text-white">All</button>
-                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 hover:bg-gray-100">Active</button>
-                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 hover:bg-gray-100">Scheduled</button>
-                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 hover:bg-gray-100">Ended</button>
+                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#27272A]">Active</button>
+                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#27272A]">Scheduled</button>
+                <button class="text-xs font-medium px-2.5 py-1 rounded text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:bg-[#27272A]">Ended</button>
             </div>
         </div>
 
         {% if ads and ads|length > 0 %}
-        <div class="divide-y divide-gray-100">
+        <div class="divide-y divide-gray-100 dark:divide-gray-800">
             {% for a in ads %}
-            <div class="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 transition-colors group">
+            <div class="px-6 py-4 flex items-center gap-4 hover:bg-gray-50 dark:bg-[#18181B] transition-colors group">
                 <!-- Banner preview -->
                 <div class="w-24 h-14 rounded-md overflow-hidden bg-gradient-to-br flex-shrink-0"
                      style="background: linear-gradient(135deg, {{ a.color_from or '#D4AF37' }}, {{ a.color_to or '#0D2A22' }});">
@@ -61,18 +61,18 @@
 
                 <!-- Name + meta -->
                 <div class="flex-1 min-w-0">
-                    <div class="text-sm font-semibold text-gray-900">{{ a.name }}</div>
-                    <div class="text-xs text-gray-500 mt-0.5">{{ a.placement or 'Homepage hero' }} · {{ a.starts_at_human }} → {{ a.ends_at_human }}</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ a.name }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{{ a.placement or 'Homepage hero' }} · {{ a.starts_at_human }} → {{ a.ends_at_human }}</div>
                 </div>
 
                 <!-- Metrics -->
                 <div class="text-right">
-                    <div class="text-sm font-semibold text-gray-900">{{ a.impressions or '0' }}</div>
-                    <div class="text-[11px] text-gray-500">impressions</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ a.impressions or '0' }}</div>
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">impressions</div>
                 </div>
                 <div class="text-right">
-                    <div class="text-sm font-semibold text-gray-900">{{ a.ctr or '0%' }}</div>
-                    <div class="text-[11px] text-gray-500">CTR</div>
+                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ a.ctr or '0%' }}</div>
+                    <div class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">CTR</div>
                 </div>
 
                 <!-- Status -->
@@ -85,13 +85,13 @@
                     {% elif a.status == 'scheduled' %}
                         <span class="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full">Scheduled</span>
                     {% elif a.status == 'ended' %}
-                        <span class="text-[11px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">Ended</span>
+                        <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#27272A] px-2 py-0.5 rounded-full">Ended</span>
                     {% else %}
                         <span class="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full">Paused</span>
                     {% endif %}
                 </div>
 
-                <button class="p-1.5 rounded hover:bg-gray-200 text-gray-500">
+                <button class="p-1.5 rounded hover:bg-gray-200 text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
                     </svg>
@@ -101,13 +101,13 @@
         </div>
         {% else %}
         <div class="p-12 text-center">
-            <div class="w-12 h-12 rounded-full bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+            <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-[#27272A] text-gray-400 dark:text-gray-500 flex items-center justify-center mx-auto mb-3">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/>
                 </svg>
             </div>
-            <h4 class="text-sm font-semibold text-gray-900">No campaigns yet</h4>
-            <p class="text-xs text-gray-500 mt-1">Create your first homepage banner or seasonal feature.</p>
+            <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100">No campaigns yet</h4>
+            <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Create your first homepage banner or seasonal feature.</p>
         </div>
         {% endif %}
     </div>

@@ -3,11 +3,11 @@
 
     <div class="flex items-end justify-between">
         <div>
-            <h2 class="font-display text-xl text-gray-900">All products</h2>
-            <p class="text-sm text-gray-500 mt-1">Complete inventory with image, 3D pipeline status, and stock levels.</p>
+            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100">All products</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Complete inventory with image, 3D pipeline status, and stock levels.</p>
         </div>
         <div class="flex items-center gap-2">
-            <button class="text-sm border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 font-medium px-3 py-2 rounded-lg flex items-center gap-2 transition-colors">
+            <button class="text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-[#111114] hover:bg-gray-50 dark:bg-[#18181B] text-gray-700 dark:text-gray-200 font-medium px-3 py-2 rounded-lg flex items-center gap-2 transition-colors">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 8l-4-4m0 0L8 8m4-4v12"/>
                 </svg>
@@ -24,33 +24,33 @@
 
     <!-- Filter pills -->
     <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider mr-1">3D Status:</span>
+        <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider mr-1">3D Status:</span>
         <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-asiko-emerald text-white">All · {{ products|length if products else 0 }}</button>
-        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white text-gray-600 border border-gray-200 hover:border-gray-300 flex items-center gap-1.5">
+        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-[#111114] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             Generated · {{ products|selectattr('pipeline_status', 'equalto', 'generated')|list|length if products else 0 }}
         </button>
-        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white text-gray-600 border border-gray-200 hover:border-gray-300 flex items-center gap-1.5">
+        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-[#111114] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
             Processing · {{ products|selectattr('pipeline_status', 'equalto', 'processing')|list|length if products else 0 }}
         </button>
-        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white text-gray-600 border border-gray-200 hover:border-gray-300 flex items-center gap-1.5">
+        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-[#111114] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
             Failed · {{ products|selectattr('pipeline_status', 'equalto', 'failed')|list|length if products else 0 }}
         </button>
-        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white text-gray-600 border border-gray-200 hover:border-gray-300 flex items-center gap-1.5">
+        <button class="text-xs font-medium px-3 py-1.5 rounded-full bg-white dark:bg-[#111114] text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:border-gray-700 flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
             Not started · {{ products|selectattr('pipeline_status', 'equalto', 'not_started')|list|length if products else 0 }}
         </button>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
         {% if products and products|length > 0 %}
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 border-b border-gray-200">
-                    <tr class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <thead class="bg-gray-50 dark:bg-[#18181B] border-b border-gray-200 dark:border-gray-800">
+                    <tr class="text-xs font-semibold text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider">
                         <th class="text-left px-6 py-3">Product</th>
                         <th class="text-left px-4 py-3">Category</th>
                         <th class="text-right px-4 py-3">Price</th>
@@ -59,23 +59,23 @@
                         <th class="text-right px-6 py-3">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                     {% for p in products %}
-                    <tr class="hover:bg-gray-50 transition-colors group">
+                    <tr class="hover:bg-gray-50 dark:bg-[#18181B] transition-colors group">
                         <td class="px-6 py-3">
                             <div class="flex items-center gap-3">
                                 <img src="{{ p.base_image or '/static/img/placeholder-product.jpg' }}" alt=""
-                                     class="w-10 h-10 rounded object-cover bg-gray-100 flex-shrink-0">
+                                     class="w-10 h-10 rounded object-cover bg-gray-100 dark:bg-[#27272A] flex-shrink-0">
                                 <div class="min-w-0">
-                                    <div class="text-sm font-medium text-gray-900 truncate">{{ p.name }}</div>
-                                    <div class="text-[11px] text-gray-500">SKU · {{ p.id }}</div>
+                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ p.name }}</div>
+                                    <div class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500">SKU · {{ p.id }}</div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                            <span class="text-xs text-gray-600">{{ p.category_name or '—' }}</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">{{ p.category_name or '—' }}</span>
                         </td>
-                        <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                        <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900 dark:text-gray-100">
                             ${{ '%.2f'|format(p.price) }}
                         </td>
                         <td class="px-4 py-3 text-center">
@@ -85,10 +85,10 @@
                                 {% elif p.stock_quantity < 5 %}
                                     <span class="text-xs font-semibold text-amber-600">{{ p.stock_quantity }}</span>
                                 {% else %}
-                                    <span class="text-xs font-semibold text-gray-900">{{ p.stock_quantity }}</span>
+                                    <span class="text-xs font-semibold text-gray-900 dark:text-gray-100">{{ p.stock_quantity }}</span>
                                 {% endif %}
                             {% else %}
-                                <span class="text-xs text-gray-400">—</span>
+                                <span class="text-xs text-gray-400 dark:text-gray-500">—</span>
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-center">
@@ -109,25 +109,25 @@
                                     Failed
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#27272A] px-2 py-0.5 rounded-full">
                                     Not started
                                 </span>
                             {% endif %}
                         </td>
                         <td class="px-6 py-3 text-right">
                             <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button class="p-1.5 rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700" title="Edit">
+                                <button class="p-1.5 rounded hover:bg-gray-200 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:text-gray-200" title="Edit">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
                                     </svg>
                                 </button>
-                                <button class="p-1.5 rounded hover:bg-emerald-50 text-gray-500 hover:text-emerald-700" title="View in Atelier">
+                                <button class="p-1.5 rounded hover:bg-emerald-50 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-emerald-700" title="View in Atelier">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                     </svg>
                                 </button>
-                                <button class="p-1.5 rounded hover:bg-rose-50 text-gray-500 hover:text-rose-600" title="Delete">
+                                <button class="p-1.5 rounded hover:bg-rose-50 text-gray-500 dark:text-gray-400 dark:text-gray-500 hover:text-rose-600" title="Delete">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/>
                                     </svg>
@@ -146,8 +146,8 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                 </svg>
             </div>
-            <h3 class="font-display text-lg text-gray-900">No products in inventory</h3>
-            <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">Add your first piece to begin the image-to-3D pipeline.</p>
+            <h3 class="font-display text-lg text-gray-900 dark:text-gray-100">No products in inventory</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1 max-w-md mx-auto">Add your first piece to begin the image-to-3D pipeline.</p>
         </div>
         {% endif %}
     </div>

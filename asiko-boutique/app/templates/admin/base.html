@@ -8,6 +8,16 @@
       "
       :class="{ 'sidebar-collapsed': !sidebarOpen, 'dark': darkMode }">
 <head>
+    <script>
+        // Apply persisted theme synchronously to prevent FOUC.
+        (function() {
+            try {
+                if ((localStorage.getItem('asiko:darkMode') ?? 'false') === 'true') {
+                    document.documentElement.classList.add('dark');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}ÀSÌKÒ Atelier{% endblock %}</title>
@@ -21,6 +31,7 @@
 
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
                     fontFamily: {
@@ -101,19 +112,29 @@
             cursor: pointer;
             position: relative;
         }
+        .dark .nav-item { color: rgb(161, 161, 170); }
         .nav-item:hover {
             background-color: rgb(243, 244, 246);
             color: rgb(17, 24, 39);
+        }
+        .dark .nav-item:hover {
+            background-color: rgb(39, 39, 42);
+            color: rgb(244, 244, 245);
         }
         .nav-item.is-active {
             background-color: rgb(239, 246, 255); /* blue-50 */
             color: rgb(37, 99, 235); /* blue-600 */
             font-weight: 600;
         }
+        .dark .nav-item.is-active {
+            background-color: rgba(37, 99, 235, 0.12);
+            color: rgb(96, 165, 250); /* blue-400 */
+        }
         .nav-item.is-active .nav-icon {
             background-color: transparent;
             color: rgb(37, 99, 235);
         }
+        .dark .nav-item.is-active .nav-icon { color: rgb(96, 165, 250); }
         .nav-icon {
             display: inline-flex;
             align-items: center;
@@ -124,7 +145,42 @@
             flex-shrink: 0;
             transition: all 180ms;
         }
+        .dark .nav-icon { color: rgb(161, 161, 170); }
         .nav-item:hover .nav-icon { color: rgb(55, 65, 81); }
+        .dark .nav-item:hover .nav-icon { color: rgb(228, 228, 231); }
+
+        /* Sidebar bottom links (Help & Support, Hide/Show) */
+        .nav-item.sidebar-bottom-link { color: rgb(107, 114, 128); }
+        .dark .nav-item.sidebar-bottom-link { color: rgb(161, 161, 170); }
+        .nav-item.sidebar-bottom-link:hover { color: rgb(17, 24, 39); }
+        .dark .nav-item.sidebar-bottom-link:hover { color: rgb(244, 244, 245); }
+
+        /* Account divider */
+        .sidebar-section-label { color: rgb(156, 163, 175); }
+        .dark .sidebar-section-label { color: rgb(113, 113, 122); }
+
+        /* Workspace content */
+        #workspace-content { animation: fadeIn 280ms ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Dark-mode component overrides (Tailwind utilities can't reach inside
+           dynamic HTMX-swapped section fragments consistently, so we paint the
+           most common surfaces via CSS variables that all section templates use). */
+        .dark .panel-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+        .dark .panel-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.24); }
+
+        .dark .surface-card {
+            background-color: rgb(17, 17, 19);
+            border-color: rgb(39, 39, 42);
+        }
+        .dark .surface-card:hover { border-color: rgb(63, 63, 70); }
+
+        .dark .surface-text-strong { color: rgb(244, 244, 245); }
+        .dark .surface-text-muted { color: rgb(161, 161, 170); }
+        .dark .surface-text-faint { color: rgb(113, 113, 122); }
         .nav-badge {
             margin-left: auto;
             min-width: 1.25rem;
@@ -154,21 +210,21 @@
 
     {% block head_extra %}{% endblock %}
 </head>
-<body class="h-full flex overflow-hidden antialiased">
+<body class="h-full flex overflow-hidden antialiased bg-[#FAFAFA] dark:bg-[#0B0B0D] text-gray-900 dark:text-gray-100">
 
     <!-- ============================================================== -->
     <!-- SIDEBAR (light-theme, single nav group, light-blue active)        -->
     <!-- ============================================================== -->
-    <aside class="w-[260px] flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden transition-all duration-300">
+    <aside class="w-[260px] flex-shrink-0 bg-white dark:bg-[#111114] border-r border-gray-200 dark:border-gray-800 flex flex-col h-full overflow-hidden transition-all duration-300">
 
         <!-- Brand header -->
-        <div class="sidebar-header-block flex items-center gap-2.5 px-4 py-4 border-b border-gray-100">
+        <div class="sidebar-header-block flex items-center gap-2.5 px-4 py-4 border-b border-gray-100 dark:border-gray-800">
             <div class="w-9 h-9 rounded-lg bg-gradient-to-br from-gray-900 to-black flex items-center justify-center flex-shrink-0 shadow-sm">
                 <span class="font-display text-base font-medium text-asiko-gold">À</span>
             </div>
             <div class="sidebar-header-text overflow-hidden flex-1">
                 <div class="flex items-center gap-1.5">
-                    <span class="font-semibold text-sm text-gray-900 truncate">ÀSÌKÒ Atelier</span>
+                    <span class="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">ÀSÌKÒ Atelier</span>
                     <svg class="w-3.5 h-3.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
@@ -179,11 +235,11 @@
 
         <!-- Search -->
         <div class="px-3 pt-3">
-            <div class="sidebar-search relative flex items-center bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
+            <div class="sidebar-search relative flex items-center bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <input type="text" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 placeholder-gray-400 ml-2 px-0 py-0">
+                <input type="text" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 ml-2 px-0 py-0">
                 <span class="sidebar-search-icon-only hidden items-center justify-center w-full"></span>
             </div>
         </div>
@@ -323,7 +379,7 @@
           hx-target="#workspace-content"
           hx-swap="innerHTML"
           hx-indicator="#workspace-indicator"
-          class="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA] relative px-3 md:px-6 py-10 md:py-10"
+          class="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA] dark:bg-[#0B0B0D] relative px-3 md:px-6 py-10 md:py-10"
           role="main"
           aria-label="Admin workspace">
 
@@ -333,31 +389,26 @@
         </div>
 
         <!-- Top bar: right-side icons only -->
-        <header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-end gap-2 flex-shrink-0">
-            <button class="w-9 h-9 rounded-lg bg-gray-900 text-white flex items-center justify-center hover:bg-gray-800 transition-colors" title="Source code">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>
-                </svg>
-            </button>
-            <button class="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors" title="Bookmark">
+        <header class="bg-white dark:bg-[#0E0E10] border-b border-gray-200 dark:border-gray-800 px-6 py-3 flex items-center justify-end gap-2 flex-shrink-0">
+            <button class="w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors" title="Bookmark">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
                 </svg>
             </button>
-            <button class="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors" title="More">
+            <button class="w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors" title="More">
                 <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>
                 </svg>
             </button>
-            <div class="w-px h-6 bg-gray-200 mx-1"></div>
-            <button class="relative w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors" title="Notifications">
+            <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1"></div>
+            <button class="relative w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors" title="Notifications">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                 </svg>
-                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white"></span>
+                <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-[#0E0E10]"></span>
             </button>
-            <button @click="darkMode = !darkMode; localStorage.setItem('asiko:darkMode', darkMode); $root.classList.toggle('dark', darkMode)"
-                    class="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-600 flex items-center justify-center transition-colors" title="Toggle theme">
+            <button @click="darkMode = !darkMode; localStorage.setItem('asiko:darkMode', darkMode); $root.classList.toggle('dark', darkMode); document.dispatchEvent(new CustomEvent('asiko:theme-changed', { detail: { dark: darkMode } }))"
+                    class="w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors" title="Toggle theme" aria-label="Toggle dark mode">
                 <svg x-show="!darkMode" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                 </svg>
@@ -365,17 +416,17 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                 </svg>
             </button>
-            <div class="w-px h-6 bg-gray-200 mx-1"></div>
-            <button class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 transition-colors" title="Profile">
+            <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1"></div>
+            <button class="flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="Profile">
                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-900 to-black flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                     {{ (request.session.get('owner_name') or 'A')[:1] | upper }}
                 </div>
-                <span class="text-sm font-medium text-gray-700 hidden md:inline">{{ request.session.get('owner_name') or 'Admin' }}</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-200 hidden md:inline">{{ request.session.get('owner_name') or 'Admin' }}</span>
             </button>
         </header>
 
         <!-- Content area (HTMX swaps sections here) -->
-        <div class="flex-1 overflow-y-auto panel-scroll">
+        <div class="flex-1 overflow-y-auto panel-scroll bg-[#FAFAFA] dark:bg-[#0B0B0D]">
             <div class="p-6 md:p-8" id="workspace-content">
                 <!-- HTMX content renders here -->
             </div>

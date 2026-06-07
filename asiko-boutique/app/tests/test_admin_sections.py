@@ -216,7 +216,6 @@ class TestAdminIndexBaseTemplate:
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin").text
             # Right-side icons are present
-            assert "title=\"Source code\"" in body
             assert "title=\"Bookmark\"" in body
             assert "title=\"Notifications\"" in body
             assert "title=\"Toggle theme\"" in body
