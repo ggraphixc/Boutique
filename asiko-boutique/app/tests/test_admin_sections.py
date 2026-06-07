@@ -230,6 +230,32 @@ class TestAdminIndexBaseTemplate:
             body = client.get("/admin").text
             assert "Help &amp; Support" in body or "Help & Support" in body
 
+    def test_dark_mode_toggle_present(self):
+        """Admin top bar has a dark mode toggle button with sun/moon SVG."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert "title=\"Toggle theme\"" in body
+            # Has a toggle button that modifies localStorage
+            assert "asiko:darkMode" in body
+
+    def test_dark_mode_fouc_prevention_script(self):
+        """Admin shell has a synchronous script to prevent flash of unstyled content."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert "asiko:darkMode" in body
+            # The sync script should be in <head>, not inside a deferred Alpine
+            assert '<script>\n        // Apply persisted theme synchronously' in body
+
+    def test_dark_mode_dark_class_configured(self):
+        """Admin shell uses Tailwind darkMode: 'class' and Alpine dark state."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert "darkMode: 'class'" in body
+            assert "'dark': darkMode" in body
+
 
 class TestDashboardKpiCards:
     """The v2 dashboard renders 4 KPI cards: Total Sales, Active Users, Orders, Products."""
