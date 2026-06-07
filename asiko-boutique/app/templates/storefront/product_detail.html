@@ -42,12 +42,31 @@
             <div class="lg:col-span-5 space-y-8 lg:sticky lg:top-8 lg:h-fit">
 
                 <!-- Editorial Hierarchy Header Block -->
-                <div class="border-b border-neutral-200 pb-6">
+                <div class="border-b border-neutral-200 pb-6"
+                     hx-ws="connect:/ws/store/product/{{ product.id }}"
+                     hx-swap="none">
                     {% if product.collection_name %}
                     <p class="font-mono text-xs tracking-[0.3em] uppercase text-[#D4AF37] mb-2">{{ product.collection_name }}</p>
                     {% endif %}
                     <h1 class="font-serif text-3xl lg:text-4xl text-[#0D2A22] tracking-wide leading-tight mb-3">{{ product.name }}</h1>
-                    <p class="font-mono text-lg text-[#0D2A22] tracking-wider">&#8358;{{ "{:,}".format(product.base_price if product.base_price is defined else product.price | int) }}</p>
+                    <div class="flex items-center gap-3">
+                        <p class="font-mono text-lg text-[#0D2A22] tracking-wider">&#8358;{{ "{:,}".format(product.base_price if product.base_price is defined else product.price | int) }}</p>
+                        <!-- Live stock badge — updates via WebSocket -->
+                        <div id="pdp-stock-badge"
+                             hx-trigger="ws:message[type=stock_update]"
+                             hx-get="/ws/store/product/{{ product.id }}/stock-badge"
+                             hx-swap="innerHTML">
+                            {% if product.stock_quantity is defined %}
+                                {% if product.stock_quantity == 0 %}
+                                    <span class="text-[11px] font-mono uppercase tracking-wider text-red-600 bg-red-50 px-2 py-0.5 rounded">Sold out</span>
+                                {% elif product.stock_quantity <= 5 %}
+                                    <span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Only {{ product.stock_quantity }} left</span>
+                                {% else %}
+                                    <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">In stock</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
                 <!-- FEATURE 4: Tiered Allocation Gatekeeper Zone (Asynchronous Lazy-Load) -->

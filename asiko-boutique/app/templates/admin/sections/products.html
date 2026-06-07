@@ -1,5 +1,10 @@
 <!-- Products section: product cards with 3D pipeline status badge -->
-<section class="space-y-6" data-section="products">
+<section class="space-y-6" data-section="products"
+         hx-ws="connect:/ws/admin/dashboard"
+         hx-get="/admin/section/products"
+         hx-trigger="ws:message[type=pipeline_update]"
+         hx-swap="innerHTML"
+         hx-target="this">
 
     <div class="flex items-end justify-between">
         <div>

@@ -1062,6 +1062,150 @@ async def section_view_site(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# Review NOTIFY helper — call this when a review is created/updated
+# ===========================================================================
+
+async def notify_new_review(db_pool, product_id: str, rating: float = 0, total_reviews: int = 0,
+                            five_star_count: int = 0, needs_response: int = 0, rating_avg: float = 0) -> None:
+    """
+    Broadcast a new review event to WebSocket subscribers.
+    Call this after inserting a review into product_reviews.
+    """
+    try:
+        from app.realtime import notify, CH_NEW_REVIEW
+        await notify(db_pool, CH_NEW_REVIEW, {
+            "type": "new_review",
+            "product_id": str(product_id),
+            "rating": rating,
+            "total_reviews": total_reviews,
+            "five_star_count": five_star_count,
+            "needs_response": needs_response,
+            "rating_avg": round(rating_avg, 1) if rating_avg else 0,
+        })
+    except Exception:
+        pass
+
+
+# ===========================================================================
+# Real-time fragment endpoints — called by HTMX when WS triggers fire
+# ===========================================================================
+
+async def rt_dashboard_pipeline(request: Request) -> HTMLResponse:
+    """Return the pipeline health section as an HTMX fragment."""
+    pool = request.app.state.db_pool
+    products = await _safe_fetch_products(pool)
+    pipeline = {"generated": 0, "processing": 0, "failed": 0, "not_started": 0}
+    for p in products:
+        pipeline[p["pipeline_status"]] = pipeline.get(p["pipeline_status"], 0)
+    recent_pipeline = [
+        {
+            "name": p["name"],
+            "thumb": p.get("base_image") or "/static/img/placeholder-product.jpg",
+            "status": p["pipeline_status"],
+            "updated_at_human": p["updated_at_human"],
+        }
+        for p in products[:5]
+    ]
+    return templates.TemplateResponse(
+        request, "admin/sections/_rt_pipeline_health.html",
+        {"request": request, "pipeline": pipeline, "recent_pipeline": recent_pipeline},
+    )
+
+
+async def rt_dashboard_activity(request: Request) -> HTMLResponse:
+    """Return the recent activity feed as an HTMX fragment."""
+    pool = request.app.state.db_pool
+    products = await _safe_fetch_products(pool)
+    activity: List[Dict[str, str]] = []
+    for p in products[:8]:
+        if p["pipeline_status"] == "generated":
+            activity.append(_activity_item(
+                "product", "bg-emerald-50 text-emerald-600",
+                "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
+                f"3D mesh generated for {p['name']}", "Pipeline completed successfully",
+            ))
+        elif p["pipeline_status"] == "failed":
+            activity.append(_activity_item(
+                "pipeline", "bg-rose-50 text-rose-600",
+                "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z",
+                f"Pipeline failed for {p['name']}", "Requires attention",
+            ))
+    return templates.TemplateResponse(
+        request, "admin/sections/_rt_activity_feed.html",
+        {"request": request, "recent_activity": activity[:6]},
+    )
+
+
+async def rt_dashboard_kpi(request: Request) -> HTMLResponse:
+    """Return the 4 KPI cards as an HTMX fragment."""
+    pool = request.app.state.db_pool
+    products = await _safe_fetch_products(pool)
+    kpi_total_sales = 0
+    kpi_total_products = len(products)
+    try:
+        async with pool.acquire() as conn:
+            try:
+                kpi_total_sales = float(
+                    await conn.fetchval("SELECT COALESCE(SUM(price * stock_quantity), 0) FROM products") or 0
+                )
+            except Exception:
+                kpi_total_sales = 0
+    except Exception:
+        pass
+    kpi_total_sales = int(kpi_total_sales // 10 * 10)
+    return templates.TemplateResponse(
+        request, "admin/sections/_rt_kpi_cards.html",
+        {"request": request, "kpi_total_sales": kpi_total_sales,
+         "kpi_active_users": 0, "kpi_orders": 0, "kpi_total_products": kpi_total_products},
+    )
+
+
+async def rt_reviews_summary(request: Request) -> HTMLResponse:
+    """Return the review stats summary as an HTMX fragment."""
+    pool = request.app.state.db_pool
+    reviews: List[Dict[str, Any]] = []
+    rating_avg = 0
+    five_star_count = 0
+    needs_response = 0
+    try:
+        async with pool.acquire() as conn:
+            try:
+                rows = await conn.fetch(
+                    "SELECT id, rating FROM product_reviews WHERE deleted_at IS NULL ORDER BY created_at DESC LIMIT 50"
+                )
+                reviews = [dict(r) for r in rows]
+            except Exception:
+                reviews = []
+            try:
+                rating_avg = await conn.fetchval(
+                    "SELECT COALESCE(AVG(rating)::FLOAT, 0) FROM product_reviews WHERE deleted_at IS NULL"
+                )
+            except Exception:
+                rating_avg = 0
+            try:
+                five_star_count = await conn.fetchval(
+                    "SELECT COUNT(*) FROM product_reviews WHERE deleted_at IS NULL AND rating = 5"
+                )
+            except Exception:
+                five_star_count = 0
+            try:
+                needs_response = await conn.fetchval(
+                    "SELECT COUNT(*) FROM product_reviews WHERE deleted_at IS NULL AND replied = false"
+                )
+            except Exception:
+                needs_response = 0
+    except Exception:
+        pass
+    five_star_pct = int((five_star_count / len(reviews)) * 100) if reviews else 0
+    return templates.TemplateResponse(
+        request, "admin/sections/_rt_review_stats.html",
+        {"request": request, "rating_avg": round(rating_avg, 1) if rating_avg else None,
+         "five_star_count": five_star_count or 0, "five_star_pct": five_star_pct,
+         "needs_response": needs_response or 0, "total_reviews": len(reviews)},
+    )
+
+
+# ===========================================================================
 # Route registration
 # ===========================================================================
 routes = [
@@ -1082,4 +1226,9 @@ routes = [
     Route("/admin/section/all-products",  endpoint=section_all_products,  methods=["GET"]),
     Route("/admin/section/reviews",       endpoint=section_reviews,       methods=["GET"]),
     Route("/admin/section/ads",           endpoint=section_ads,           methods=["GET"]),
+    # Real-time fragment endpoints (called by HTMX when WS triggers fire)
+    Route("/admin/rt/pipeline",           endpoint=rt_dashboard_pipeline, methods=["GET"]),
+    Route("/admin/rt/activity",           endpoint=rt_dashboard_activity, methods=["GET"]),
+    Route("/admin/rt/kpi",                endpoint=rt_dashboard_kpi,      methods=["GET"]),
+    Route("/admin/rt/reviews",            endpoint=rt_reviews_summary,    methods=["GET"]),
 ]

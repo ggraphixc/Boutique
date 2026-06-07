@@ -1,5 +1,6 @@
 # app/workers/pipeline_daemon.py
 import asyncio
+import json
 import os
 import shutil
 import logging
@@ -19,6 +20,19 @@ class AsikoPipelineDaemon:
         except Exception as e:
             logger.error(f"Gradio initial connection error: {e}")
             self.ai_client = None
+
+    async def _notify_pipeline_update(self, product_id: str, status: str, model_url: str = "") -> None:
+        """Send a Postgres NOTIFY on pipeline_update channel for WebSocket broadcast."""
+        try:
+            from app.realtime import notify, CH_PIPELINE_UPDATE
+            await notify(self.db_pool, CH_PIPELINE_UPDATE, {
+                "type": "pipeline_update",
+                "product_id": str(product_id),
+                "status": status,
+                "model_url": model_url,
+            })
+        except Exception as exc:
+            logger.debug("NOTIFY pipeline_update failed: %s", exc)
 
     async def start_loop(self, check_interval_seconds=5):
         """
@@ -47,6 +61,7 @@ class AsikoPipelineDaemon:
         
         async with self.db_pool.acquire() as conn:
             await conn.execute("UPDATE products SET pipeline_status = 'processing' WHERE id = $1;", product_id)
+        await self._notify_pipeline_update(product_id, "processing")
 
         if not os.path.exists(local_img_path):
             await self.mark_as_failed(product_id, f"File {local_img_path} not found on disk.")
@@ -102,6 +117,7 @@ class AsikoPipelineDaemon:
                 public_url_path, product_id
             )
         print(f"LOG_SYSTEM: Product {product_id} state updated successfully.")
+        await self._notify_pipeline_update(product_id, "completed", public_url_path)
 
     async def mark_as_failed(self, product_id, error_message):
         async with self.db_pool.acquire() as conn:
@@ -109,3 +125,4 @@ class AsikoPipelineDaemon:
                 "UPDATE products SET pipeline_status = 'failed', pipeline_error_log = $1 WHERE id = $2;",
                 error_message, product_id
             )
+        await self._notify_pipeline_update(product_id, "failed")

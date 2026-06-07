@@ -123,6 +123,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     import asyncio
     from app.database import init_db_pool, close_db_pool
     from app.workers.pipeline_daemon import AsikoPipelineDaemon
+    from app.realtime import manager as realtime_manager
 
     # 1. Initialize our high-throughput Neon Postgres connection cluster pool
     app.state.db_pool = await init_db_pool()
@@ -156,10 +157,14 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     daemon_task = asyncio.create_task(daemon.start_loop(check_interval_seconds=10))
     print("LOG_SYSTEM: ÀSÌKÒ 3D Pipeline Daemon successfully mounted to application lifespan thread.")
 
+    # 4. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
+    realtime_manager.start_listeners(app.state.db_pool)
+    print("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
+
     try:
         yield
     finally:
-        # 4. Graceful teardown sequences on web application shutdown
+        # 5. Graceful teardown sequences on web application shutdown
         print("LOG_SYSTEM: Shutting down web instance. Dismantling background processes safely...")
         daemon.is_running = False
         daemon_task.cancel()
@@ -167,6 +172,10 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             await daemon_task
         except asyncio.CancelledError:
             pass
+
+        # Stop real-time listeners
+        await realtime_manager.stop_listeners()
+        print("LOG_SYSTEM: Real-time WebSocket listeners stopped.")
 
         # Close connection boundaries
         await close_db_pool()
@@ -213,6 +222,8 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.virtual_experience import routes as virtual_experience_routes
     from app.routes.dpp_verification import routes as dpp_routes
     from app.services.settlement import routes as settlement_routes
+    from app.routes.ws_admin import ws_admin_routes
+    from app.routes.ws_store import ws_store_routes
 
     for route_list in [
         storefront_routes,
@@ -229,6 +240,8 @@ def _register_route_modules(app: Starlette) -> None:
         virtual_experience_routes,
         dpp_routes,
         settlement_routes,
+        ws_admin_routes,
+        ws_store_routes,
     ]:
         app.routes.extend(route_list)
 

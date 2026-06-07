@@ -2,11 +2,14 @@
 # Single source of truth for template loading, filters, and session helpers.
 # Avoids circular imports between main.py and route files.
 
+import os
 from starlette.templating import Jinja2Templates
 from starlette.requests import Request
 
 # Initialize Jinja2 with custom environment configurations
-templates = Jinja2Templates(directory="app/templates")
+# Use path relative to this file so tests work from any CWD
+_TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+templates = Jinja2Templates(directory=_TEMPLATE_DIR)
 
 
 # Custom filter to format currency cleanly without external dependencies

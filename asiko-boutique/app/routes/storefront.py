@@ -246,9 +246,28 @@ async def product_detail(request: Request) -> HTMLResponse:
     )
 
 
+async def stock_badge_fragment(request: Request) -> HTMLResponse:
+    """Return a live stock badge fragment for PDP real-time updates."""
+    product_id = request.path_params.get("product_id")
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT stock_quantity FROM products WHERE id = $1", int(product_id)
+        )
+    qty = row["stock_quantity"] if row else 0
+    if qty == 0:
+        html = '<span class="text-[11px] font-mono uppercase tracking-wider text-red-600 bg-red-50 px-2 py-0.5 rounded">Sold out</span>'
+    elif qty <= 5:
+        html = f'<span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Only {qty} left</span>'
+    else:
+        html = '<span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">In stock</span>'
+    return HTMLResponse(html)
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/htmx/products", endpoint=product_grid_fragment, methods=["GET"]),
     Route("/product/{product_id:int}", endpoint=product_detail, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),
+    Route("/ws/store/product/{product_id:int}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
 ]

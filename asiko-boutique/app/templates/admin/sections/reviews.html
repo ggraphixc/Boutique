@@ -1,5 +1,6 @@
 <!-- Reviews section: per-product customer reviews -->
-<section class="space-y-6" data-section="reviews">
+<section class="space-y-6" data-section="reviews"
+         hx-ws="connect:/ws/admin/reviews">
 
     <div class="flex items-end justify-between">
         <div>
@@ -18,7 +19,12 @@
         </div>
     </div>
 
-    <!-- Aggregate stats -->
+    <!-- Aggregate stats — auto-refreshes when new reviews arrive -->
+    <div id="review-stats"
+         hx-get="/admin/rt/reviews"
+         hx-trigger="ws:message[type=new_review]"
+         hx-swap="innerHTML"
+         hx-target="this">
     <div class="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
             <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 uppercase tracking-wider font-semibold">Average rating</div>

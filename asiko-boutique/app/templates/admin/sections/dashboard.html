@@ -1,5 +1,6 @@
 <!-- Dashboard section: 4 KPI cards + 2-col (Recent Activity + Quick Stats) + 3D pipeline + Top sellers -->
-<section class="space-y-6" data-section="dashboard">
+<section class="space-y-6" data-section="dashboard"
+         hx-ws="connect:/ws/admin/dashboard">
 
     <!-- Page header (inside workspace, since top bar no longer has title) -->
     <div>
@@ -7,7 +8,13 @@
         <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Welcome back to your dashboard</p>
     </div>
 
-    <!-- KPI cards row -->
+    <!-- KPI cards row — auto-refreshes when new orders arrive -->
+    <div id="kpi-cards"
+         hx-get="/admin/rt/kpi"
+         hx-trigger="ws:message[type=new_order]"
+         hx-swap="innerHTML"
+         hx-target="this">
+    </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
 
         <!-- Total Sales -->
@@ -91,8 +98,12 @@
     <!-- Two column: Recent Activity (left, wider) + Quick Stats (right) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        <!-- Recent Activity (col-span-2) -->
-        <div class="lg:col-span-2 bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+        <!-- Recent Activity (col-span-2) — auto-refreshes on new reviews/pipeline events -->
+        <div class="lg:col-span-2 bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6"
+             hx-get="/admin/rt/activity"
+             hx-trigger="ws:message[type=new_review], ws:message[type=pipeline_update]"
+             hx-swap="innerHTML"
+             hx-target="this">
             <div class="flex items-center justify-between mb-5">
                 <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Activity</h3>
                 <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700">View all</a>
@@ -187,8 +198,13 @@
         </div>
     </div>
 
-    <!-- 3D Pipeline Health (full width) -->
-    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+    <!-- 3D Pipeline Health (full width) — auto-refreshes on pipeline status changes -->
+    <div id="pipeline-health"
+         hx-get="/admin/rt/pipeline"
+         hx-trigger="ws:message[type=pipeline_update]"
+         hx-swap="innerHTML"
+         hx-target="this"
+         class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
         <div class="flex items-center justify-between mb-5">
             <div>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">3D Pipeline Health</h3>

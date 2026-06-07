@@ -42,6 +42,17 @@ async def inline_update_stock(request: Request) -> HTMLResponse:
             new_qty, variant_id,
         )
 
+    # Notify WebSocket subscribers about the stock change
+    try:
+        from app.realtime import notify, CH_STOCK_UPDATE
+        await notify(pool, CH_STOCK_UPDATE, {
+            "type": "stock_update",
+            "variant_id": str(variant_id),
+            "stock": new_qty,
+        })
+    except Exception:
+        pass
+
     return HTMLResponse(
         f"<div class='text-xs font-mono text-[#10B981] animate-pulse' "
         f"hx-swap-oob='true' id='status-variant-{variant_id}'>"
@@ -285,6 +296,19 @@ async def simulate_pipeline_processing_worker(request):
                 pipeline_error_log = NULL WHERE id = $2::UUID;
                 """, mock_model_url, product_id
             )
+
+    # Notify WebSocket subscribers about the pipeline status change
+    try:
+        from app.realtime import notify, CH_PIPELINE_UPDATE
+        status = "failed" if target_action == "fail" else "completed"
+        await notify(db_pool, CH_PIPELINE_UPDATE, {
+            "type": "pipeline_update",
+            "product_id": str(product_id),
+            "status": status,
+            "model_url": f"/static/models/auto_generated_{product_id}.glb" if status == "completed" else "",
+        })
+    except Exception:
+        pass
 
     return HTMLResponse(content="", headers={"HX-Refresh": "true"})
 

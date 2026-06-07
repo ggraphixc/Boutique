@@ -1,0 +1,25 @@
+<!-- Real-time activity feed fragment (swapped via WS trigger) -->
+<div id="rt-activity-feed" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
+    <div class="flex items-center justify-between mb-5">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Activity</h3>
+        <a href="#" class="text-sm font-medium text-blue-600 hover:text-blue-700">View all</a>
+    </div>
+    <div class="space-y-4">
+        {% for item in recent_activity[:6] %}
+        <div class="flex items-start gap-3.5">
+            <div class="w-9 h-9 rounded-lg {{ item.icon_bg }} {{ item.icon_color }} flex items-center justify-center flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ item.icon }}"/>
+                </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ item.title }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{{ item.subtitle }}</div>
+            </div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">{{ item.time_ago }}</div>
+        </div>
+        {% else %}
+        <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-6">No recent activity yet.</div>
+        {% endfor %}
+    </div>
+</div>
