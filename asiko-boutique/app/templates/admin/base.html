@@ -320,6 +320,8 @@
     <main id="workspace"
           hx-trigger="load"
           hx-get="/admin/section/dashboard"
+          hx-target="#workspace-content"
+          hx-swap="innerHTML"
           hx-indicator="#workspace-indicator"
           class="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA] relative px-3 md:px-6 py-10 md:py-10"
           role="main"

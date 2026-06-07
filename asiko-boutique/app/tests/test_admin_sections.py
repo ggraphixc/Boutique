@@ -138,11 +138,35 @@ class TestAdminIndexBaseTemplate:
                 assert nav_id in body, f"missing nav id {nav_id}"
 
     def test_index_uses_htmx_workspace_target(self):
-        """The workspace hx-target is #workspace-content (NOT #workspace)."""
+        """The workspace hx-target is #workspace-content (NOT #workspace).
+
+        Regression: <main id="workspace" hx-trigger="load"> must target the inner
+        #workspace-content div, otherwise the initial dashboard swap replaces
+        the entire <main> element (including the top bar and the swap target),
+        which breaks every subsequent nav click.
+        """
+        import re
         app = _make_app_with_routes()
         with TestClient(app, raise_server_exceptions=False) as client:
             r = client.get("/admin")
-            assert 'hx-target="#workspace-content"' in r.text
+            body = r.text
+            # The <main id="workspace"> block must contain hx-target="#workspace-content"
+            # within its opening tag (i.e. on the same element as hx-trigger="load").
+            main_match = re.search(
+                r'<main\b[^>]*id="workspace"[^>]*>',
+                body,
+                re.DOTALL,
+            )
+            assert main_match, "<main id=\"workspace\"> not found in /admin response"
+            main_tag = main_match.group(0)
+            assert 'hx-trigger="load"' in main_tag
+            assert 'hx-target="#workspace-content"' in main_tag, (
+                "hx-trigger=load on <main> must target #workspace-content; "
+                "otherwise the initial load swaps the whole <main> element and "
+                "breaks every subsequent nav click."
+            )
+            # The #workspace-content div must exist in the response (the swap target).
+            assert 'id="workspace-content"' in body
 
     def test_index_loads_dashboard_by_default(self):
         """The hx-trigger=load on workspace loads /admin/section/dashboard."""
