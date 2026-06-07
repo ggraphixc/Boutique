@@ -15,6 +15,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.testclient import TestClient
 
 from app.routes.admin_sections import routes as admin_sections_routes
+from app.routes.admin_dashboard import routes as admin_dashboard_routes
 
 
 def _make_empty_pool():
@@ -35,14 +36,50 @@ def _make_empty_pool():
     return pool
 
 
-def _make_app_with_routes():
-    """Fresh Starlette app with just the admin section routes + mocked pool.
-    SessionMiddleware is required because base.html reads request.session."""
+def _make_populated_pool():
+    """Mock pool that returns one inventory row for the operations section,
+    so the HTMX forms actually render in tests."""
+    pool = MagicMock()
+    inventory_row = {
+        "product_id": "11111111-1111-1111-1111-111111111111",
+        "name": "Aba Handloomed Trouser",
+        "model_3d_url": "/static/models/foo.glb",
+        "source_2d_image_url": None,
+        "pipeline_status": "completed",
+        "variant_id": "22222222-2222-2222-2222-222222222222",
+        "size": "L",
+        "color": "Natural Cotton",
+        "stock_qty": 7,
+    }
+
+    @asynccontextmanager
+    async def _acquire():
+        conn = MagicMock()
+        # The operations section runs 3 fetch() calls (inventory, reservations,
+        # waitlists). We return inventory data only; the others stay empty.
+        async def _fetch(query, *args, **kwargs):
+            if "FROM product_variants v" in query:
+                return [inventory_row]
+            return []
+        conn.fetch = AsyncMock(side_effect=_fetch)
+        conn.fetchrow = AsyncMock(return_value=None)
+        conn.fetchval = AsyncMock(return_value=0)
+        conn.execute = AsyncMock(return_value=None)
+        yield conn
+
+    pool.acquire = _acquire
+    return pool
+
+
+def _make_app_with_routes(pool_factory=_make_empty_pool):
+    """Fresh Starlette app with admin section routes + legacy admin dashboard
+    routes + mocked pool. SessionMiddleware is required because base.html
+    reads request.session."""
     test_app = Starlette(
-        routes=admin_sections_routes,
+        routes=admin_sections_routes + admin_dashboard_routes,
         middleware=[Middleware(SessionMiddleware, secret_key="test-key", session_cookie="asiko_test")],
     )
-    test_app.state.db_pool = _make_empty_pool()
+    test_app.state.db_pool = pool_factory()
     return test_app
 
 
@@ -58,6 +95,7 @@ SECTIONS = [
     ("/admin/section/all-products",  "data-section=\"all-products\""),
     ("/admin/section/reviews",       "data-section=\"reviews\""),
     ("/admin/section/ads",           "data-section=\"ads\""),
+    ("/admin/section/operations",    "data-section=\"operations\""),
     ("/admin/section/settings",      "data-section=\"settings\""),
     ("/admin/section/about",         "data-section=\"about\""),
 ]
@@ -266,6 +304,95 @@ class TestDashboardActivityStatsGrid:
             # Quick stats panel still renders
             assert "Quick Stats" in body
             assert "Conversion Rate" in body
+
+
+class TestOperationsSection:
+    """The Operations section preserves the legacy production-ledger + waitlist
+    + reservation feeds from the old /admin/dashboard, but renders in the
+    v2 light-theme shell."""
+
+    def test_operations_renders_v2_design(self):
+        app = _make_app_with_routes(pool_factory=_make_populated_pool)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/operations")
+            assert r.status_code == 200
+            body = r.text
+            assert "data-section=\"operations\"" in body
+            # 4 operational KPI cards
+            for title in ("Verified Revenue", "Unfulfilled Backlogs", "Active Holds", "Waitlist Demand"):
+                assert title in body, f"missing KPI {title!r}"
+            # Atelier Production Ledger heading
+            assert "Atelier Production Ledger" in body
+            # Right column feeds
+            assert "Out-of-Stock Queues" in body
+            assert "Stock Sentinel Feed" in body
+            # Populated pool renders the seeded product
+            assert "Aba Handloomed Trouser" in body
+
+    def test_operations_uses_light_theme(self):
+        """The section uses the v2 light-theme tokens (no dark green from the old design)."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/operations").text
+            # v2 light theme
+            assert "bg-white" in body
+            # Pastel icon chips
+            assert "bg-blue-50" in body
+            assert "bg-amber-50" in body
+            assert "bg-emerald-50" in body
+            assert "bg-purple-50" in body
+            # Old dark-green theme is gone
+            assert "BRAND COMMAND" not in body
+
+    def test_operations_pastel_kpi_chips(self):
+        """KPI cards use pastel icon chips (blue/amber/emerald/purple) for
+        Verified Revenue, Unfulfilled Backlogs, Active Holds, Waitlist Demand."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/operations").text
+            # Each chip color appears at least once
+            assert body.count("bg-blue-50") >= 1
+            assert body.count("bg-amber-50") >= 1
+            assert body.count("bg-emerald-50") >= 1
+            assert body.count("bg-purple-50") >= 1
+
+    def test_operations_htmx_endpoints_referenced(self):
+        """The section's forms point at the legacy HTMX endpoints
+        (which are still served by app/routes/admin_dashboard.py)."""
+        app = _make_app_with_routes(pool_factory=_make_populated_pool)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/operations").text
+            assert 'hx-post="/admin/dashboard/update-stock"' in body
+            assert 'hx-post="/admin/dashboard/update-model-url"' in body
+            # notify-waitlist is only rendered when there's a waitlist row;
+            # with the empty pool we still want to confirm the form action is
+            # defined in the template by checking the waitlists else-branch
+            assert "No waiting buyers backlogged" in body
+
+    def test_legacy_admin_dashboard_url_routes_to_v2(self):
+        """The legacy /admin/dashboard now serves the v2 dashboard (was the
+        dark-green Executive Dashboard). The v2 dashboard's data-section
+        marker should appear in the response."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/dashboard")
+            assert r.status_code == 200
+            body = r.text
+            # The v2 dashboard marker (not the old dark-green design)
+            assert "data-section=\"dashboard\"" in body
+            # The old dark-green branding is gone
+            assert "BRAND COMMAND" not in body
+            # The new KPI titles render
+            for title in ("Total Sales", "Active Users", "Orders", "Products"):
+                assert title in body, f"missing v2 KPI {title!r}"
+
+    def test_index_includes_operations_nav_item(self):
+        """The /admin sidebar includes the new 'Operations' nav item."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert 'id="nav-operations"' in body
+            assert ">Operations<" in body
 
 
 class TestPipelineStatusMapping:

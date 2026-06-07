@@ -17,69 +17,16 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 async def admin_dashboard_home(request: Request) -> HTMLResponse:
-    """GET /admin/dashboard — Executive command center with metrics and inventory."""
-    pool = request.app.state.db_pool
-    async with pool.acquire() as conn:
-        total_revenue = await conn.fetchval(
-            "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'paid'"
-        )
-        pending_orders_count = await conn.fetchval(
-            "SELECT COUNT(*) FROM orders WHERE status = 'pending'"
-        )
-        active_holds = await conn.fetchval(
-            "SELECT COUNT(*) FROM product_reservations WHERE status = 'staged'"
-        )
-        waitlist_volume = await conn.fetchval(
-            "SELECT COUNT(*) FROM product_waitlists WHERE notified = false"
-        )
+    """GET /admin/dashboard — Executive command center with metrics and inventory.
 
-        inventory_rows = await conn.fetch(
-            """
-            SELECT p.id AS product_id, p.name, p.model_3d_url,
-                   p.source_2d_image_url, p.pipeline_status,
-                   v.id AS variant_id, v.size, v.color, v.stock_qty
-            FROM product_variants v
-            JOIN products p ON v.product_id = p.id
-            ORDER BY p.id DESC, v.size ASC
-            """
-        )
-
-        active_reservations = await conn.fetch(
-            """
-            SELECT r.id, p.name, r.quantity, r.status, r.created_at
-            FROM product_reservations r
-            JOIN product_variants v ON r.variant_id = v.id
-            JOIN products p ON v.product_id = p.id
-            ORDER BY r.created_at DESC LIMIT 8
-            """
-        )
-
-        pending_waitlists = await conn.fetch(
-            """
-            SELECT w.variant_id, p.name AS product_name, v.size, v.color,
-                    COUNT(w.email) AS demand_count
-            FROM product_waitlists w
-            JOIN product_variants v ON w.variant_id = v.id
-            JOIN products p ON v.product_id = p.id
-            WHERE w.notified = false
-            GROUP BY w.variant_id, p.name, v.size, v.color
-            ORDER BY demand_count DESC
-            """
-        )
-
-    context = {
-        "request": request,
-        "metrics": {
-            "revenue": total_revenue or 0.0,
-            "pending_orders": pending_orders_count,
-            "active_holds": active_holds,
-            "waitlist_volume": waitlist_volume,
-        },
-        "inventory": [dict(r) for r in inventory_rows],
-        "reservations": [dict(res) for res in active_reservations],
-        "waitlists": [dict(w) for w in pending_waitlists],
-    }
-    return templates.TemplateResponse(request, "admin/dashboard.html", context)
+    Migrated to the v2 admin redesign. The legacy production-ledger,
+    out-of-stock queues, and stock sentinel feed are preserved as a new
+    "Operations" section at /admin/section/operations. The HTMX endpoints
+    (update-stock, update-model-url, notify-waitlist) below are still
+    served by this module and are wired to the operations section.
+    """
+    from app.routes.admin_sections import section_dashboard
+    return await section_dashboard(request)
 
 
 async def inline_update_stock(request: Request) -> HTMLResponse:

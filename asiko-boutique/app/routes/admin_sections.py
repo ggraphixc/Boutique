@@ -612,6 +612,126 @@ async def admin_index(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# 10. OPERATIONS (production ledger + waitlist + reservation feeds)
+# Migrated from app/routes/admin_dashboard.py admin_dashboard_home.
+# The HTMX endpoints (/admin/dashboard/update-stock, /admin/dashboard/update-model-url,
+# /admin/dashboard/notify-waitlist) are still served by the legacy module.
+# ===========================================================================
+async def section_operations(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+
+    # KPI metrics (operational signals, distinct from the v2 dashboard's commercial KPIs)
+    total_revenue = 0.0
+    pending_orders_count = 0
+    active_holds = 0
+    waitlist_volume = 0
+    inventory: List[Dict[str, Any]] = []
+    active_reservations: List[Dict[str, Any]] = []
+    pending_waitlists: List[Dict[str, Any]] = []
+
+    try:
+        async with pool.acquire() as conn:
+            try:
+                total_revenue = float(
+                    await conn.fetchval(
+                        "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status = 'paid'"
+                    ) or 0
+                )
+            except Exception:
+                total_revenue = 0.0
+            try:
+                pending_orders_count = int(
+                    await conn.fetchval(
+                        "SELECT COUNT(*) FROM orders WHERE status = 'pending'"
+                    ) or 0
+                )
+            except Exception:
+                pending_orders_count = 0
+            try:
+                active_holds = int(
+                    await conn.fetchval(
+                        "SELECT COUNT(*) FROM product_reservations WHERE status = 'staged'"
+                    ) or 0
+                )
+            except Exception:
+                active_holds = 0
+            try:
+                waitlist_volume = int(
+                    await conn.fetchval(
+                        "SELECT COUNT(*) FROM product_waitlists WHERE notified = false"
+                    ) or 0
+                )
+            except Exception:
+                waitlist_volume = 0
+
+            try:
+                inventory_rows = await conn.fetch(
+                    """
+                    SELECT p.id AS product_id, p.name, p.model_3d_url,
+                           p.source_2d_image_url, p.pipeline_status,
+                           v.id AS variant_id, v.size, v.color, v.stock_qty
+                    FROM product_variants v
+                    JOIN products p ON v.product_id = p.id
+                    ORDER BY p.id DESC, v.size ASC
+                    """
+                )
+                inventory = [dict(r) for r in inventory_rows]
+            except Exception as exc:
+                logger.warning("[admin] inventory fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """
+                    SELECT r.id, p.name, r.quantity, r.status, r.created_at
+                    FROM product_reservations r
+                    JOIN product_variants v ON r.variant_id = v.id
+                    JOIN products p ON v.product_id = p.id
+                    ORDER BY r.created_at DESC LIMIT 8
+                    """
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    active_reservations.append(d)
+            except Exception as exc:
+                logger.warning("[admin] reservations fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """
+                    SELECT w.variant_id, p.name AS product_name, v.size, v.color,
+                            COUNT(w.email) AS demand_count
+                    FROM product_waitlists w
+                    JOIN product_variants v ON w.variant_id = v.id
+                    JOIN products p ON v.product_id = p.id
+                    WHERE w.notified = false
+                    GROUP BY w.variant_id, p.name, v.size, v.color
+                    ORDER BY demand_count DESC
+                    """
+                )
+                pending_waitlists = [dict(r) for r in rows]
+            except Exception as exc:
+                logger.warning("[admin] waitlist fetch failed: %s", exc)
+
+    except Exception as exc:
+        logger.warning("[admin] operations fetch failed: %s", exc)
+
+    context = {
+        "request": request,
+        "metrics": {
+            "revenue": total_revenue,
+            "pending_orders": pending_orders_count,
+            "active_holds": active_holds,
+            "waitlist_volume": waitlist_volume,
+        },
+        "inventory": inventory,
+        "reservations": active_reservations,
+        "waitlists": pending_waitlists,
+    }
+    return templates.TemplateResponse(request, "admin/sections/operations.html", context)
+
+
+# ===========================================================================
 # Route registration
 # ===========================================================================
 routes = [
@@ -626,4 +746,5 @@ routes = [
     Route("/admin/section/settings",      endpoint=section_settings_post, methods=["POST"]),
     Route("/admin/section/about",         endpoint=section_about_get,     methods=["GET"]),
     Route("/admin/section/about",         endpoint=section_about_post,    methods=["POST"]),
+    Route("/admin/section/operations",    endpoint=section_operations,    methods=["GET"]),
 ]
