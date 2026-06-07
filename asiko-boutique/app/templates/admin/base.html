@@ -201,23 +201,24 @@
                     <span class="nav-label">Dashboard</span>
                 </button>
 
-                <button hx-get="/admin/section/all-products" hx-target="#workspace-content" hx-push-url="true"
+                <button hx-get="/admin/section/sales" hx-target="#workspace-content" hx-push-url="true"
                         id="nav-sales"
                         class="nav-item">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <span class="nav-label">Sales</span>
-                    <span class="nav-badge" id="nav-badge-sales">3</span>
+                    <span class="nav-badge hidden" id="nav-badge-sales">0</span>
                 </button>
 
-                <a href="/" target="_blank" rel="noopener"
+                <button hx-get="/admin/section/view-site" hx-target="#workspace-content" hx-push-url="true"
+                        id="nav-view-site"
                         class="nav-item">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     <span class="nav-label">View Site</span>
-                </a>
+                </button>
 
                 <button hx-get="/admin/section/products" hx-target="#workspace-content" hx-push-url="true"
                         id="nav-products"
@@ -237,8 +238,8 @@
                     <span class="nav-label">Tags</span>
                 </button>
 
-                <button hx-get="/admin/section/reviews" hx-target="#workspace-content" hx-push-url="true"
-                        id="nav-reviews"
+                <button hx-get="/admin/section/analytics" hx-target="#workspace-content" hx-push-url="true"
+                        id="nav-analytics"
                         class="nav-item">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
@@ -246,14 +247,14 @@
                     <span class="nav-label">Analytics</span>
                 </button>
 
-                <button hx-get="/admin/section/ads" hx-target="#workspace-content" hx-push-url="true"
-                        id="nav-ads"
+                <button hx-get="/admin/section/members" hx-target="#workspace-content" hx-push-url="true"
+                        id="nav-members"
                         class="nav-item">
                     <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
                     <span class="nav-label">Members</span>
-                    <span class="nav-badge" id="nav-badge-ads">12</span>
+                    <span class="nav-badge hidden" id="nav-badge-members">0</span>
                 </button>
 
                 <button hx-get="/admin/section/operations" hx-target="#workspace-content" hx-push-url="true"
@@ -320,7 +321,7 @@
           hx-trigger="load"
           hx-get="/admin/section/dashboard"
           hx-indicator="#workspace-indicator"
-          class="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA] relative"
+          class="flex-1 flex flex-col overflow-hidden bg-[#FAFAFA] relative px-3 md:px-6 py-10 md:py-10"
           role="main"
           aria-label="Admin workspace">
 
@@ -387,10 +388,11 @@
         const PAGE_META = {
             'nav-dashboard':    { title: 'Dashboard' },
             'nav-sales':        { title: 'Sales' },
+            'nav-view-site':    { title: 'View Site' },
             'nav-products':     { title: 'Products' },
             'nav-categories':   { title: 'Tags' },
-            'nav-reviews':      { title: 'Analytics' },
-            'nav-ads':          { title: 'Members' },
+            'nav-analytics':    { title: 'Analytics' },
+            'nav-members':      { title: 'Members' },
             'nav-operations':   { title: 'Operations' },
             'nav-settings':     { title: 'Settings' },
             'nav-about':        { title: 'About Me' },
@@ -408,11 +410,16 @@
             const path = window.location.pathname;
             const match = path.match(/\/admin\/section\/(\w[\w-]*)/);
             const idMap = {
-                'dashboard': 'nav-dashboard', 'products': 'nav-products',
-                'categories': 'nav-categories', 'all-products': 'nav-sales',
-                'reviews': 'nav-reviews', 'ads': 'nav-ads',
+                'dashboard':  'nav-dashboard',
+                'sales':      'nav-sales',
+                'view-site':  'nav-view-site',
+                'products':   'nav-products',
+                'categories': 'nav-categories',
+                'analytics':  'nav-analytics',
+                'members':    'nav-members',
                 'operations': 'nav-operations',
-                'settings': 'nav-settings', 'about': 'nav-about',
+                'settings':   'nav-settings',
+                'about':      'nav-about',
             };
             if (match && idMap[match[1]]) {
                 setActiveNav(idMap[match[1]]);

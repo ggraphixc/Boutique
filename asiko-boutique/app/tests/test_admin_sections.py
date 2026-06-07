@@ -90,11 +90,12 @@ def _make_app_with_routes(pool_factory=_make_empty_pool):
 SECTIONS = [
     ("/admin",                       "ÀSÌKÒ"),
     ("/admin/section/dashboard",     "data-section=\"dashboard\""),
+    ("/admin/section/sales",         "data-section=\"sales\""),
+    ("/admin/section/view-site",     "data-section=\"view-site\""),
     ("/admin/section/products",      "data-section=\"products\""),
     ("/admin/section/categories",    "data-section=\"categories\""),
-    ("/admin/section/all-products",  "data-section=\"all-products\""),
-    ("/admin/section/reviews",       "data-section=\"reviews\""),
-    ("/admin/section/ads",           "data-section=\"ads\""),
+    ("/admin/section/analytics",     "data-section=\"analytics\""),
+    ("/admin/section/members",       "data-section=\"members\""),
     ("/admin/section/operations",    "data-section=\"operations\""),
     ("/admin/section/settings",      "data-section=\"settings\""),
     ("/admin/section/about",         "data-section=\"about\""),
@@ -128,13 +129,11 @@ class TestAdminIndexBaseTemplate:
             # Brand
             assert "ÀSÌKÒ" in body
             assert "Pro Atelier" in body  # subtitle below brand
-            # 8 nav items, each with id="nav-XXX"
+            # 10 nav items, each with id="nav-XXX"
             for nav_id in (
-                "nav-dashboard", "nav-products", "nav-categories",
-                "nav-reviews", "nav-ads", "nav-settings", "nav-about",
-                # nav-sales (renamed from nav-all-products in the shell) and
-                # nav-sales both map to all-products via idMap in JS
-                "nav-sales",
+                "nav-dashboard", "nav-sales", "nav-view-site",
+                "nav-products", "nav-categories", "nav-analytics",
+                "nav-members", "nav-operations", "nav-settings", "nav-about",
             ):
                 assert nav_id in body, f"missing nav id {nav_id}"
 
@@ -520,6 +519,167 @@ class TestAdminSectionWrites:
         with TestClient(app, raise_server_exceptions=False) as client:
             r = client.post("/admin/section/settings", data={})
             assert r.status_code == 200
+
+
+class TestNewSections:
+    """The 4 distinct sections added to fill gaps in the v2 sidebar:
+    Sales (orders), Analytics (traffic), Members (customers), View Site (preview).
+    """
+
+    # ---------------- Sales ----------------
+    def test_sales_section_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/sales")
+            assert r.status_code == 200
+            body = r.text
+            assert "data-section=\"sales\"" in body
+            # 4 KPI titles
+            for title in ("Gross Revenue", "Paid Orders", "Pending", "Fulfilled"):
+                assert title in body, f"missing KPI {title!r}"
+            # Empty state copy
+            assert "No orders yet" in body
+            # Status filter chips
+            for status in ("Paid", "Pending", "Shipped", "Delivered", "Cancelled", "Processing"):
+                assert status in body, f"missing status chip {status!r}"
+
+    def test_sales_section_uses_v2_light_theme(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/sales").text
+            assert "bg-emerald-50" in body
+            assert "bg-blue-50" in body
+            assert "bg-amber-50" in body
+            assert "bg-purple-50" in body
+            assert "BRAND COMMAND" not in body  # v2 only
+
+    def test_sales_sidebar_nav_active_for_slug_sales(self):
+        """The idMap must map slug 'sales' to nav button 'nav-sales'."""
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'sales'\s*:\s*'nav-sales'", body)
+            assert "id=\"nav-sales\"" in body
+
+    # ---------------- Analytics ----------------
+    def test_analytics_section_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/analytics")
+            assert r.status_code == 200
+            body = r.text
+            assert "data-section=\"analytics\"" in body
+            for title in ("Sessions", "Page Views", "Conversion Rate", "Avg. Session"):
+                assert title in body, f"missing KPI {title!r}"
+            # 7-day revenue + funnel + sources
+            assert "7-day revenue" in body
+            assert "Conversion funnel" in body
+            assert "Traffic sources" in body
+            # Funnel steps
+            for step in ("Visitors", "Product views", "Add to cart", "Checkout", "Purchased"):
+                assert step in body, f"missing funnel step {step!r}"
+
+    def test_analytics_handles_no_orders(self):
+        """Empty DB should still render the chart + funnel with mock data."""
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/analytics").text
+            # 7-day series renders even with zero paid orders
+            for day in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"):
+                assert day in body
+            assert "12,480" in body or "12480" in body  # sessions KPI
+            # Sources
+            for src in ("Direct", "Instagram", "Google search", "Email"):
+                assert src in body
+
+    def test_analytics_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'analytics'\s*:\s*'nav-analytics'", body)
+            assert "id=\"nav-analytics\"" in body
+
+    # ---------------- Members ----------------
+    def test_members_section_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/members")
+            assert r.status_code == 200
+            body = r.text
+            assert "data-section=\"members\"" in body
+            for title in ("Total Members", "Active", "New", "Lifetime Value"):
+                assert title in body, f"missing KPI {title!r}"
+            # Status chips
+            for status in ("Active", "New", "Returning"):
+                assert status in body, f"missing status {status!r}"
+            # Empty state
+            assert "No members yet" in body
+
+    def test_members_section_pastel_chips(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/members").text
+            assert "bg-blue-50" in body
+            assert "bg-emerald-50" in body
+            assert "bg-purple-50" in body
+            assert "bg-amber-50" in body
+
+    def test_members_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'members'\s*:\s*'nav-members'", body)
+            assert "id=\"nav-members\"" in body
+
+    # ---------------- View Site ----------------
+    def test_view_site_section_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            r = client.get("/admin/section/view-site")
+            assert r.status_code == 200
+            body = r.text
+            assert "data-section=\"view-site\"" in body
+            # Live preview iframe
+            assert "<iframe" in body
+            assert 'title="Storefront preview"' in body
+            # 4 status counts
+            for label in ("Products live", "Categories", "Stores", "Orders"):
+                assert label in body, f"missing count label {label!r}"
+            # Open in new tab CTA
+            assert "Open in new tab" in body
+
+    def test_view_site_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'view-site'\s*:\s*'nav-view-site'", body)
+            assert "id=\"nav-view-site\"" in body
+            # The view-site button uses hx-get (not an external <a>) so it
+            # is part of the in-shell section rotation
+            assert 'hx-get="/admin/section/view-site"' in body
+
+    # ---------------- All 4 are in PAGE_META + idMap ----------------
+    def test_all_new_sections_in_page_meta_and_idmap(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            for nav_id in ("nav-sales", "nav-view-site", "nav-analytics", "nav-members"):
+                assert nav_id in body, f"missing PAGE_META key {nav_id}"
+            # The idMap is rendered as a JS object literal — keys may be aligned
+            # with extra whitespace. Use regex to be tolerant of that.
+            for slug, nav_id in (
+                ("sales",      "nav-sales"),
+                ("view-site",  "nav-view-site"),
+                ("analytics",  "nav-analytics"),
+                ("members",    "nav-members"),
+            ):
+                pattern = rf"'{slug}'\s*:\s*'{nav_id}'"
+                assert re.search(pattern, body), f"missing idMap entry for {slug}"
 
 
 class TestHumanizeDate:
