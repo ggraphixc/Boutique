@@ -184,7 +184,7 @@
                 </div>
 
                 <!-- Secondary row: View in Shop / Turn Photo to 3D -->
-                <div class="mt-2">
+                <div id="pipeline-action-{{ p.id }}" class="mt-2">
                     {% if p.pipeline_status == 'generated' %}
                     <a href="/" target="_blank" class="w-full text-xs font-medium text-white bg-[#0D2A22] hover:bg-[#0a1f1a] rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-1">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -193,10 +193,22 @@
                         </svg>
                         View in Shop
                     </a>
+                    {% elif p.pipeline_status == 'processing' %}
+                    <div class="w-full text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2.5 text-center flex items-center justify-center gap-2">
+                        <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                        Being made...
+                    </div>
                     {% else %}
-                    <button class="w-full text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2.5 transition-colors">
-                        Turn Photo to 3D
-                    </button>
+                    <form hx-post="/admin/dashboard/pipeline/link-2d"
+                          hx-target="#pipeline-action-{{ p.id }}"
+                          hx-swap="innerHTML">
+                        <input type="hidden" name="product_id" value="{{ p.id }}">
+                        <input type="hidden" name="source_2d_image_url" value="{{ p.base_image or '' }}">
+                        <button type="submit" class="w-full text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-2">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                            Turn Photo to 3D
+                        </button>
+                    </form>
                     {% endif %}
                 </div>
             </div>

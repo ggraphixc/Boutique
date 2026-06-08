@@ -128,17 +128,23 @@
                     </div>
 
                     <!-- Action -->
-                    <div class="flex-shrink-0">
+                    <div id="ops-pipeline-{{ p.id }}" class="flex-shrink-0">
                         {% if p.pipeline_status == 'generated' %}
                         <a href="/" target="_blank" class="text-xs font-medium text-[#0D2A22] dark:text-gray-200 bg-white dark:bg-[#27272A] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#333] rounded-lg px-3 py-2 transition-colors">
                             View in Shop
                         </a>
                         {% elif p.pipeline_status == 'processing' %}
-                        <span class="text-xs text-amber-600 font-medium px-3 py-2">Processing...</span>
+                        <span class="text-xs text-amber-600 font-medium px-3 py-2">Being made...</span>
                         {% else %}
-                        <a href="/admin/section/products" hx-get="/admin/section/products" hx-target="#workspace-content" hx-push-url="true" class="text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2 transition-colors">
-                            Upload Photo
-                        </a>
+                        <form hx-post="/admin/dashboard/pipeline/link-2d"
+                              hx-target="#ops-pipeline-{{ p.id }}"
+                              hx-swap="innerHTML">
+                            <input type="hidden" name="product_id" value="{{ p.id }}">
+                            <input type="hidden" name="source_2d_image_url" value="{{ p.base_image or '' }}">
+                            <button type="submit" class="text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2 transition-colors">
+                                Turn Photo to 3D
+                            </button>
+                        </form>
                         {% endif %}
                     </div>
                 </div>
