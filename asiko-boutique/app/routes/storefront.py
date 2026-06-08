@@ -179,7 +179,7 @@ async def product_detail(request: Request) -> HTMLResponse:
     Editorial PDP: capsule lookups from asiko_capsule_assignments,
     concierge token via Django Signer, gallery from base_image.
     """
-    product_id = int(request.path_params["product_id"])
+    product_id = request.path_params["product_id"]
     pool = request.app.state.db_pool
 
     async with pool.acquire() as conn:
@@ -274,7 +274,7 @@ async def stock_badge_fragment(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT stock_quantity FROM products WHERE id = $1", int(product_id)
+            "SELECT stock_quantity FROM products WHERE id = $1", product_id
         )
     qty = row["stock_quantity"] if row else 0
     if qty == 0:
@@ -290,7 +290,7 @@ routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/lookbook", endpoint=lookbook, methods=["GET"]),
     Route("/htmx/products", endpoint=product_grid_fragment, methods=["GET"]),
-    Route("/product/{product_id:int}", endpoint=product_detail, methods=["GET"]),
+    Route("/product/{product_id}", endpoint=product_detail, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),
-    Route("/ws/store/product/{product_id:int}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
+    Route("/ws/store/product/{product_id}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
 ]

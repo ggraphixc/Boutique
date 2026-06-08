@@ -79,8 +79,8 @@ async def showroom_items_fragment(request: Request) -> HTMLResponse:
             SELECT p.id, p.name, p.model_3d_url, p.price,
                    v.id AS variant_id, v.size, v.color,
                    v.mesh_node_identifier, v.custom_shader_color
-            FROM product_variants v
-            JOIN products p ON v.product_id = p.id
+            FROM products p
+            LEFT JOIN product_variants v ON v.product_id = p.id
             WHERE p.model_3d_url IS NOT NULL
             ORDER BY p.name, v.size
             LIMIT 20
@@ -98,7 +98,7 @@ async def showroom_items_fragment(request: Request) -> HTMLResponse:
         color_hex = _resolve_color(r["custom_shader_color"])
         mesh_ref = _resolve_mesh(r["mesh_node_identifier"])
         model_url = r["model_3d_url"]
-        variant_id = str(r["variant_id"])
+        variant_id = str(r["variant_id"]) if r["variant_id"] else ""
         product_id = str(r["id"])
         price_val = float(r["price"]) if r["price"] else 0
 
