@@ -328,6 +328,27 @@ class TestDeleteProductEndpoint:
         response = client.delete(f"/admin/products/{pid}")
         assert response.text == ""
 
+    def test_delete_product_fk_violation_returns_409(self):
+        """DELETE /admin/products/{id} returns 409 when product has orders."""
+        import asyncpg
+        pool = MagicMock()
+        product_id = "test-product-fk"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            conn.fetchval = AsyncMock(return_value=product_id)
+            conn.execute = AsyncMock(side_effect=asyncpg.ForeignKeyViolationError("FK violation"))
+            yield conn
+
+        pool.acquire = _acquire
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.delete(f"/admin/products/{product_id}")
+        assert response.status_code == 409
+        assert "Cannot delete" in response.text
+        assert "existing orders" in response.text
+
 
 class TestProductsSectionUI:
     """Test the products section UI elements."""

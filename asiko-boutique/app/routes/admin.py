@@ -2,6 +2,7 @@
 # Product management endpoints for HTMX-driven admin interface.
 # Returns raw HTML fragments for HTMX swaps (matches admin_inventory.py pattern).
 
+import asyncpg
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, JSONResponse
 from starlette.routing import Route
@@ -120,7 +121,13 @@ async def handle_delete_product(request: Request) -> HTMLResponse:
                 status_code=404,
             )
 
-        await conn.execute("DELETE FROM products WHERE id = $1", product_id)
+        try:
+            await conn.execute("DELETE FROM products WHERE id = $1", product_id)
+        except asyncpg.ForeignKeyViolationError:
+            return HTMLResponse(
+                "<div class='text-xs font-mono text-[#EF4444] p-2'>Cannot delete — this product has existing orders. Archive it instead.</div>",
+                status_code=409,
+            )
 
     return HTMLResponse("")
 
