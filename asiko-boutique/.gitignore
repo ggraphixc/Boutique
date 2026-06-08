@@ -35,6 +35,7 @@ static/uploads/*.jpg
 static/uploads/*.png
 static/uploads/*.glb
 static/uploads/*.usdz
+static/uploads/optimized/
 
 # env files (can opt-in for committing if needed)
 .env*
