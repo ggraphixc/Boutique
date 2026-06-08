@@ -159,9 +159,9 @@ class TestProductsSectionForm:
         """Products section contains the Alpine modal for new product."""
         app = _make_app_with_admin_routes()
         client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/admin/section/products")
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
         assert response.status_code == 200
-        assert 'x-data="{ showNewProduct: false' in response.text
+        assert 'showNewProduct: false' in response.text
         assert 'x-show="showNewProduct"' in response.text
 
     def test_products_section_has_form_fields(self):
@@ -194,5 +194,211 @@ class TestProductsSectionForm:
         assert '@click="showNewProduct = true"' in response.text
 
 
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
+class TestEditProductEndpoint:
+    """Test the POST /admin/products/{id}/edit endpoint."""
+
+    def _make_pool_for_edit(self):
+        """Mock pool with a product that exists."""
+        pool = MagicMock()
+        product_id = "test-product-id-123"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            call_count = {"n": 0}
+
+            async def fetchval_side_effect(sql, *args):
+                call_count["n"] += 1
+                # First call: check product exists
+                if "SELECT id FROM products WHERE id" in sql and "slug" not in sql:
+                    return product_id
+                # Slug check calls
+                if "SELECT id FROM products WHERE slug" in sql:
+                    return None  # No slug conflict
+                # Category lookup
+                if "SELECT id FROM categories WHERE name" in sql:
+                    return "cat-123"
+                return None
+
+            conn.fetchval = AsyncMock(side_effect=fetchval_side_effect)
+            conn.execute = AsyncMock(return_value=None)
+            conn.fetch = AsyncMock(return_value=[])
+            yield conn
+
+        pool.acquire = _acquire
+        return pool, product_id
+
+    def test_edit_product_returns_200(self):
+        """POST /admin/products/{id}/edit returns 200 with valid data."""
+        pool, pid = self._make_pool_for_edit()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            f"/admin/products/{pid}/edit",
+            data={
+                "name": "Updated Product",
+                "price": "25000",
+                "stock_quantity": "10",
+                "category": "Dresses",
+                "description": "Updated description",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 200
+
+    def test_edit_product_has_hx_redirect(self):
+        """POST /admin/products/{id}/edit returns HX-Redirect header."""
+        pool, pid = self._make_pool_for_edit()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            f"/admin/products/{pid}/edit",
+            data={
+                "name": "Updated Product",
+                "price": "25000",
+            },
+            follow_redirects=False,
+        )
+        assert "HX-Redirect" in response.headers
+        assert response.headers["HX-Redirect"] == "/admin/section/products"
+
+    def test_edit_product_success_message(self):
+        """POST /admin/products/{id}/edit returns success message."""
+        pool, pid = self._make_pool_for_edit()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            f"/admin/products/{pid}/edit",
+            data={
+                "name": "Updated Product",
+                "price": "25000",
+            },
+            follow_redirects=False,
+        )
+        assert "Product updated successfully" in response.text
+
+    def test_edit_product_missing_name_returns_400(self):
+        """POST /admin/products/{id}/edit with empty name returns 400."""
+        pool, pid = self._make_pool_for_edit()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.post(
+            f"/admin/products/{pid}/edit",
+            data={
+                "name": "",
+                "price": "25000",
+            },
+            follow_redirects=False,
+        )
+        assert response.status_code == 400
+        assert "Please enter a product name." in response.text
+
+
+class TestDeleteProductEndpoint:
+    """Test the DELETE /admin/products/{id} endpoint."""
+
+    def _make_pool_for_delete(self):
+        """Mock pool with a product that exists."""
+        pool = MagicMock()
+        product_id = "test-product-id-456"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            conn.fetchval = AsyncMock(return_value=product_id)  # Product exists
+            conn.execute = AsyncMock(return_value=None)
+            yield conn
+
+        pool.acquire = _acquire
+        return pool, product_id
+
+    def test_delete_product_returns_200(self):
+        """DELETE /admin/products/{id} returns 200."""
+        pool, pid = self._make_pool_for_delete()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.delete(f"/admin/products/{pid}")
+        assert response.status_code == 200
+
+    def test_delete_product_returns_empty_body(self):
+        """DELETE /admin/products/{id} returns empty body for HTMX."""
+        pool, pid = self._make_pool_for_delete()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.delete(f"/admin/products/{pid}")
+        assert response.text == ""
+
+
+class TestProductsSectionUI:
+    """Test the products section UI elements."""
+
+    def test_products_section_has_edit_delete_buttons(self):
+        """Products section has Edit and Delete buttons when products exist."""
+        from unittest.mock import AsyncMock
+        from contextlib import asynccontextmanager
+
+        pool = MagicMock()
+        product_id = "test-product-id-789"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            # _safe_fetch_products calls conn.fetch() with the product query
+            conn.fetch = AsyncMock(return_value=[
+                {
+                    "id": product_id,
+                    "name": "Test Jacket",
+                    "slug": "test-jacket",
+                    "price": 25000.0,
+                    "stock_quantity": 5,
+                    "base_image": "/static/uploads/test.jpg",
+                    "model_3d_url": None,
+                    "pipeline_status": "idle",
+                    "asset_category": None,
+                    "created_at": None,
+                    "category_id": "cat-1",
+                    "category_name": "Outerwear",
+                    "category_color": None,
+                }
+            ])
+            yield conn
+
+        pool.acquire = _acquire
+
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+        # Edit button exists on the product card
+        assert "Edit" in response.text
+        # Delete button exists with hx-delete
+        assert "hx-delete" in response.text
+        assert "Delete" in response.text
+
+    def test_products_section_has_edit_modal(self):
+        """Products section has the edit product modal."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+        assert "showEditProduct" in response.text
+        assert "Edit Product" in response.text
+        assert "Save Changes" in response.text
+
+    def test_products_section_has_new_product_modal(self):
+        """Products section has the new product modal."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+        assert "showNewProduct" in response.text
+        assert "Add New Product" in response.text
+        assert "Save Product" in response.text
+
+    def test_products_section_has_open_edit_function(self):
+        """Products section has the openEdit Alpine function."""
+        app = _make_app_with_admin_routes()
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+        assert "openEdit(p)" in response.text or "openEdit(" in response.text

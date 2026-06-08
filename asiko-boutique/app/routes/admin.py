@@ -335,9 +335,129 @@ async def create_product(request: Request):
     )
 
 
+async def edit_product(request: Request):
+    """
+    POST /admin/products/{id}/edit — Update an existing product.
+    Accepts multipart form: name, price, stock_quantity, category, description, source_2d_file (optional).
+    Returns redirect to reload the products section.
+    """
+    import os
+    import secrets
+    import re
+
+    product_id = request.path_params.get("id")
+    if not product_id:
+        return HTMLResponse(
+            "<span class='text-xs text-red-500'>Product not found.</span>",
+            status_code=400,
+        )
+
+    form = await request.form()
+    name = (form.get("name") or "").strip()
+    price_raw = (form.get("price") or "0").strip()
+    category = (form.get("category") or "").strip()
+    stock_raw = (form.get("stock_quantity") or "0").strip()
+    description = (form.get("description") or "").strip()
+    uploaded_file = form.get("source_2d_file")
+
+    if not name:
+        return HTMLResponse(
+            "<span class='text-xs text-red-500'>Please enter a product name.</span>",
+            status_code=400,
+        )
+
+    try:
+        price = float(price_raw)
+    except (ValueError, TypeError):
+        price = 0.0
+
+    try:
+        stock_quantity = int(float(stock_raw))
+    except (ValueError, TypeError):
+        stock_quantity = 0
+
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+    # Handle optional new image upload
+    UPLOAD_DIR = "static/uploads"
+    image_path = None
+    if uploaded_file and hasattr(uploaded_file, "filename") and uploaded_file.filename:
+        ext = os.path.splitext(uploaded_file.filename)[1].lower()
+        if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>Invalid image format. Use JPG, PNG, or WebP.</span>",
+                status_code=400,
+            )
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        secure_name = f"prod_{secrets.token_hex(8)}{ext}"
+        file_path = os.path.join(UPLOAD_DIR, secure_name)
+        contents = await uploaded_file.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        image_path = f"/{file_path}"
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        # Verify product exists
+        exists = await conn.fetchval("SELECT id FROM products WHERE id = $1", product_id)
+        if not exists:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>Product not found.</span>",
+                status_code=404,
+            )
+
+        # Check for duplicate slug (excluding current product)
+        base_slug = slug
+        suffix = 1
+        while True:
+            dup = await conn.fetchval(
+                "SELECT id FROM products WHERE slug = $1 AND id != $2",
+                slug, product_id,
+            )
+            if not dup:
+                break
+            suffix += 1
+            slug = f"{base_slug}-{suffix}"
+
+        # Resolve category_id from category name
+        category_id = None
+        if category:
+            category_id = await conn.fetchval(
+                "SELECT id FROM categories WHERE name = $1", category
+            )
+
+        # Build update query
+        if image_path:
+            await conn.execute(
+                """
+                UPDATE products
+                SET name = $1, slug = $2, price = $3, stock_quantity = $4,
+                    base_image = $5, description = $6, category_id = $7
+                WHERE id = $8
+                """,
+                name, slug, price, stock_quantity, image_path, description or None, category_id, product_id,
+            )
+        else:
+            await conn.execute(
+                """
+                UPDATE products
+                SET name = $1, slug = $2, price = $3, stock_quantity = $4,
+                    description = $5, category_id = $6
+                WHERE id = $7
+                """,
+                name, slug, price, stock_quantity, description or None, category_id, product_id,
+            )
+
+    return HTMLResponse(
+        "<div class='text-xs text-emerald-600 font-medium'>Product updated successfully.</div>",
+        headers={"HX-Redirect": "/admin/section/products"},
+    )
+
+
 routes = [
     Route("/admin/products", endpoint=get_admin_products_fragment, methods=["GET"]),
     Route("/admin/products/create", endpoint=create_product, methods=["POST"]),
+    Route("/admin/products/{id}/edit", endpoint=edit_product, methods=["POST"]),
     Route("/admin/products/{id}/detail", endpoint=get_product_detail_fragment, methods=["GET"]),
     Route("/admin/products/{id}", endpoint=handle_delete_product, methods=["DELETE"]),
     Route("/admin/settings", endpoint=get_general_settings_fragment, methods=["GET"]),
