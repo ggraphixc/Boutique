@@ -402,3 +402,171 @@ class TestProductsSectionUI:
         response = client.get("/admin/section/products", headers={"HX-Request": "true"})
         assert response.status_code == 200
         assert "openEdit(p)" in response.text or "openEdit(" in response.text
+
+    def test_products_section_cards_link_to_detail(self):
+        """Product cards have hx-get links to the detail page."""
+        from unittest.mock import AsyncMock
+        from contextlib import asynccontextmanager
+
+        pool = MagicMock()
+        pid = "detail-link-test-id"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            conn.fetch = AsyncMock(return_value=[
+                {
+                    "id": pid,
+                    "name": "Link Test Jacket",
+                    "slug": "link-test-jacket",
+                    "price": 30000.0,
+                    "stock_quantity": 10,
+                    "base_image": "/static/uploads/test.jpg",
+                    "model_3d_url": None,
+                    "pipeline_status": "idle",
+                    "asset_category": None,
+                    "created_at": None,
+                    "category_id": "cat-1",
+                    "category_name": "Tailoring",
+                    "category_color": None,
+                }
+            ])
+            yield conn
+
+        pool.acquire = _acquire
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/products", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+        assert f'/admin/section/product/{pid}' in response.text
+
+
+class TestProductDetailPage:
+    """Test the product detail page."""
+
+    def _make_pool_for_detail(self):
+        """Mock pool with a product and variants."""
+        pool = MagicMock()
+        product_id = "detail-test-product-123"
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            from asyncpg import Record
+
+            # Product record
+            product_data = {
+                "id": product_id,
+                "name": "Green Agbada",
+                "slug": "green-agbada",
+                "price": 45000.0,
+                "stock_quantity": 8,
+                "base_image": "/static/uploads/green.jpg",
+                "model_3d_url": None,
+                "pipeline_status": "idle",
+                "description": "Hand-stitched traditional agbada",
+                "category_id": "cat-1",
+                "category_name": "Outerwear",
+                "category_color": None,
+                "created_at": None,
+                "updated_at": None,
+                "pipeline_error_log": None,
+            }
+
+            async def fetchrow_side_effect(sql, *args):
+                if "FROM products p" in sql and "WHERE p.id" in sql:
+                    return product_data
+                return None
+
+            async def fetch_side_effect(sql, *args):
+                if "FROM product_variants" in sql:
+                    return [
+                        {"id": "v1", "size": "L", "color": "Green", "stock_qty": 5, "mesh_node_identifier": None, "custom_shader_color": "#2d5a27"},
+                        {"id": "v2", "size": "XL", "color": "Green", "stock_qty": 3, "mesh_node_identifier": None, "custom_shader_color": "#2d5a27"},
+                    ]
+                return []
+
+            conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
+            conn.fetch = AsyncMock(side_effect=fetch_side_effect)
+            yield conn
+
+        pool.acquire = _acquire
+        return pool, product_id
+
+    def test_detail_returns_200(self):
+        """GET /admin/section/product/{id} returns 200."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert response.status_code == 200
+
+    def test_detail_shows_product_name(self):
+        """Detail page shows the product name."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "Green Agbada" in response.text
+
+    def test_detail_shows_price(self):
+        """Detail page shows the product price in Naira."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "&#8358;" in response.text
+        assert "45,000" in response.text
+
+    def test_detail_shows_description(self):
+        """Detail page shows the product description."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "Hand-stitched traditional agbada" in response.text
+
+    def test_detail_shows_variants(self):
+        """Detail page shows product variants."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "Green" in response.text
+        assert "L" in response.text
+        assert "XL" in response.text
+
+    def test_detail_has_back_button(self):
+        """Detail page has a back-to-products link."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "Back to Products" in response.text
+        assert "/admin/section/products" in response.text
+
+    def test_detail_has_delete_button(self):
+        """Detail page has a delete button."""
+        pool, pid = self._make_pool_for_detail()
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get(f"/admin/section/product/{pid}", headers={"HX-Request": "true"})
+        assert "hx-delete" in response.text
+        assert "Delete Product" in response.text
+
+    def test_detail_nonexistent_product_redirects(self):
+        """Detail page for nonexistent product redirects to products list."""
+        pool = MagicMock()
+
+        @asynccontextmanager
+        async def _acquire():
+            conn = MagicMock()
+            conn.fetchrow = AsyncMock(return_value=None)
+            conn.fetch = AsyncMock(return_value=[])
+            yield conn
+
+        pool.acquire = _acquire
+        app = _make_app_with_admin_routes(pool_fn=lambda: pool)
+        client = TestClient(app, raise_server_exceptions=False)
+        response = client.get("/admin/section/product/nonexistent-id", headers={"HX-Request": "true"})
+        assert response.status_code == 200

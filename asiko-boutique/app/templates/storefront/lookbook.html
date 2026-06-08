@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Lookbook — ASIKO Boutique{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100">
+    <!-- Hero -->
+    <section class="relative overflow-hidden bg-[#0D2A22] py-20 lg:py-28">
+        <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div class="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-[#D4AF37]/10 via-transparent to-fuchsia-300/5 blur-[120px]"></div>
+        </div>
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-[#D4AF37]">ASIKO Atelier</span>
+            <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide mt-4 mb-4">The Lookbook</h1>
+            <p class="text-white/50 text-base lg:text-lg max-w-lg mx-auto font-light">Curated ensembles from the current collection. Each piece designed to stand alone or compose into a complete look.</p>
+        </div>
+    </section>
+
+    <!-- Products editorial grid -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        {% if products %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for product in products %}
+            <a href="/product/{{ product.id }}" class="group block">
+                <div class="relative aspect-[3/4] overflow-hidden rounded-xl bg-neutral-100 dark:bg-[#18181B] border border-neutral-200 dark:border-gray-800 mb-4">
+                    {% if product.base_image %}
+                    <img src="{{ product.base_image }}" alt="{{ product.name }}"
+                         class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                         loading="lazy">
+                    {% else %}
+                    <div class="w-full h-full flex items-center justify-center">
+                        <span class="font-display text-[80px] text-[#0D2A22]/10 dark:text-white/5 select-none">A</span>
+                    </div>
+                    {% endif %}
+
+                    <!-- 3D badge -->
+                    {% if product.has_3d_model %}
+                    <span class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg">
+                        <span class="relative flex h-1.5 w-1.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2A22] opacity-60"></span>
+                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0D2A22]"></span>
+                        </span>
+                        3D
+                    </span>
+                    {% endif %}
+
+                    <!-- Hover overlay -->
+                    <div class="absolute inset-0 bg-[#0D2A22]/0 group-hover:bg-[#0D2A22]/20 transition-all duration-500 flex items-end justify-center pb-8 opacity-0 group-hover:opacity-100">
+                        <span class="px-6 py-2.5 bg-white dark:bg-[#D4AF37] text-[#0D2A22] font-mono text-[10px] uppercase tracking-[0.2em] font-semibold rounded-lg shadow-lg translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                            View Details
+                        </span>
+                    </div>
+                </div>
+
+                <div class="px-1">
+                    <h3 class="font-display text-lg text-[#0D2A22] dark:text-gray-100 group-hover:text-[#D4AF37] transition-colors">{{ product.name }}</h3>
+                    <p class="text-sm text-[#1A1A1A]/60 dark:text-gray-400 mt-1 line-clamp-2">{{ product.description }}</p>
+                    <div class="flex items-center justify-between mt-3">
+                        <span class="font-mono text-lg font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ product.price|naira }}</span>
+                        <span class="text-xs text-[#1A1A1A]/40 dark:text-gray-500">{{ product.stock_quantity }} available</span>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20">
+            <p class="font-display text-2xl text-[#0D2A22]/20 dark:text-white/10">Collection coming soon</p>
+            <p class="text-sm text-[#1A1A1A]/40 dark:text-gray-600 mt-2">New pieces are being added to the lookbook.</p>
+        </div>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

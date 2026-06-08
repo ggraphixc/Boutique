@@ -195,9 +195,9 @@
 <!-- ============================================================ -->
 <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-20">
     <div class="flex flex-wrap justify-center gap-3">
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 backdrop-blur-sm text-[#0D2A22] shadow-sm">No "DM for Price"</span>
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 backdrop-blur-sm text-[#0D2A22] shadow-sm">Fair Trade Certified</span>
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 backdrop-blur-sm text-[#0D2A22] shadow-sm">Living Wage Employer</span>
+        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">No "DM for Price"</span>
+        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">Fair Trade Certified</span>
+        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">Living Wage Employer</span>
     </div>
 </section>
 
@@ -206,45 +206,47 @@
 <!-- ============================================================ -->
 <section id="storefront" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 text-center">
     <span class="text-xs tracking-[0.25em] uppercase text-[#D4AF37] font-mono">The Collection</span>
-    <h2 class="font-display text-3xl lg:text-4xl font-light text-[#0D2A22] tracking-wide mt-2 mb-4">contemporary nigerian fashion</h2>
-    <p class="text-[#1A1A1A]/60 text-base max-w-2xl mx-auto font-light">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
+    <h2 class="font-display text-3xl lg:text-4xl font-light text-[#0D2A22] dark:text-white tracking-wide mt-2 mb-4">contemporary nigerian fashion</h2>
+    <p class="text-[#1A1A1A]/60 dark:text-gray-400 text-base max-w-2xl mx-auto font-light">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
 </section>
 
 <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for product in products %}
-        <div class="group overflow-hidden rounded-xl border border-[#D4AF37]/20 bg-white shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="relative aspect-square bg-[#FBF9F6] overflow-hidden">
+        <a href="/product/{{ product.id }}" class="group block overflow-hidden rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B] shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
+            <div class="relative aspect-square bg-[#FBF9F6] dark:bg-[#111] overflow-hidden">
+                {% if product.base_image %}
+                <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" loading="lazy">
+                {% else %}
                 <div class="absolute inset-0 bg-gradient-to-br from-[#0D2A22]/5 to-[#D4AF37]/10"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-[#0D2A22]/30"><span class="font-display text-5xl">A</span></div>
+                <div class="absolute inset-0 flex items-center justify-center text-[#0D2A22]/30 dark:text-white/10"><span class="font-display text-5xl">A</span></div>
+                {% endif %}
                 {% if product.has_3d_model %}
-                <a href="/virtual-experience"
-                   class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg hover:bg-[#D4AF37] transition-all duration-300 group-hover:scale-105"
-                   title="View in 3D Virtual Atelier">
+                <span class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg">
                     <span class="relative flex h-1.5 w-1.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2A22] opacity-60"></span>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2222] opacity-60"></span>
                         <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0D2A22]"></span>
                     </span>
                     3D
-                </a>
+                </span>
                 {% endif %}
             </div>
             <div class="p-4">
-                <h3 class="font-display text-lg text-[#0D2A22] mb-2">{{ product.name }}</h3>
-                <p class="text-sm text-[#1A1A1A]/70 mb-3 line-clamp-2">{{ product.description }}</p>
+                <h3 class="font-display text-lg text-[#0D2A22] dark:text-gray-100 mb-2 group-hover:text-[#D4AF37] transition-colors">{{ product.name }}</h3>
+                <p class="text-sm text-[#1A1A1A]/70 dark:text-gray-400 mb-3 line-clamp-2">{{ product.description }}</p>
                 <div class="flex items-center justify-between mb-4">
-                    <span class="text-xl font-semibold text-[#0D2A22]">{{ product.price|naira }}</span>
-                    <span class="text-xs text-[#1A1A1A]/50">{{ product.stock_quantity }} in stock</span>
+                    <span class="text-xl font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ product.price|naira }}</span>
+                    <span class="text-xs text-[#1A1A1A]/50 dark:text-gray-500">{{ product.stock_quantity }} in stock</span>
                 </div>
-                <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML" onclick="document.getElementById('cart-drawer').classList.remove('hidden')">
+                <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('cart-drawer').classList.remove('hidden')">
                     <input type="hidden" name="product_id" value="{{ product.id }}">
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-white bg-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 transition-colors">
+                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-colors">
                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                         Add to Cart
                     </button>
                 </form>
             </div>
-        </div>
+        </a>
         {% endfor %}
     </div>
 </section>

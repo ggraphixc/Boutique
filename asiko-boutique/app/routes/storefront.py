@@ -113,7 +113,7 @@ async def dpp_verification(request: Request) -> HTMLResponse:
         )
 
     # Build DPP provenance data from product + cryptographic seed
-    seed = hashlib.sha256(f"ASIKO:{product_id}:{p_row['name']}:NGA:2026".encode()).hexdigest()[:8].upper()
+    seed = hashlib.sha256(f"ASIKO:{serial_index}:{p_row['name']}:NGA:2026".encode()).hexdigest()[:8].upper()
     context = {
         "request": request,
         "verified": True,
@@ -121,7 +121,7 @@ async def dpp_verification(request: Request) -> HTMLResponse:
         "serial": serial,
         "fabric": "Aba Handloomed Cotton / Organic Vegetable Dye",
         "dye": "Indigofera & Kola Nut Extract (Terroir-Mapped)",
-        "artisan_id": f"ATLR-{product_id:04d}-NG-{seed}",
+        "artisan_id": f"ATLR-{serial_index:04d}-NG-{seed}",
         "wage_index": "94.2",
     }
     return templates.TemplateResponse(
@@ -148,6 +148,28 @@ async def product_grid_fragment(request: Request) -> HTMLResponse:
 
     return templates.TemplateResponse(
         request, "storefront/product_grid.html",
+        {"request": request, "products": products},
+    )
+
+
+async def lookbook(request: Request) -> HTMLResponse:
+    """Editorial lookbook page — curated product showcase."""
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT id, name, description, price, stock_quantity, "
+            "base_image, model_3d_url "
+            "FROM products ORDER BY id DESC"
+        )
+
+    products = []
+    for p in rows:
+        d = dict(p)
+        d["has_3d_model"] = d.get("model_3d_url") is not None
+        products.append(d)
+
+    return templates.TemplateResponse(
+        request, "storefront/lookbook.html",
         {"request": request, "products": products},
     )
 
@@ -266,6 +288,7 @@ async def stock_badge_fragment(request: Request) -> HTMLResponse:
 
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
+    Route("/lookbook", endpoint=lookbook, methods=["GET"]),
     Route("/htmx/products", endpoint=product_grid_fragment, methods=["GET"]),
     Route("/product/{product_id:int}", endpoint=product_detail, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),

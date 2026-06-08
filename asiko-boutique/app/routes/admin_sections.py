@@ -331,6 +331,51 @@ async def section_products(request: Request) -> HTMLResponse:
     )
 
 
+async def section_product_detail(request: Request) -> HTMLResponse:
+    """Full detail view for a single product."""
+    product_id = request.path_params.get("id")
+    pool = request.app.state.db_pool
+
+    async with pool.acquire() as conn:
+        product = await conn.fetchrow(
+            """
+            SELECT p.*, c.name AS category_name, c.color AS category_color
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.id = $1
+            """,
+            product_id,
+        )
+        if not product:
+            return _section_response(
+                request, "admin/sections/products.html",
+                {"products": await _safe_fetch_products(pool)},
+            )
+
+        variants = await conn.fetch(
+            """
+            SELECT id, size, color, stock_qty, mesh_node_identifier, custom_shader_color
+            FROM product_variants
+            WHERE product_id = $1
+            ORDER BY size, color
+            """,
+            product_id,
+        )
+
+    product_dict = dict(product)
+    product_dict["price"] = float(product_dict.get("price") or 0)
+    product_dict["stock_quantity"] = int(product_dict.get("stock_quantity") or 0)
+    raw_status = product_dict.get("pipeline_status")
+    product_dict["pipeline_status"] = _map_pipeline_status(raw_status)
+
+    variants_list = [dict(v) for v in variants]
+
+    return _section_response(
+        request, "admin/sections/product_detail.html",
+        {"product": product_dict, "variants": variants_list},
+    )
+
+
 # ===========================================================================
 # 3. CATEGORIES
 # ===========================================================================
@@ -1246,6 +1291,7 @@ routes = [
     Route("/admin/section/sales",         endpoint=section_sales,         methods=["GET"]),
     Route("/admin/section/view-site",     endpoint=section_view_site,     methods=["GET"]),
     Route("/admin/section/products",      endpoint=section_products,      methods=["GET"]),
+    Route("/admin/section/product/{id}", endpoint=section_product_detail, methods=["GET"]),
     Route("/admin/section/categories",    endpoint=section_categories,    methods=["GET"]),
     Route("/admin/section/analytics",     endpoint=section_analytics,     methods=["GET"]),
     Route("/admin/section/members",       endpoint=section_members,       methods=["GET"]),

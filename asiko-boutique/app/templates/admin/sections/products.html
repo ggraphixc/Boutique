@@ -70,8 +70,11 @@
         <article id="product-card-{{ p.id }}"
                  class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg transition-all duration-300 group">
 
-            <!-- Product image -->
-            <div class="relative aspect-[4/5] bg-gray-100 dark:bg-[#18181B] overflow-hidden">
+            <!-- Product image — click to view detail -->
+            <div class="relative aspect-[4/5] bg-gray-100 dark:bg-[#18181B] overflow-hidden cursor-pointer"
+                 hx-get="/admin/section/product/{{ p.id }}"
+                 hx-target="#workspace-content"
+                 hx-push-url="true">
                 {% if p.base_image %}
                 <img src="{{ p.base_image }}"
                      alt="{{ p.name }}"
@@ -129,8 +132,11 @@
             <!-- Card body -->
             <div class="p-4">
                 <div class="flex items-start justify-between gap-2">
-                    <div class="flex-1 min-w-0">
-                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.name }}</h3>
+                    <div class="flex-1 min-w-0 cursor-pointer"
+                         hx-get="/admin/section/product/{{ p.id }}"
+                         hx-target="#workspace-content"
+                         hx-push-url="true">
+                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate hover:underline">{{ p.name }}</h3>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ p.category_name or 'General' }}</p>
                     </div>
                     <div class="text-right">
