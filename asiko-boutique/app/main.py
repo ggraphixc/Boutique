@@ -221,6 +221,7 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.virtual import routes as virtual_routes
     from app.routes.virtual_experience import routes as virtual_experience_routes
     from app.routes.dpp_verification import routes as dpp_routes
+    from app.routes.customer import routes as customer_routes
     from app.services.settlement import routes as settlement_routes
     from app.routes.ws_admin import ws_admin_routes
     from app.routes.ws_store import ws_store_routes
@@ -239,6 +240,7 @@ def _register_route_modules(app: Starlette) -> None:
         virtual_routes,
         virtual_experience_routes,
         dpp_routes,
+        customer_routes,
         settlement_routes,
         ws_admin_routes,
         ws_store_routes,

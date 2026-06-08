@@ -3,37 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ÀSÌKÒ Atelier // 3D Virtual Experience</title>
+    <title>ÀSÌKÒ Atelier // Try On</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37', cyber: '#E6C875' },
-                        neutral: { dark: '#1A1A1A' },
-                        status: { mint: '#10B981', crimson: '#EF4444' },
-                        ambient: { fuchsia: '#D946EF', cyan: '#22D3EE', amber: '#F59E0B', emerald: '#34D399' },
+                        brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' },
                     },
                     fontFamily: {
                         display: ['"Playfair Display"', 'Georgia', 'serif'],
                         sans: ['"Inter"', 'system-ui', 'sans-serif'],
-                        mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
-                    },
-                    animation: {
-                        'ping-slow': 'ping 3s cubic-bezier(0, 0, 0.2, 1) infinite',
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-soft': 'pulse-soft 4s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-10px)' },
-                        },
-                        'pulse-soft': {
-                            '0%, 100%': { opacity: '0.4' },
-                            '50%': { opacity: '0.8' },
-                        },
                     },
                 },
             },
@@ -41,11 +22,10 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
 
-    <!-- Three.js via importmap -->
     <script type="importmap">
     {
         "imports": {
@@ -54,289 +34,187 @@
         }
     }
     </script>
-    <style>
-        [x-cloak] { display: none !important; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background-color: #FBF9F6; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; overscroll-behavior: none; }
-
-        .glass-panel { backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .glass-panel-strong { backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 0.4); }
-        .neon-glow { box-shadow: 0 0 30px rgba(230, 200, 117, 0.15), 0 0 60px rgba(212, 175, 55, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
-        .neon-glow-strong { box-shadow: 0 0 40px rgba(230, 200, 117, 0.25), 0 0 80px rgba(212, 175, 55, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
-
-        .three-canvas-container { position: relative; width: 100%; height: 100%; }
-        .three-canvas-container canvas { display: block; width: 100% !important; height: 100% !important; }
-
-        /* Pointer-event isolation for the 3D viewport.
-           The WebGL canvas needs pointer-events:auto so OrbitControls can grab
-           drag gestures, but every overlay HUD and dock must explicitly opt in
-           with pointer-events-auto so clicks land on the buttons, not the canvas. */
-        .atelier-canvas-wrap { position: absolute; inset: 0; }
-        .atelier-canvas-wrap > canvas { pointer-events: auto; }
-        .atelier-canvas-wrap .pointer-events-auto { pointer-events: auto !important; }
-
-        .panel-scroll::-webkit-scrollbar { width: 3px; }
-        .panel-scroll::-webkit-scrollbar-track { background: transparent; }
-        .panel-scroll::-webkit-scrollbar-thumb { background: rgba(13, 42, 34, 0.15); border-radius: 99px; }
-
-        .mode-transition { transition: opacity 0.4s ease, transform 0.4s ease; }
-
-        @keyframes loadingProgress {
-            0% { width: 0%; margin-left: 0%; }
-            50% { width: 60%; margin-left: 20%; }
-            100% { width: 0%; margin-left: 100%; }
-        }
-    </style>
 </head>
-<body class="min-h-screen relative antialiased"
-      x-data="virtualAtelier">
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep">
 
-    <!-- ============================================================ -->
-    <!-- AMBIENT IRIDESCENT BACKLIGHTING                               -->
-    <!-- ============================================================ -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div class="absolute top-[-15%] left-[-8%] w-[60vw] h-[60vw] rounded-full bg-gradient-to-tr from-fuchsia-300/25 via-rose-200/15 to-cyan-200/20 blur-[150px] animate-pulse-soft"></div>
-        <div class="absolute bottom-[-12%] right-[-10%] w-[50vw] h-[50vw] rounded-full bg-gradient-to-br from-amber-200/20 via-[#D4AF37]/10 to-emerald-200/25 blur-[120px] animate-pulse-soft" style="animation-delay: -2s;"></div>
-        <div class="absolute top-[40%] left-[50%] -translate-x-1/2 -translate-y-1/2 w-[40vw] h-[40vw] rounded-full bg-gradient-to-r from-[#D4AF37]/5 to-cyan-200/10 blur-[100px]"></div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- FLOATING INTERACTIVE GLOWING PARTICLES (decorative)            -->
-    <!-- ============================================================ -->
-    <div class="fixed inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div class="absolute w-2 h-2 rounded-full bg-[#E6C875]/40 top-[15%] left-[12%] blur-[1px] animate-float" style="animation-duration: 7s;"></div>
-        <div class="absolute w-1.5 h-1.5 rounded-full bg-fuchsia-300/30 top-[25%] right-[18%] blur-[1px] animate-float" style="animation-duration: 9s; animation-delay: -1s;"></div>
-        <div class="absolute w-3 h-3 rounded-full bg-cyan-200/20 bottom-[30%] left-[20%] blur-[2px] animate-float" style="animation-duration: 8s; animation-delay: -3s;"></div>
-        <div class="absolute w-1 h-1 rounded-full bg-amber-200/40 bottom-[20%] right-[25%] blur-[1px] animate-float" style="animation-duration: 10s; animation-delay: -5s;"></div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- LUXURY MINIMAL NAVIGATION (mix-blend-difference for contrast)  -->
-    <!-- ============================================================ -->
-    <header class="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 py-5 flex items-center justify-between mix-blend-difference">
-        <div class="flex items-center gap-4">
-            <a href="/" class="flex items-center gap-3 group">
-                <h1 class="font-display text-xl font-light tracking-[0.25em] text-white uppercase">ÀSÌKÒ</h1>
-                <span class="hidden sm:inline-block w-px h-5 bg-white/20"></span>
-                <span class="hidden sm:block text-[9px] tracking-[0.3em] text-[#E6C875] uppercase font-mono font-medium">Virtual Atelier</span>
-            </a>
+    <!-- Top nav bar -->
+    <header class="fixed top-0 left-0 right-0 z-50 bg-brand-base/90 backdrop-blur-md border-b border-brand-deep/5">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="font-display text-lg tracking-wide text-brand-deep">ÀSÌKÒ</a>
+            <div class="flex items-center gap-3">
+                <span class="text-xs font-mono text-brand-deep/40">3D Try-On</span>
+                <a href="/" class="text-xs text-brand-deep/60 hover:text-brand-deep transition-colors">Back to Shop</a>
+            </div>
         </div>
-        <nav class="flex items-center gap-8 text-[11px] uppercase tracking-[0.2em] font-mono">
-            <button @click="activeMode = 'showroom'"
-                    :class="activeMode === 'showroom' ? 'text-white border-b border-white/80' : 'text-white/50 hover:text-white/80 border-b border-transparent'"
-                    class="pb-1 transition-all duration-300 cursor-pointer"
-                    aria-label="Switch to Showroom mode">Showroom</button>
-            <button @click="activeMode = 'dressing_room'"
-                    :class="activeMode === 'dressing_room' ? 'text-white border-b border-white/80' : 'text-white/50 hover:text-white/80 border-b border-transparent'"
-                    class="pb-1 transition-all duration-300 cursor-pointer"
-                    aria-label="Switch to Dressing Room mode">Dressing Room</button>
-            <a href="/cart/drawer"
-               hx-get="/cart/drawer"
-               hx-target="#cart-drawer-content"
-               hx-swap="innerHTML"
-               onclick="document.getElementById('cart-drawer').classList.remove('hidden')"
-               class="relative ml-4 text-white/70 hover:text-white transition-colors cursor-pointer"
-               aria-label="Open cart">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                {% if cart and cart.item_count > 0 %}
-                <span class="absolute -top-2 -right-2 h-4 w-4 rounded-full bg-[#E6C875] text-[#0D2A22] text-[9px] font-bold flex items-center justify-center font-mono">{{ cart.item_count }}</span>
-                {% endif %}
-            </a>
-        </nav>
     </header>
 
-    <!-- ============================================================ -->
-    <!-- MASTER GRID: 3D VIEWPORT + LEFT CONTROL PANEL                 -->
-    <!-- ============================================================ -->
-    <main class="w-full min-h-screen bg-[#FBF9F6] pt-24 pb-12 px-4 md:px-8 font-sans">
-        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <main class="pt-14 min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 py-6">
 
-            <div class="lg:col-span-4 space-y-6 flex flex-col justify-between">
-                <div class="bg-white border border-[#0D2A22]/10 p-6 space-y-6 shadow-sm">
-                    <div>
-                        <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D4AF37] block mb-1">ÀSÌKÒ Studio Suite</span>
-                        <h1 class="text-2xl font-serif text-[#0D2A22] tracking-tight">Virtual Atelier</h1>
+            <!-- Gender toggle -->
+            <div class="flex items-center gap-2 mb-4" x-data="{ gender: 'female' }">
+                <button @click="gender='female'; if(window.__tryOnEngine) window.__tryOnEngine.loadAvatar('female')"
+                        :class="gender === 'female' ? 'bg-brand-deep text-brand-base' : 'bg-brand-deep/5 text-brand-deep/60'"
+                        class="px-3 py-1 text-xs font-medium rounded-full transition-all">
+                    Female
+                </button>
+                <button @click="gender='male'; if(window.__tryOnEngine) window.__tryOnEngine.loadAvatar('male')"
+                        :class="gender === 'male' ? 'bg-brand-deep text-brand-base' : 'bg-brand-deep/5 text-brand-deep/60'"
+                        class="px-3 py-1 text-xs font-medium rounded-full transition-all">
+                    Male
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- 3D Viewer (2/3 width) -->
+                <div class="lg:col-span-2 relative bg-white border border-brand-deep/10 min-h-[500px] lg:min-h-[600px] overflow-hidden rounded-lg"
+                     id="tryon-canvas-wrap">
+
+                    <!-- Loading overlay -->
+                    <div id="tryon-loader" class="absolute inset-0 flex items-center justify-center bg-brand-base z-30 transition-opacity duration-500">
+                        <div class="flex flex-col items-center gap-3">
+                            <div class="w-5 h-5 border border-brand-deep/30 border-t-brand-accent rounded-full animate-spin"></div>
+                            <span class="text-xs font-mono text-brand-deep/40 tracking-widest uppercase">Loading 3D view...</span>
+                        </div>
                     </div>
 
-                    <div class="flex border-b border-[#0D2A22]/10 text-xs font-mono">
-                        <button type="button"
-                                @click="activeMode = 'showroom'"
-                                class="pb-2 pr-4 uppercase tracking-wider transition-all"
-                                :class="activeMode === 'showroom' ? 'border-b-2 border-[#0D2A22] font-semibold text-[#0D2A22]' : 'text-[#0D2A22]/40'">
-                            Showroom
+                    <canvas id="tryon-canvas" class="w-full h-full block absolute inset-0"></canvas>
+
+                    <!-- Zoom controls -->
+                    <div class="absolute bottom-4 right-4 flex flex-col gap-1 z-20">
+                        <button onclick="if(window.__tryOnEngine) window.__tryOnEngine.zoomIn()"
+                                class="w-8 h-8 flex items-center justify-center bg-brand-deep text-brand-base hover:bg-brand-accent hover:text-brand-deep text-sm font-light transition-all rounded">
+                            +
                         </button>
-                        <button type="button"
-                                @click="activeMode = 'dressing_room'"
-                                class="pb-2 px-4 uppercase tracking-wider transition-all"
-                                :class="activeMode === 'dressing_room' ? 'border-b-2 border-[#0D2A22] font-semibold text-[#0D2A22]' : 'text-[#0D2A22]/40'">
-                            Dressing Room
+                        <button onclick="if(window.__tryOnEngine) window.__tryOnEngine.zoomOut()"
+                                class="w-8 h-8 flex items-center justify-center bg-brand-deep text-brand-base hover:bg-brand-accent hover:text-brand-deep text-sm font-light transition-all rounded">
+                            −
+                        </button>
+                        <button onclick="if(window.__tryOnEngine) window.__tryOnEngine.resetView()"
+                                class="w-8 h-8 flex items-center justify-center bg-brand-deep/10 text-brand-deep hover:bg-brand-deep hover:text-brand-base text-xs transition-all rounded mt-1">
+                            ↺
                         </button>
                     </div>
 
-                    <div class="space-y-4">
-                        <div x-show="activeMode === 'showroom'" class="space-y-4">
-                            <label class="text-[10px] font-mono uppercase tracking-wider text-[#0D2A22]/60 block">Gender Axis Profile</label>
-                            <div class="grid grid-cols-2 gap-2">
-                                <button type="button"
-                                        @click="switchGender('male')"
-                                        class="p-3 text-left border transition-all font-mono text-xs"
-                                        :class="currentGender === 'male' ? 'border-[#0D2A22] bg-[#0D2A22]/5 text-[#0D2A22]' : 'border-[#0D2A22]/10 text-[#0D2A22]/60'">
-                                    Male Axis
-                                </button>
-                                <button type="button"
-                                        @click="switchGender('female')"
-                                        class="p-3 text-left border transition-all font-mono text-xs"
-                                        :class="currentGender === 'female' ? 'border-[#0D2A22] bg-[#0D2A22]/5 text-[#0D2A22]' : 'border-[#0D2A22]/10 text-[#0D2A22]/60'">
-                                    Female Axis
-                                </button>
-                            </div>
+                    <!-- Current garment label -->
+                    <div class="absolute top-4 left-4 z-20" x-data="{ name: 'No garment selected' }"
+                         x-init="$watch('$store.tryOn.currentGarmentName', v => name = v)"
+                         x-show="name !== 'No garment selected'">
+                        <div class="bg-brand-base/90 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-brand-accent/20">
+                            <span class="text-xs font-medium text-brand-deep" x-text="name"></span>
                         </div>
+                    </div>
+                </div>
 
-                        <div x-show="activeMode === 'dressing_room'" class="space-y-4">
-                            <label class="text-[10px] font-mono uppercase tracking-wider text-[#0D2A22]/60 block">Active Wardrobe Configuration</label>
-                            <div class="border border-dashed border-[#0D2A22]/20 p-4 text-center bg-[#FBF9F6]">
-                                <span class="text-xs text-[#0D2A22]/60 block">Layering Engine Active</span>
-                                <span class="text-[9px] text-[#0D2A22]/40 block mt-1">Select catalog apparel rows below to load textures.</span>
+                <!-- Product panel (1/3 width) -->
+                <div class="space-y-4" id="product-panel">
+
+                    <!-- Product card from URL or HTMX loaded -->
+                    <div id="tryon-product-info"
+                         hx-get="{{ product_info_url }}"
+                         hx-trigger="load"
+                         hx-swap="innerHTML">
+                        <div class="bg-white rounded-lg border border-brand-deep/10 p-4 animate-pulse h-48"></div>
+                    </div>
+
+                    <!-- Browse collection -->
+                    <div class="bg-white rounded-lg border border-brand-deep/10 p-4">
+                        <h3 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-3">Browse Collection</h3>
+                        <div id="tryon-product-list"
+                             hx-get="/tryon/product-list"
+                             hx-trigger="load"
+                             hx-swap="innerHTML">
+                            <div class="space-y-2 animate-pulse">
+                                <div class="h-12 bg-brand-deep/5 rounded"></div>
+                                <div class="h-12 bg-brand-deep/5 rounded"></div>
+                                <div class="h-12 bg-brand-deep/5 rounded"></div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="space-y-2">
+                        <button id="add-to-bag-btn"
+                                hx-post="/cart/add"
+                                hx-vals='{}'
+                                hx-swap="none"
+                                class="w-full py-3 bg-brand-deep text-brand-base font-medium text-sm rounded-lg hover:bg-brand-accent hover:text-brand-deep transition-all disabled:opacity-40"
+                                disabled>
+                            Add to Bag
+                        </button>
+                        <a href="/cart" class="block text-center text-xs text-brand-deep/50 hover:text-brand-deep transition-colors">
+                            View Shopping Bag →
+                        </a>
                     </div>
                 </div>
             </div>
-
-            <div class="lg:col-span-8 relative bg-[#FBF9F6] border border-[#0D2A22]/10 min-h-[600px] shadow-sm overflow-hidden atelier-canvas-wrap"
-                 x-data="{ mouseX: 0, mouseY: 0, isHovered: false }"
-                 @mousemove="let rect = $el.getBoundingClientRect(); mouseX = $event.clientX - rect.left; mouseY = $event.clientY - rect.top;"
-                 @mouseenter="isHovered = true"
-                 @mouseleave="isHovered = false">
-
-                <div class="pointer-events-none absolute rounded-full bg-[radial-gradient(circle_at_center,rgba(214,175,55,0.08)_0%,transparent_70%)] blur-3xl transition-opacity duration-300 select-none z-10"
-                     :class="isHovered ? 'opacity-100' : 'opacity-0'"
-                     :style="`width: 500px; height: 500px; left: ${mouseX - 250}px; top: ${mouseY - 250}px;`"></div>
-
-                <div id="canvas-loader" class="absolute inset-0 flex flex-col items-center justify-center bg-[#FBF9F6] z-40 transition-all duration-300">
-                    <div class="flex flex-col items-center space-y-3">
-                        <div class="w-5 h-5 border border-[#0D2A22] border-t-transparent rounded-full animate-spin"></div>
-                        <span class="text-[10px] font-mono tracking-widest text-[#0D2A22]/60 uppercase">Assembling Spatial Viewport...</span>
-                    </div>
-                </div>
-
-                <canvas id="atelier-33d-canvas" class="w-full h-full block focus:outline-none absolute inset-0 z-0"></canvas>
-
-                <div class="absolute bottom-6 right-6 flex flex-col space-y-1.5 z-50 pointer-events-auto">
-                    <button type="button"
-                            onclick="if(window.__atelierEngine){ window.__atelierEngine.zoomIn(); }"
-                            class="w-9 h-9 flex items-center justify-center bg-[#0D2A22] text-[#FBF9F6] hover:bg-[#D4AF37] hover:text-[#0D2A22] border border-[#0D2A22]/10 text-lg font-light transition-all select-none touch-manipulation">
-                        ＋
-                    </button>
-                    <button type="button"
-                            onclick="if(window.__atelierEngine){ window.__atelierEngine.zoomOut(); }"
-                            class="w-9 h-9 flex items-center justify-center bg-[#0D2A22] text-[#FBF9F6] hover:bg-[#D4AF37] hover:text-[#0D2A22] border border-[#0D2A22]/10 text-lg font-light transition-all select-none touch-manipulation">
-                        －
-                    </button>
-                </div>
-            </div>
-
         </div>
     </main>
 
-    <!-- ============================================================ -->
-    <!-- CART DRAWER (matches base.html pattern)                        -->
-    <!-- ============================================================ -->
-    <div id="cart-drawer" class="hidden fixed inset-0 z-[100]" x-data="{ open: true }" x-show="open" x-cloak>
-        <div class="absolute inset-0 bg-[#0D2A22]/70 backdrop-blur-sm" onclick="document.getElementById('cart-drawer').classList.add('hidden')"></div>
-        <div class="absolute right-0 top-0 h-full w-full max-w-md bg-white/95 backdrop-blur-xl shadow-2xl overflow-y-auto">
-            <div class="flex items-center justify-between p-5 border-b border-[#D4AF37]/20">
-                <h2 class="font-display text-lg text-[#0D2A22] tracking-wide">Shopping Bag</h2>
-                <button onclick="document.getElementById('cart-drawer').classList.add('hidden')" class="p-2 hover:bg-neutral-100 rounded-lg transition-colors cursor-pointer" aria-label="Close cart">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            <div id="cart-drawer-content" class="p-5">
-                <p class="text-center text-neutral-400 py-12 text-sm font-light">Loading your atelier selections...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- ============================================================ -->
-    <!-- ALPINE.JS GLOBAL STATE                                        -->
-    <!-- ============================================================ -->
+    <!-- Alpine.js store for try-on state -->
     <script>
         document.addEventListener('alpine:init', () => {
-            const wardrobeItems = [
-                { id: 'mesh_dress_lux', name: 'Atelier Drape Dress', meta: 'Size S · Onyx', price: 320000, layer: 'base' },
-                { id: 'mesh_top_structural', name: 'Structural Shell Top', meta: 'Size XS · Sand', price: 195000, layer: 'base' },
-                { id: 'mesh_trouser_tapered', name: 'Tapered Trouser', meta: 'Size S · Ivory', price: 180000, layer: 'structural' },
-                { id: 'mesh_jacket_cyber', name: 'Cyber Blazer', meta: 'Size M · Emerald', price: 250000, layer: 'shell' },
-            ];
-
-            Alpine.data('virtualAtelier', () => ({
-                activeMode: 'showroom',
+            Alpine.store('tryOn', {
+                currentProduct: null,
+                currentGarmentName: 'No garment selected',
+                currentGarmentPrice: 0,
                 currentGender: 'female',
-                selectedVariant: null,
-                wardrobeItems: wardrobeItems,
-                switchGender(g) {
-                    // Idempotent guard: clicking the already-active axis must
-                    // not kick off another loadAsync, otherwise two in-flight
-                    // loads can race and both GLBs end up mounted in the same
-                    // wrapper group ("two avatars stacked on one axis").
-                    if (this.currentGender === g) return;
-                    this.currentGender = g;
-                    if (window.__atelierEngine) {
-                        // Routes through AVATAR_ASSETS so male→avatar_male.glb
-                        // and female→avatar_female.glb stay bound in one place.
-                        window.__atelierEngine.loadAvatarByGender(g);
-                    }
-                },
-            }));
+            });
         });
     </script>
 
-    <!-- ============================================================ -->
-    <!-- THREE.JS 3D ENGINE — MODULAR INITIALIZATION                    -->
-    <!-- ============================================================ -->
+    <!-- Three.js engine -->
     <script type="module">
-        import { initAtelierEngine } from '/static/js/atelier-3d.js?v={{ range(1000, 9999) | random }}';
+        import { initTryOnEngine } from '/static/js/atelier-3d.js?v={{ range(1000, 9999) | random }}';
 
         document.addEventListener('DOMContentLoaded', () => {
-            const parentContainer = document.querySelector('.atelier-canvas-wrap');
-            if (parentContainer) {
-                window.__atelierEngine = initAtelierEngine(parentContainer);
-                // Default avatar instantiation — resolves through AVATAR_ASSETS
-                // (male → avatar_male.glb, female → avatar_female.glb).
-                window.__atelierEngine.loadAvatarByGender('female');
+            const container = document.getElementById('tryon-canvas-wrap');
+            if (!container) return;
 
-                // Apply saved measurements from session if available
-                {% if saved_measurements %}
-                window.__atelierEngine.applyMeasurements({
-                    chest: {{ saved_measurements.chest }},
-                    waist: {{ saved_measurements.waist }},
-                    hips: {{ saved_measurements.hips }},
-                }, true);
-                {% endif %}
-            }
+            const engine = initTryOnEngine(container);
+            window.__tryOnEngine = engine;
+
+            // Load default avatar
+            engine.loadAvatar('female');
+
+            // Hide loader after a short delay
+            setTimeout(() => {
+                const loader = document.getElementById('tryon-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.style.display = 'none', 500);
+                }
+            }, 1500);
+
+            // Listen for garment selection events
+            document.addEventListener('tryon-load-garment', (e) => {
+                const { url, name, price, productId } = e.detail;
+                engine.loadGarment(url);
+                Alpine.store('tryOn').currentGarmentName = name;
+                Alpine.store('tryOn').currentGarmentPrice = price;
+                Alpine.store('tryOn').currentProduct = { id: productId, name, price };
+
+                // Enable add to bag
+                const btn = document.getElementById('add-to-bag-btn');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.setAttribute('hx-vals', JSON.stringify({ product_id: productId }));
+                }
+            });
         });
     </script>
 
-    <!-- ============================================================ -->
-    <!-- FAILSAFE UNHOOK: auto-clear canvas loader veil after 1.2s    -->
-    <!-- (insurance if any initialization script chokes)              -->
-    <!-- ============================================================ -->
+    <!-- Failsafe loader clear -->
     <script>
-        // Absolute insurance loop: if any initialization script chokes or assets stall,
-        // clear the loading veil automatically after 1.2 seconds so the app remains perfectly usable.
         document.addEventListener("DOMContentLoaded", function() {
             setTimeout(function() {
-                var loaderVeil = document.getElementById('canvas-loader');
-                if (loaderVeil && loaderVeil.style.display !== 'none') {
-                    console.warn("Failsafe unhook triggered to release canvas layout lock.");
-                    loaderVeil.style.opacity = '0';
-                    setTimeout(function() { loaderVeil.style.display = 'none'; }, 300);
+                var loader = document.getElementById('tryon-loader');
+                if (loader && loader.style.display !== 'none') {
+                    loader.style.opacity = '0';
+                    setTimeout(function() { loader.style.display = 'none'; }, 500);
                 }
-            }, 1200);
+            }, 3000);
         });
     </script>
 </body>

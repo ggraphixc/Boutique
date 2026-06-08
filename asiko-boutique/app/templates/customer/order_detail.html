@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÀSÌKÒ // Order #{{ order.id[:8] }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' } } } },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep">
+
+    <!-- Nav -->
+    <header class="border-b border-brand-deep/5">
+        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="font-display text-lg tracking-wide">ÀSÌKÒ</a>
+            <div class="flex items-center gap-4 text-xs">
+                <a href="/account" class="text-brand-deep/50 hover:text-brand-deep">← Back to Account</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+
+        <!-- Order header -->
+        <div class="flex items-start justify-between mb-8">
+            <div>
+                <h1 class="font-display text-xl text-brand-deep mb-1">Order #{{ order.id[:8] }}</h1>
+                <p class="text-xs text-brand-deep/50">{{ order.created }}</p>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded {{ order.status_cls }}">{{ order.status }}</span>
+        </div>
+
+        <!-- Shipping info -->
+        <div class="bg-white rounded-lg border border-brand-deep/10 p-4 mb-6">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-3">Shipping</h2>
+            <div class="text-sm text-brand-deep/70 space-y-1">
+                <p>{{ order.customer_name }}</p>
+                <p>{{ order.address }}</p>
+                <p>{{ order.state }}</p>
+            </div>
+        </div>
+
+        <!-- Order items -->
+        <div class="bg-white rounded-lg border border-brand-deep/10 p-4 mb-6">
+            <h2 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-3">Items</h2>
+            <div class="space-y-3">
+                {% for item in items %}
+                <div class="flex items-center gap-3">
+                    {% if item.image %}
+                    <img src="{{ item.image }}" class="w-12 h-12 rounded object-cover" alt="">
+                    {% else %}
+                    <div class="w-12 h-12 rounded bg-brand-deep/5 flex items-center justify-center text-xs text-brand-deep/30">A</div>
+                    {% endif %}
+                    <div class="flex-1">
+                        <p class="text-sm font-medium text-brand-deep">{{ item.name }}</p>
+                        <p class="text-xs text-brand-deep/50">Qty: {{ item.quantity }}</p>
+                    </div>
+                    <span class="font-mono text-sm text-brand-deep">&#8358;{{ "{:,.0f}".format(item.price * item.quantity) }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Order total -->
+        <div class="bg-white rounded-lg border border-brand-deep/10 p-4">
+            <div class="flex justify-between text-sm mb-2">
+                <span class="text-brand-deep/50">Subtotal</span>
+                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.total - order.shipping) }}</span>
+            </div>
+            <div class="flex justify-between text-sm mb-3">
+                <span class="text-brand-deep/50">Shipping</span>
+                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.shipping) }}</span>
+            </div>
+            <div class="flex justify-between text-sm font-medium border-t border-brand-deep/10 pt-3">
+                <span>Total</span>
+                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.total) }}</span>
+            </div>
+        </div>
+
+    </main>
+</body>
+</html>

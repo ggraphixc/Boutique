@@ -286,6 +286,191 @@ async def stock_badge_fragment(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+# ============================================================
+# 3D Try-On Routes
+# ============================================================
+
+async def try_on_page(request: Request) -> HTMLResponse:
+    """Main try-on page: 3D viewer + product panel."""
+    product_id = request.path_params["product_id"]
+    pool = request.app.state.db_pool
+
+    product = None
+    async with pool.acquire() as conn:
+        product = await conn.fetchrow(
+            """
+            SELECT p.id, p.name, p.description, p.price, p.base_image,
+                   p.model_3d_url, p.stock_quantity,
+                   c.name AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE p.id = $1
+            """,
+            product_id,
+        )
+
+    if not product:
+        return HTMLResponse("Product not found", status_code=404)
+
+    ctx = {
+        "request": request,
+        "product": dict(product),
+        "product_id": str(product["id"]),
+        "product_info_url": f"/tryon/product-info/{product['id']}",
+    }
+    return templates.TemplateResponse(request, "virtual_experience.html", ctx)
+
+
+async def tryon_product_info(request: Request) -> HTMLResponse:
+    """HTMX fragment: product info card for the try-on panel."""
+    product_id = request.path_params["product_id"]
+    pool = request.app.state.db_pool
+
+    product = None
+    async with pool.acquire() as conn:
+        product = await conn.fetchrow(
+            """
+            SELECT p.id, p.name, p.description, p.price, p.base_image,
+                   p.model_3d_url, p.stock_quantity,
+                   c.name AS category_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            WHERE p.id = $1
+            """,
+            product_id,
+        )
+
+    if not product:
+        return HTMLResponse('<div class="text-xs text-red-500 p-4">Product not found.</div>')
+
+    p = dict(product)
+    price_str = f"&#8358;{int(p['price']):,}" if p["price"] else "&#8358;0"
+    has_3d = bool(p.get("model_3d_url"))
+    stock = p.get("stock_quantity") or 0
+    img_html = ""
+    if p.get("base_image"):
+        img_html = f'<img src="{p["base_image"]}" alt="{p["name"]}" class="w-full h-32 object-cover rounded-lg mb-3">'
+
+    stock_badge = ""
+    if stock == 0:
+        stock_badge = '<span class="text-[10px] font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">Sold out</span>'
+    elif stock <= 5:
+        stock_badge = f'<span class="text-[10px] font-mono text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Only {stock} left</span>'
+    else:
+        stock_badge = '<span class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">In stock</span>'
+
+    html = f"""
+    <div class="bg-white rounded-lg border border-brand-deep/10 p-4">
+        {img_html}
+        <div class="flex items-start justify-between gap-2 mb-2">
+            <h2 class="font-display text-lg text-brand-deep leading-tight">{p['name']}</h2>
+            {stock_badge}
+        </div>
+        <p class="text-xs text-brand-deep/50 mb-1">{p.get('category_name') or ''}</p>
+        <p class="font-mono text-sm text-brand-deep mb-3">{price_str}</p>
+        <p class="text-xs text-brand-deep/60 leading-relaxed mb-3 line-clamp-3">{p.get('description') or ''}</p>
+    </div>
+    """
+    return HTMLResponse(html)
+
+
+async def tryon_product_list(request: Request) -> HTMLResponse:
+    """HTMX fragment: browseable list of products with 3D models for the try-on panel."""
+    pool = request.app.state.db_pool
+
+    products = []
+    async with pool.acquire() as conn:
+        products = await conn.fetch(
+            """
+            SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
+                   p.stock_quantity
+            FROM products p
+            WHERE p.model_3d_url IS NOT NULL
+            ORDER BY p.name
+            LIMIT 20
+            """
+        )
+
+    if not products:
+        # Show all products even without 3D models
+        async with pool.acquire() as conn:
+            products = await conn.fetch(
+                """
+                SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
+                       p.stock_quantity
+                FROM products p
+                ORDER BY p.name
+                LIMIT 20
+                """
+            )
+
+    if not products:
+        return HTMLResponse(
+            '<div class="text-xs text-brand-deep/40 p-4 text-center">No products yet.</div>'
+        )
+
+    rows = ""
+    for p in products:
+        pid = str(p["id"])
+        name = p["name"]
+        price = f"&#8358;{int(p['price']):,}" if p["price"] else "&#8358;0"
+        has_3d = bool(p.get("model_3d_url"))
+        img = p.get("base_image") or ""
+        stock = p.get("stock_quantity") or 0
+
+        # Thumbnail
+        if img:
+            thumb = f'<img src="{img}" class="w-8 h-8 rounded object-cover" alt="">'
+        else:
+            thumb = '<div class="w-8 h-8 rounded bg-brand-deep/5 flex items-center justify-center text-[10px] text-brand-deep/30">A</div>'
+
+        # 3D badge
+        badge_3d = ""
+        if has_3d:
+            badge_3d = '<span class="text-[8px] font-mono text-brand-accent bg-brand-accent/10 px-1 py-0.5 rounded">3D</span>'
+
+        # Stock
+        if stock == 0:
+            stock_cls = "text-red-400"
+            stock_txt = "Sold out"
+        elif stock <= 5:
+            stock_cls = "text-amber-600"
+            stock_txt = f"{stock} left"
+        else:
+            stock_cls = "text-emerald-600"
+            stock_txt = "In stock"
+
+        # Click handler: dispatch event to load garment in 3D viewer
+        # If product has no 3D model, clicking does nothing special
+        click_attrs = ""
+        if has_3d:
+            model_url = p["model_3d_url"]
+            click_attrs = f"""onclick="document.dispatchEvent(new CustomEvent('tryon-load-garment', {{ detail: {{ url: '{model_url}', name: '{name.replace("'", "\\'")}', price: {int(p['price'] or 0)}, productId: '{pid}' }} }}))" """
+
+        rows += f"""
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-brand-deep/5 transition-colors cursor-pointer group {('' if has_3d else 'opacity-50')}"
+             {click_attrs}>
+            {thumb}
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1">
+                    <span class="text-xs font-medium text-brand-deep truncate">{name}</span>
+                    {badge_3d}
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-mono text-brand-deep/50">{price}</span>
+                    <span class="text-[9px] font-mono {stock_cls}">{stock_txt}</span>
+                </div>
+            </div>
+            <div class="text-[9px] text-brand-deep/30 group-hover:text-brand-accent transition-colors">
+                {'Try →' if has_3d else 'No 3D'}
+            </div>
+        </div>
+        """
+
+    html = f'<div class="space-y-1 max-h-[300px] overflow-y-auto">{rows}</div>'
+    return HTMLResponse(html)
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/lookbook", endpoint=lookbook, methods=["GET"]),
@@ -293,4 +478,7 @@ routes = [
     Route("/product/{product_id}", endpoint=product_detail, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),
     Route("/ws/store/product/{product_id}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
+    Route("/try/{product_id}", endpoint=try_on_page, methods=["GET"]),
+    Route("/tryon/product-info/{product_id}", endpoint=tryon_product_info, methods=["GET"]),
+    Route("/tryon/product-list", endpoint=tryon_product_list, methods=["GET"]),
 ]

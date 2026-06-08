@@ -1,13 +1,15 @@
 # ASIKO Boutique - Checkout & Shipping Routes (Atomic Transactions)
 # DB-backed 36-state matrix, SELECT FOR UPDATE stock validation, Brevo dispatch.
+# Paystack payment initialization for Nigerian payments.
 
 import json
 from starlette.requests import Request
-from starlette.responses import HTMLResponse, RedirectResponse
+from starlette.responses import HTMLResponse, RedirectResponse, JSONResponse
 from starlette.routing import Route
 
 from app.core import templates, get_cart_from_session, save_cart_to_session
 from app.services.brevo import send_transactional_email
+from app.services.settlement import initialize_paystack_transaction
 
 
 async def checkout_page(request: Request) -> HTMLResponse:
@@ -64,7 +66,7 @@ async def shipping_summary(request: Request) -> HTMLResponse:
 async def checkout_submit(request: Request) -> HTMLResponse:
     """
     Transactional gateway: SELECT FOR UPDATE stock validation, atomic order creation,
-    stock decrement, cart flush, Brevo email dispatch with graceful fallback.
+    stock decrement, Paystack initialization, Brevo email dispatch with graceful fallback.
     """
     form_data = await request.form()
     first_name = form_data.get("first_name", "").strip()
@@ -160,6 +162,26 @@ async def checkout_submit(request: Request) -> HTMLResponse:
                         line["quantity"], line["variant_id"],
                     )
 
+        # Initialize Paystack transaction
+        amount_kobo = int(grand_total * 100)  # Convert to kobo
+        paystack_result = await initialize_paystack_transaction(
+            email=email,
+            amount_kobo=amount_kobo,
+            order_id=str(order_id),
+            metadata=metadata_payload,
+        )
+
+        if "error" in paystack_result:
+            # Payment initialization failed — still redirect to confirmation
+            # but log the error. In production, you might want to show an error page.
+            request.session["last_order_id"] = str(order_id)
+            request.session["payment_error"] = paystack_result["error"]
+            return RedirectResponse(url="/checkout/confirmation", status_code=302)
+
+        # Store Paystack reference in session for verification
+        request.session["last_order_id"] = str(order_id)
+        request.session["paystack_reference"] = paystack_result["reference"]
+
         # Flush cart after successful transaction
         cart["lines"] = []
         cart["total"] = 0.0
@@ -181,8 +203,8 @@ async def checkout_submit(request: Request) -> HTMLResponse:
         except Exception:
             pass  # Suppress failures from missing/placeholder API keys
 
-        request.session["last_order_id"] = str(order_id)
-        return RedirectResponse(url="/checkout/confirmation", status_code=302)
+        # Redirect to Paystack payment page
+        return RedirectResponse(url=paystack_result["authorization_url"], status_code=302)
 
     except Exception as exc:
         return HTMLResponse(

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÀSÌKÒ // My Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' } } } },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep">
+
+    <!-- Nav -->
+    <header class="border-b border-brand-deep/5">
+        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+            <a href="/" class="font-display text-lg tracking-wide">ÀSÌKÒ</a>
+            <div class="flex items-center gap-4 text-xs">
+                <a href="/account" class="font-medium text-brand-deep">My Account</a>
+                <a href="/cart" class="text-brand-deep/50 hover:text-brand-deep">Bag</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 py-8">
+
+        <!-- Welcome -->
+        <div class="mb-8">
+            <h1 class="font-display text-2xl text-brand-deep mb-1">My Account</h1>
+            <p class="text-sm text-brand-deep/50">{{ customer_email }}</p>
+        </div>
+
+        <!-- Order history -->
+        <section>
+            <h2 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-4">Order History</h2>
+
+            {% if not orders %}
+            <div class="bg-white rounded-lg border border-brand-deep/10 p-8 text-center">
+                <p class="text-sm text-brand-deep/40 mb-3">You haven't placed any orders yet.</p>
+                <a href="/" class="text-xs font-medium text-brand-accent hover:text-brand-deep transition-colors">Start Shopping →</a>
+            </div>
+            {% else %}
+
+            <div class="space-y-3">
+                {% for order in orders %}
+                <a href="/account/order/{{ order.id }}"
+                   class="block bg-white rounded-lg border border-brand-deep/10 p-4 hover:shadow-md transition-all">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-xs text-brand-deep/40">#{{ order.id[:8] }}</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded {{ order.status_cls }}">{{ order.status }}</span>
+                        </div>
+                        <span class="font-mono text-sm text-brand-deep">&#8358;{{ "{:,.0f}".format(order.total) }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-brand-deep/50">
+                        <span>{{ order.item_count }} item{{ 's' if order.item_count != 1 else '' }}{% if order.state %} · {{ order.state }}{% endif %}</span>
+                        <span>{{ order.created }}</span>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+
+            {% endif %}
+        </section>
+
+    </main>
+</body>
+</html>

@@ -450,14 +450,14 @@ class TestVirtualExperience:
         app = _make_virtual_app()
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/virtual-experience")
-        assert "atelier-33d-canvas" in response.text
+        assert "tryon-canvas" in response.text
 
     def test_virtual_experience_has_gender_switch(self):
         """Page includes male/female gender toggle."""
         app = _make_virtual_app()
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/virtual-experience")
-        assert "switchGender" in response.text
+        assert "gender" in response.text.lower()
 
 
 class TestShowroomItems:

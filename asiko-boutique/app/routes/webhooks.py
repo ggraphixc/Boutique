@@ -341,7 +341,10 @@ async def paystack_webhook(request: Request) -> JSONResponse:
         if not reference:
             return JSONResponse({"error": "No reference"}, status_code=400)
 
-        order = await fetch_order_by_id(reference)
+        # Strip the asiko_ prefix if present (we use f"asiko_{order_id}" as reference)
+        order_ref = reference.replace("asiko_", "") if reference.startswith("asiko_") else reference
+
+        order = await fetch_order_by_id(order_ref)
         if not order:
             logger.info("Paystack reference %s did not match any order", reference)
             return JSONResponse({"received": True})

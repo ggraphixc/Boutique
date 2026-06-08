@@ -244,6 +244,64 @@ async def paystack_webhook_handler(request: Request) -> Response:
 
 
 # ---------------------------------------------------------------------------
+# Paystack Transaction Initialization
+# ---------------------------------------------------------------------------
+
+async def initialize_paystack_transaction(
+    email: str,
+    amount_kobo: int,
+    order_id: str,
+    metadata: dict = None,
+) -> dict:
+    """
+    Initialize a Paystack transaction and return the authorization URL.
+    Returns {"authorization_url": "...", "reference": "..."} on success.
+    Returns {"error": "..."} on failure.
+    """
+    paystack_secret = os.getenv("PAYSTACK_SECRET_KEY", "")
+    if not paystack_secret or paystack_secret.startswith("your_"):
+        return {"error": "Paystack secret key not configured"}
+
+    payload = {
+        "email": email,
+        "amount": amount_kobo,  # Paystack expects amount in kobo (₦1 = 100 kobo)
+        "reference": f"asiko_{order_id}",
+        "callback_url": os.getenv("PAYSTACK_CALLBACK_URL", "https://asikoboutique.com/checkout/confirmation"),
+        "metadata": metadata or {},
+    }
+
+    headers = {
+        "Authorization": f"Bearer {paystack_secret}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://api.paystack.co/transaction/initialize",
+                json=payload,
+                headers=headers,
+                timeout=15.0,
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("status"):
+                    return {
+                        "authorization_url": data["data"]["authorization_url"],
+                        "reference": data["data"]["reference"],
+                    }
+                return {"error": data.get("message", "Unknown Paystack error")}
+            else:
+                logger.error("[PAYSTACK] Initialization failed: %s %s", response.status_code, response.text[:200])
+                return {"error": f"Paystack API error: {response.status_code}"}
+
+    except Exception as e:
+        logger.error("[PAYSTACK] Initialization exception: %s", e)
+        return {"error": f"Payment initialization failed: {str(e)}"}
+
+
+# ---------------------------------------------------------------------------
 # Route table
 # ---------------------------------------------------------------------------
 

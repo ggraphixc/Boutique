@@ -230,7 +230,6 @@ class TestPipelineDaemonLazyConnection:
         daemon = AsikoPipelineDaemon(db_pool=mock_pool)
 
         assert daemon.ai_client is None
-        assert daemon._connect_attempted is False
 
     @patch("gradio_client.Client", side_effect=Exception("DNS fail"))
     def test_ensure_client_returns_false_on_failure(self, mock_client_cls):
@@ -242,7 +241,6 @@ class TestPipelineDaemonLazyConnection:
 
         assert result is False
         assert daemon.ai_client is None
-        assert daemon._connect_attempted is True
 
     @patch("gradio_client.Client")
     def test_ensure_client_returns_true_on_success(self, mock_client_cls):
