@@ -29,13 +29,39 @@ def _make_pool_with_insert():
     return pool
 
 
-def _make_app_with_admin_routes():
+def _make_pool_with_store():
+    """Mock pool that has a store (required for product creation)."""
+    pool = MagicMock()
+    store_id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    call_count = {"n": 0}
+
+    @asynccontextmanager
+    async def _acquire():
+        conn = MagicMock()
+        # fetchval is called in order: 1) store_id, 2) slug check loop
+        # First call returns store_id, subsequent calls return None (no slug conflict)
+        async def fetchval_side_effect(sql, *args):
+            call_count["n"] += 1
+            if "FROM stores" in sql:
+                return store_id
+            return None  # No duplicate slug
+
+        conn.fetchval = AsyncMock(side_effect=fetchval_side_effect)
+        conn.execute = AsyncMock(return_value=None)
+        conn.fetch = AsyncMock(return_value=[])  # Empty for product list
+        yield conn
+
+    pool.acquire = _acquire
+    return pool
+
+
+def _make_app_with_admin_routes(pool_fn=None):
     """Fresh Starlette app with admin CRUD + section routes + mocked pool."""
     test_app = Starlette(
         routes=admin_crud_routes + admin_sections_routes,
         middleware=[Middleware(SessionMiddleware, secret_key="test-key", session_cookie="asiko_test")],
     )
-    test_app.state.db_pool = _make_pool_with_insert()
+    test_app.state.db_pool = (pool_fn or _make_pool_with_store)()
     return test_app
 
 

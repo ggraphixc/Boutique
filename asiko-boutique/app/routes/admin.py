@@ -287,6 +287,14 @@ async def create_product(request: Request):
 
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
+        # Fetch the default store (required NOT NULL column)
+        store_id = await conn.fetchval("SELECT id FROM stores ORDER BY created_at LIMIT 1")
+        if not store_id:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>No store configured. Create a store first.</span>",
+                status_code=400,
+            )
+
         # Check for duplicate slug, append suffix if needed
         base_slug = slug
         suffix = 1
@@ -301,10 +309,10 @@ async def create_product(request: Request):
 
         await conn.execute(
             """
-            INSERT INTO products (name, slug, price, stock_quantity, base_image, description, pipeline_status)
-            VALUES ($1, $2, $3, 0, $4, $5, 'idle')
+            INSERT INTO products (store_id, name, slug, price, stock_quantity, base_image, description, pipeline_status)
+            VALUES ($1, $2, $3, $4, 0, $5, $6, 'idle')
             """,
-            name, slug, price, image_path, description or None,
+            store_id, name, slug, price, image_path, description or None,
         )
 
     # Return a success message with HX-Redirect to reload the products section
