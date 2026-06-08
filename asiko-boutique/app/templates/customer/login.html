@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ÀSÌKÒ // Sign In</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' } } } },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep flex items-center justify-center px-4">
+
+    <div class="w-full max-w-md">
+
+        <!-- Brand -->
+        <div class="text-center mb-8">
+            <a href="/" class="font-display text-2xl tracking-wide">ÀSÌKÒ</a>
+            <p class="text-xs text-brand-deep/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="bg-white rounded-xl border border-brand-deep/10 p-8 shadow-sm">
+            <h1 class="font-display text-xl text-brand-deep mb-1">Welcome Back</h1>
+            <p class="text-sm text-brand-deep/50 mb-6">Sign in to your ÀSÌKÒ account.</p>
+
+            {% if error %}
+            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Email</label>
+                    <input type="email" name="email" required
+                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
+                           placeholder="you@example.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Password</label>
+                    <input type="password" name="password" required
+                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
+                           placeholder="Your password">
+                </div>
+                <button type="submit"
+                        class="w-full bg-brand-deep text-white py-3 rounded-lg text-sm font-medium hover:bg-brand-deep/90 transition-colors">
+                    Sign In
+                </button>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-xs text-brand-deep/40 mt-6">
+            Don't have an account? <a href="/register" class="text-brand-accent hover:text-brand-deep">Create one</a>
+        </p>
+
+    </div>
+</body>
+</html>

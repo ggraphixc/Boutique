@@ -48,7 +48,7 @@ def _make_app(pool_fn=None):
     return app
 
 
-def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image="/static/uploads/test.jpg", model_3d=None):
+def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image="/static/uploads/test.jpg", model_3d=None, category_name="Tailoring"):
     """Create a mock product row."""
     return {
         "id": pid,
@@ -58,6 +58,7 @@ def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image
         "stock_quantity": stock,
         "base_image": image,
         "model_3d_url": model_3d,
+        "category_name": category_name,
     }
 
 
@@ -175,7 +176,7 @@ class TestLookbook:
         """Lookbook shows empty state when no products."""
         app = _make_app()
         client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/")
+        response = client.get("/lookbook")
         assert response.status_code == 200
 
     def test_lookbook_has_hero(self):
@@ -325,7 +326,7 @@ class TestProductDetail:
         app = _make_app(pool_fn=lambda: pool)
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/product/1")
-        assert "View in 3D" in response.text
+        assert "Try On in 3D" in response.text
 
 
 class TestDPPVerification:

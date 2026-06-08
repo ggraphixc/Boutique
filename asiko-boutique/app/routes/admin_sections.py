@@ -1283,6 +1283,39 @@ async def rt_reviews_summary(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# Order Status Update
+# ===========================================================================
+
+async def update_order_status(request: Request) -> HTMLResponse:
+    """POST /admin/orders/{order_id}/status — update order status."""
+    order_id = request.path_params["order_id"]
+    form = await request.form()
+    new_status = (form.get("status") or "").strip()
+
+    valid_statuses = {"pending", "paid", "processing", "shipped", "delivered", "cancelled"}
+    if new_status not in valid_statuses:
+        return HTMLResponse("Invalid status", status_code=400)
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE orders SET status = $1 WHERE id = $2",
+            new_status, order_id,
+        )
+
+    status_labels = {
+        "pending": ("Pending", "bg-amber-50 text-amber-700 border-amber-200"),
+        "paid": ("Paid", "bg-emerald-50 text-emerald-700 border-emerald-200"),
+        "processing": ("Processing", "bg-blue-50 text-blue-700 border-blue-200"),
+        "shipped": ("Shipped", "bg-purple-50 text-purple-700 border-purple-200"),
+        "delivered": ("Delivered", "bg-emerald-50 text-emerald-800 border-emerald-200"),
+        "cancelled": ("Cancelled", "bg-red-50 text-red-700 border-red-200"),
+    }
+    label, cls = status_labels.get(new_status, ("Unknown", "bg-gray-50 text-gray-700 border-gray-200"))
+    return HTMLResponse(f'<span class="text-[10px] font-mono px-2 py-0.5 rounded border {cls}">{label}</span>')
+
+
+# ===========================================================================
 # Route registration
 # ===========================================================================
 routes = [
@@ -1300,6 +1333,7 @@ routes = [
     Route("/admin/section/settings",      endpoint=section_settings_post, methods=["POST"]),
     Route("/admin/section/about",         endpoint=section_about_get,     methods=["GET"]),
     Route("/admin/section/about",         endpoint=section_about_post,    methods=["POST"]),
+    Route("/admin/orders/{order_id}/status", endpoint=update_order_status, methods=["POST"]),
     # Legacy sections retained for direct URL access (sidebar no longer links to these)
     Route("/admin/section/all-products",  endpoint=section_all_products,  methods=["GET"]),
     Route("/admin/section/reviews",       endpoint=section_reviews,       methods=["GET"]),

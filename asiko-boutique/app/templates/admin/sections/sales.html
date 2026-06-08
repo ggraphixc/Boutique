@@ -128,12 +128,21 @@
                         </td>
                         <td class="px-6 py-3 text-gray-600 dark:text-gray-300">{{ o.item_count }} item{{ '' if o.item_count == 1 else 's' }}</td>
                         <td class="px-6 py-3 text-right font-semibold text-gray-900 dark:text-gray-100">₦{{ '{:,.0f}'.format(o.total_amount) }}</td>
-                        <td class="px-6 py-3">
-                            {% set s = status_styles.get(o.status_key, status_styles['pending']) %}
-                            <span class="inline-flex items-center gap-1.5 rounded-full {{ s[0] }} {{ s[1] }} ring-1 {{ s[2] }} px-2.5 py-0.5 text-xs font-medium">
-                                <span class="w-1.5 h-1.5 rounded-full {% if o.status_key in ('paid','delivered') %}bg-emerald-500{% elif o.status_key == 'cancelled' %}bg-rose-500{% elif o.status_key == 'pending' %}bg-amber-500{% else %}bg-blue-500{% endif %}"></span>
-                                {{ o.status_label }}
-                            </span>
+                        <td class="px-6 py-3" id="status-{{ o.id[:8] }}">
+                            <form hx-post="/admin/orders/{{ o.id }}/status"
+                                  hx-target="#status-{{ o.id[:8] }}"
+                                  hx-swap="innerHTML"
+                                  hx-trigger="change"
+                                  hx-include="this">
+                                <select name="status" class="text-[10px] font-mono px-2 py-1 rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-[#18181B] text-gray-700 dark:text-gray-200 cursor-pointer">
+                                    <option value="pending" {% if o.status_key == 'pending' %}selected{% endif %}>Pending</option>
+                                    <option value="paid" {% if o.status_key == 'paid' %}selected{% endif %}>Paid</option>
+                                    <option value="processing" {% if o.status_key == 'processing' %}selected{% endif %}>Processing</option>
+                                    <option value="shipped" {% if o.status_key == 'shipped' %}selected{% endif %}>Shipped</option>
+                                    <option value="delivered" {% if o.status_key == 'delivered' %}selected{% endif %}>Delivered</option>
+                                    <option value="cancelled" {% if o.status_key == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                                </select>
+                            </form>
                         </td>
                         <td class="px-6 py-3 text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{{ o.created_at_human }}</td>
                     </tr>

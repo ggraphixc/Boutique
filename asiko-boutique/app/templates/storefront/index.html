@@ -210,10 +210,37 @@
     <p class="text-[#1A1A1A]/60 dark:text-gray-400 text-base max-w-2xl mx-auto font-light">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
 </section>
 
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16">
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16" x-data="{ search: '', category: 'all' }">
+    <!-- Search + Filter Bar -->
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8">
+        <div class="relative flex-1">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0D2A22]/30 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input type="text" x-model="search" placeholder="Search collection..."
+                   class="w-full pl-10 pr-4 py-2.5 border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-[#18181B] dark:text-white focus:outline-none focus:border-[#D4AF37]">
+        </div>
+        <div class="flex gap-2 overflow-x-auto pb-1">
+            <button @click="category = 'all'" :class="category === 'all' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">All</button>
+            <button @click="category = 'tailoring'" :class="category === 'tailoring' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Tailoring</button>
+            <button @click="category = 'dresses'" :class="category === 'dresses' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Dresses</button>
+            <button @click="category = 'outerwear'" :class="category === 'outerwear' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Outerwear</button>
+            <button @click="category = 'accessories'" :class="category === 'accessories' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Accessories</button>
+            <button @click="category = 'footwear'" :class="category === 'footwear' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
+                    class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Footwear</button>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for product in products %}
-        <a href="/product/{{ product.id }}" class="group block overflow-hidden rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B] shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
+        {% set cat = (product.category_name | default('', true)) | lower %}
+        <a href="/product/{{ product.id }}"
+           x-show="category === 'all' || '{{ cat }}' === category"
+           x-transition
+           class="group block overflow-hidden rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B] shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
             <div class="relative aspect-square bg-[#FBF9F6] dark:bg-[#111] overflow-hidden">
                 {% if product.base_image %}
                 <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" loading="lazy">

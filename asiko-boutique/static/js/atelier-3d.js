@@ -261,7 +261,7 @@ class TryOnEngine {
     }
 
     // ── Garment loading ────────────────────────────────────────
-    async loadGarment(glbUrl) {
+    async loadGarment(glbUrl, sourceImageUrl) {
         this._purgeGarment();
         const reqId = ++this._loadRequestId;
 
@@ -277,15 +277,23 @@ class TryOnEngine {
             this._fitToViewport(gltf.scene, false);
 
             // Enable double-sided rendering for clothing
+            let hasTextures = false;
             gltf.scene.traverse((child) => {
                 if (child.isMesh) {
                     child.castShadow = true;
                     child.receiveShadow = true;
                     if (child.material) {
                         child.material.side = THREE.DoubleSide;
+                        // Check if material has an actual texture map
+                        if (child.material.map) hasTextures = true;
                     }
                 }
             });
+
+            // If no textures on the GLB, apply source product image
+            if (!hasTextures && sourceImageUrl) {
+                await this._applySourceImageTexture(gltf.scene, sourceImageUrl);
+            }
 
             this.scene.add(group);
             this.currentGarment = group;
@@ -312,6 +320,43 @@ class TryOnEngine {
             this.scene.remove(this.currentGarment);
             this.currentGarment = null;
         }
+    }
+
+    async _applySourceImageTexture(scene, imageUrl) {
+        // Load the product photo as a Three.js texture
+        const textureLoader = new THREE.TextureLoader();
+        const texture = await new Promise((resolve, reject) => {
+            textureLoader.load(
+                imageUrl,
+                (tex) => {
+                    tex.colorSpace = THREE.SRGBColorSpace;
+                    tex.wrapS = THREE.RepeatWrapping;
+                    tex.wrapT = THREE.RepeatWrapping;
+                    resolve(tex);
+                },
+                undefined,
+                (err) => {
+                    console.warn('[TryOnEngine] Source image texture load failed:', err);
+                    resolve(null);
+                },
+            );
+        });
+        if (!texture) return;
+
+        // Apply the texture to every mesh that has no texture
+        scene.traverse((child) => {
+            if (!child.isMesh) return;
+            // If it already has a texture, skip
+            if (child.material && child.material.map) return;
+
+            const mat = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.65,
+                metalness: 0.05,
+                side: THREE.DoubleSide,
+            });
+            child.material = mat;
+        });
     }
 
     clearGarment() {

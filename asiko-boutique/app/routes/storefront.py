@@ -28,9 +28,10 @@ async def homepage(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, name, description, price, stock_quantity, "
-            "base_image, model_3d_url "
-            "FROM products ORDER BY id DESC"
+            "SELECT p.id, p.name, p.description, p.price, p.stock_quantity, "
+            "p.base_image, p.model_3d_url, c.name AS category_name "
+            "FROM products p LEFT JOIN categories c ON c.id = p.category_id "
+            "ORDER BY p.id DESC"
         )
 
     products = []
@@ -300,7 +301,7 @@ async def try_on_page(request: Request) -> HTMLResponse:
         product = await conn.fetchrow(
             """
             SELECT p.id, p.name, p.description, p.price, p.base_image,
-                   p.model_3d_url, p.stock_quantity,
+                   p.model_3d_url, p.source_2d_image_url, p.stock_quantity,
                    c.name AS category_name
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
@@ -331,7 +332,7 @@ async def tryon_product_info(request: Request) -> HTMLResponse:
         product = await conn.fetchrow(
             """
             SELECT p.id, p.name, p.description, p.price, p.base_image,
-                   p.model_3d_url, p.stock_quantity,
+                   p.model_3d_url, p.source_2d_image_url, p.stock_quantity,
                    c.name AS category_name
             FROM products p
             LEFT JOIN categories c ON c.id = p.category_id
@@ -445,7 +446,8 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
         click_attrs = ""
         if has_3d:
             model_url = p["model_3d_url"]
-            click_attrs = f"""onclick="document.dispatchEvent(new CustomEvent('tryon-load-garment', {{ detail: {{ url: '{model_url}', name: '{name.replace("'", "\\'")}', price: {int(p['price'] or 0)}, productId: '{pid}' }} }}))" """
+            source_img = p.get("source_2d_image_url") or p.get("base_image") or ""
+            click_attrs = f"""onclick="document.dispatchEvent(new CustomEvent('tryon-load-garment', {{ detail: {{ url: '{model_url}', sourceImage: '{source_img}', name: '{name.replace("'", "\\'")}', price: {int(p['price'] or 0)}, productId: '{pid}' }} }}))" """
 
         rows += f"""
         <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-brand-deep/5 transition-colors cursor-pointer group {('' if has_3d else 'opacity-50')}"
@@ -471,11 +473,113 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+# ---------------------------------------------------------------------------
+# Product Reviews
+# ---------------------------------------------------------------------------
+
+async def submit_review(request: Request) -> HTMLResponse:
+    """Submit a product review. POST /product/{product_id}/review"""
+    product_id = request.path_params["product_id"]
+    form = await request.form()
+    rating = int(form.get("rating") or 5)
+    title = (form.get("title") or "").strip()[:120]
+    body = (form.get("body") or "").strip()[:1000]
+    customer_name = (form.get("name") or "").strip() or "Anonymous"
+    customer_email = (form.get("email") or "").strip()
+
+    rating = max(1, min(5, rating))
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            INSERT INTO product_reviews (product_id, customer_name, customer_email, rating, title, body, verified)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            """,
+            product_id, customer_name, customer_email, rating, title, body, bool(customer_email),
+        )
+
+    return HTMLResponse("""
+        <div class="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-3 rounded-lg">
+            Thank you! Your review has been submitted.
+        </div>
+    """)
+
+
+async def product_reviews_fragment(request: Request) -> HTMLResponse:
+    """HTMX fragment: reviews list for a product. GET /product/{product_id}/reviews"""
+    product_id = request.path_params["product_id"]
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        reviews = await conn.fetch(
+            """
+            SELECT customer_name, rating, title, body, created_at
+            FROM product_reviews
+            WHERE product_id = $1 AND deleted_at IS NULL
+            ORDER BY created_at DESC
+            LIMIT 20
+            """,
+            product_id,
+        )
+
+    if not reviews:
+        return HTMLResponse("""
+            <div class="text-center py-8 text-sm text-brand-deep/40">
+                No reviews yet. Be the first to share your experience.
+            </div>
+        """)
+
+    stars_html = ""
+    for r in reviews:
+        created = r["created_at"].strftime("%d %b %Y") if r["created_at"] else ""
+        stars = "★" * r["rating"] + "☆" * (5 - r["rating"])
+        stars_html += f"""
+            <div class="border-b border-brand-deep/5 py-4 last:border-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-amber-500 text-sm">{stars}</span>
+                    <span class="text-xs text-brand-deep/50">{created}</span>
+                </div>
+                <p class="text-sm font-medium text-brand-deep">{r['title'] or ''}</p>
+                <p class="text-sm text-brand-deep/60 mt-1">{r['body'] or ''}</p>
+                <p class="text-xs text-brand-deep/40 mt-2">— {r['customer_name']}</p>
+            </div>
+        """
+
+    return HTMLResponse(stars_html)
+
+
+async def about_page(request: Request) -> HTMLResponse:
+    """Public About page. GET /about"""
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        about = await conn.fetchrow("SELECT * FROM about_me LIMIT 1")
+
+    ctx = {}
+    if about:
+        ctx = {
+            "name": about.get("name") or "ASIKO Boutique",
+            "role": about.get("role") or "",
+            "tagline": about.get("tagline") or "",
+            "story": about.get("story") or "",
+            "location": about.get("location") or "",
+            "email": about.get("email") or "",
+            "founded_year": about.get("founded_year") or "",
+        }
+
+    return templates.TemplateResponse(request, "storefront/about.html", {
+        "request": request,
+        "about": ctx,
+    })
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
+    Route("/about", endpoint=about_page, methods=["GET"]),
     Route("/lookbook", endpoint=lookbook, methods=["GET"]),
     Route("/htmx/products", endpoint=product_grid_fragment, methods=["GET"]),
     Route("/product/{product_id}", endpoint=product_detail, methods=["GET"]),
+    Route("/product/{product_id}/review", endpoint=submit_review, methods=["POST"]),
+    Route("/product/{product_id}/reviews", endpoint=product_reviews_fragment, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),
     Route("/ws/store/product/{product_id}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
     Route("/try/{product_id}", endpoint=try_on_page, methods=["GET"]),

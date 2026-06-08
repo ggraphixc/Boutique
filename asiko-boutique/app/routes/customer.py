@@ -1,11 +1,117 @@
-# ASIKO Boutique — Customer Dashboard Routes
-# Order history, profile, and account management.
+# ASIKO Boutique — Customer Auth + Dashboard Routes
+# Register, login, logout, order history, profile.
+
+import hashlib
+import hmac
+import os
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 from starlette.routing import Route
 
 from app.core import templates
+
+
+def _hash_password(password: str) -> str:
+    """SHA-256 hash with salt. Simple enough for a boutique — not Fort Knox."""
+    salt = os.environ.get("AUTH_SALT", "asiko-boutique-salt-2024")
+    return hashlib.sha256(f"{salt}{password}".encode()).hexdigest()
+
+
+def _check_password(password: str, password_hash: str) -> bool:
+    return hmac.compare_digest(_hash_password(password), password_hash)
+
+
+# ---------------------------------------------------------------------------
+# Register
+# ---------------------------------------------------------------------------
+
+async def register_page(request: Request) -> HTMLResponse:
+    error = request.query_params.get("error", "")
+    return templates.TemplateResponse(request, "customer/register.html", {
+        "request": request,
+        "error": error,
+    })
+
+
+async def register_submit(request: Request) -> RedirectResponse:
+    form = await request.form()
+    email = (form.get("email") or "").strip().lower()
+    password = form.get("password") or ""
+    full_name = (form.get("full_name") or "").strip()
+
+    if not email or not password:
+        return RedirectResponse("/register?error=Email+and+password+are+required", status_code=302)
+
+    if len(password) < 6:
+        return RedirectResponse("/register?error=Password+must+be+at+least+6+characters", status_code=302)
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        existing = await conn.fetchval(
+            "SELECT id FROM customers WHERE email = $1", email
+        )
+        if existing:
+            return RedirectResponse("/register?error=An+account+with+this+email+already+exists", status_code=302)
+
+        customer_id = await conn.fetchval(
+            "INSERT INTO customers (email, password_hash, full_name) VALUES ($1, $2, $3) RETURNING id",
+            email,
+            _hash_password(password),
+            full_name or email.split("@")[0],
+        )
+
+    request.session["customer_id"] = str(customer_id)
+    request.session["customer_email"] = email
+    request.session["customer_name"] = full_name or email.split("@")[0]
+    return RedirectResponse("/account", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Login
+# ---------------------------------------------------------------------------
+
+async def login_page(request: Request) -> HTMLResponse:
+    error = request.query_params.get("error", "")
+    return templates.TemplateResponse(request, "customer/login.html", {
+        "request": request,
+        "error": error,
+    })
+
+
+async def login_submit(request: Request) -> RedirectResponse:
+    form = await request.form()
+    email = (form.get("email") or "").strip().lower()
+    password = form.get("password") or ""
+
+    if not email or not password:
+        return RedirectResponse("/login?error=Email+and+password+are+required", status_code=302)
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        customer = await conn.fetchrow(
+            "SELECT id, password_hash, full_name FROM customers WHERE email = $1",
+            email,
+        )
+
+    if not customer or not _check_password(password, customer["password_hash"]):
+        return RedirectResponse("/login?error=Invalid+email+or+password", status_code=302)
+
+    request.session["customer_id"] = str(customer["id"])
+    request.session["customer_email"] = email
+    request.session["customer_name"] = customer["full_name"]
+    return RedirectResponse("/account", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Logout
+# ---------------------------------------------------------------------------
+
+async def logout(request: Request) -> RedirectResponse:
+    request.session.pop("customer_id", None)
+    request.session.pop("customer_email", None)
+    request.session.pop("customer_name", None)
+    return RedirectResponse("/", status_code=302)
 
 
 async def customer_dashboard(request: Request) -> HTMLResponse:
@@ -168,6 +274,11 @@ async def customer_order_detail(request: Request) -> HTMLResponse:
 
 
 routes = [
+    Route("/register", endpoint=register_page, methods=["GET"]),
+    Route("/register", endpoint=register_submit, methods=["POST"]),
+    Route("/login", endpoint=login_page, methods=["GET"]),
+    Route("/login", endpoint=login_submit, methods=["POST"]),
+    Route("/logout", endpoint=logout, methods=["GET"]),
     Route("/account", endpoint=customer_dashboard, methods=["GET"]),
     Route("/account/order/{order_id}", endpoint=customer_order_detail, methods=["GET"]),
 ]

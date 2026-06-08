@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}About — ASIKO Boutique{% endblock %}
+{% block content %}
+
+<!-- Hero -->
+<section class="relative bg-[#0D2A22] text-white py-24 text-center">
+    <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div class="absolute top-[-10%] right-[-5%] w-[50%] h-[50%] rounded-full bg-gradient-to-bl from-fuchsia-300/15 via-rose-200/10 to-cyan-200/15 blur-[120px]"></div>
+    </div>
+    <div class="relative max-w-3xl mx-auto px-4">
+        <span class="text-[#D4AF37] text-xs tracking-[0.3em] uppercase font-mono">Est. {{ about.founded_year or '2024' }}</span>
+        <h1 class="font-display text-4xl lg:text-5xl font-light tracking-wide mt-4 mb-6">{{ about.name or 'ASIKO Boutique' }}</h1>
+        <p class="text-xl text-white/70 font-light italic">{{ about.tagline or '' }}</p>
+    </div>
+</section>
+
+<!-- Story -->
+<section class="max-w-3xl mx-auto px-4 py-20">
+    <div class="prose prose-lg max-w-none">
+        <h2 class="font-display text-2xl text-[#0D2A22] dark:text-white tracking-wide">Our Story</h2>
+        <p class="text-[#1A1A1A]/70 dark:text-gray-400 leading-relaxed font-light">
+            {{ about.story or '' }}
+        </p>
+    </div>
+</section>
+
+<!-- Details -->
+<section class="max-w-3xl mx-auto px-4 pb-20">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-8">
+        <div class="text-center p-6 rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B]">
+            <svg class="w-6 h-6 mx-auto mb-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <p class="text-sm font-medium text-[#0D2A22] dark:text-gray-200">{{ about.location or 'Lagos, Nigeria' }}</p>
+        </div>
+        <div class="text-center p-6 rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B]">
+            <svg class="w-6 h-6 mx-auto mb-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            <p class="text-sm font-medium text-[#0D2A22] dark:text-gray-200">{{ about.email or '' }}</p>
+        </div>
+        <div class="text-center p-6 rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B]">
+            <svg class="w-6 h-6 mx-auto mb-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+            <p class="text-sm font-medium text-[#0D2A22] dark:text-gray-200">{{ about.role or '' }}</p>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

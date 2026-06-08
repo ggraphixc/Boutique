@@ -60,6 +60,7 @@ async def virtual_experience(request: Request) -> HTMLResponse:
         "request": request,
         "cart": cart,
         "saved_measurements": saved_measurements,
+        "product_info_url": "",
     }
     return templates.TemplateResponse(
         request, "virtual_experience.html", context,

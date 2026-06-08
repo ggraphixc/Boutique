@@ -55,6 +55,7 @@
                     <nav class="hidden md:flex items-center gap-6">
                         <a href="/" class="text-sm font-medium text-[#0D2A22] dark:text-gray-200 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors">Home</a>
                         <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Lookbook</a>
+                        <a href="/about" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">About</a>
                         <a href="/virtual-experience" class="text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
                             <span class="inline-flex items-center gap-1">
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/></svg>
@@ -76,6 +77,19 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
                             </svg>
                         </button>
+                        {% if request.session.get("customer_email") %}
+                        <a href="/account"
+                           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Account
+                        </a>
+                        {% else %}
+                        <a href="/login"
+                           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            Sign In
+                        </a>
+                        {% endif %}
                         <button
                             hx-get="/cart/drawer"
                             hx-target="#cart-drawer-content"

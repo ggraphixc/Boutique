@@ -151,9 +151,8 @@ class AsikoPipelineDaemon:
                 ),
             )
 
-            # --- Extract the GLB file path from the result ---
-            # The API returns a tuple; the first element is typically a file path
-            # (or dict with "path").  Handle all common shapes defensively.
+            # /shape_generation returns: (untextured_glb, html_preview, stats, seed)
+            # Extract the GLB file path from the result.
             glb_path = self._extract_glb_path(result)
             if not glb_path or not os.path.exists(glb_path):
                 raise ValueError(f"No valid GLB file returned by Hunyuan3D-2. Raw result: {result}")
@@ -164,7 +163,8 @@ class AsikoPipelineDaemon:
             secure_filename = f"mesh_prod_{product_id}.glb"
             final_destination = os.path.join(OPTIMIZED_DIR, secure_filename)
             shutil.copy(glb_path, final_destination)
-            public_url_path = f"/{final_destination}"
+            # Normalize Windows backslashes for DB URL
+            public_url_path = "/" + final_destination.replace("\\", "/")
 
             await self.commit_success(product_id, public_url_path)
 
@@ -180,7 +180,7 @@ class AsikoPipelineDaemon:
             fallback_source = "static/models/avatar_female.glb"
             try:
                 shutil.copy(fallback_source, final_destination)
-                public_url_path = f"/{final_destination}"
+                public_url_path = "/" + final_destination.replace("\\", "/")
                 await self.commit_success(product_id, public_url_path)
                 logger.info("Fallback model deployed for product %s.", product_id)
             except Exception as fallback_err:
@@ -202,9 +202,9 @@ class AsikoPipelineDaemon:
         if isinstance(result, str):
             return result if result.endswith(".glb") else None
 
-        # Dict with a "path" key
+        # Dict with a "path" or "value" key (Gradio update format)
         if isinstance(result, dict):
-            p = result.get("path") or result.get("url") or result.get("name")
+            p = result.get("path") or result.get("value") or result.get("url") or result.get("name")
             if p and isinstance(p, str) and p.endswith(".glb"):
                 return p
             # Fall through to treat dict values as iterable
@@ -216,7 +216,7 @@ class AsikoPipelineDaemon:
                 if isinstance(item, str) and item.endswith(".glb"):
                     return item
                 if isinstance(item, dict):
-                    p = item.get("path") or item.get("url")
+                    p = item.get("path") or item.get("value") or item.get("url")
                     if p and isinstance(p, str) and p.endswith(".glb"):
                         return p
                 # Recurse one level for nested tuples
@@ -229,7 +229,7 @@ class AsikoPipelineDaemon:
                 if isinstance(item, str) and os.path.exists(item):
                     return item
                 if isinstance(item, dict):
-                    p = item.get("path")
+                    p = item.get("path") or item.get("value")
                     if p and isinstance(p, str) and os.path.exists(p):
                         return p
 

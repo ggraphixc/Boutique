@@ -265,6 +265,56 @@ class TestPipelineDaemonLazyConnection:
             assert result is False
 
 
+class TestExtractGlbPath:
+    """_extract_glb_path parses all known Gradio result shapes."""
+
+    def test_none_returns_none(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        assert AsikoPipelineDaemon._extract_glb_path(None) is None
+
+    def test_string_glb_path(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        assert AsikoPipelineDaemon._extract_glb_path("/tmp/mesh.glb") == "/tmp/mesh.glb"
+
+    def test_string_non_glb_returns_none(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        assert AsikoPipelineDaemon._extract_glb_path("/tmp/result.html") is None
+
+    def test_dict_with_value_key(self):
+        """Gradio update format: {'value': '/path/to/mesh.glb', '__type__': 'update'}"""
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        result = {"value": "/tmp/gradio/abc/white_mesh.glb", "__type__": "update"}
+        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/gradio/abc/white_mesh.glb"
+
+    def test_dict_with_path_key(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        result = {"path": "/tmp/mesh.glb"}
+        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/mesh.glb"
+
+    def test_tuple_with_gradio_update_and_html(self):
+        """Actual Hunyuan3D-2 result format."""
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        result = (
+            {"value": "C:\\Users\\USER\\AppData\\Local\\Temp\\gradio\\abc\\white_mesh.glb", "__type__": "update"},
+            '<div><iframe src="/static/abc/white_mesh.html"></iframe></div>',
+            {"model": {"shapegen": "tencent/Hunyuan3D-2"}},
+            7176669,
+        )
+        path = AsikoPipelineDaemon._extract_glb_path(result)
+        assert path is not None
+        assert path.endswith("white_mesh.glb")
+
+    def test_nested_list(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        result = [["/tmp/deep/mesh.glb", "other"], "nope"]
+        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/deep/mesh.glb"
+
+    def test_empty_returns_none(self):
+        from app.workers.pipeline_daemon import AsikoPipelineDaemon
+        assert AsikoPipelineDaemon._extract_glb_path([]) is None
+        assert AsikoPipelineDaemon._extract_glb_path(()) is None
+
+
 # ---------------------------------------------------------------------------
 # Fragment render function tests
 # ---------------------------------------------------------------------------

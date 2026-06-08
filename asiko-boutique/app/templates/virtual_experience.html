@@ -112,9 +112,11 @@
 
                     <!-- Product card from URL or HTMX loaded -->
                     <div id="tryon-product-info"
+                         {% if product_info_url %}
                          hx-get="{{ product_info_url }}"
                          hx-trigger="load"
-                         hx-swap="innerHTML">
+                         hx-swap="innerHTML"
+                         {% endif %}>
                         <div class="bg-white rounded-lg border border-brand-deep/10 p-4 animate-pulse h-48"></div>
                     </div>
 
@@ -166,7 +168,7 @@
 
     <!-- Three.js engine -->
     <script type="module">
-        import { initTryOnEngine } from '/static/js/atelier-3d.js?v={{ range(1000, 9999) | random }}';
+        import { initTryOnEngine } from '/static/js/atelier-3d.js?v=1.1';
 
         document.addEventListener('DOMContentLoaded', () => {
             const container = document.getElementById('tryon-canvas-wrap');
@@ -189,8 +191,8 @@
 
             // Listen for garment selection events
             document.addEventListener('tryon-load-garment', (e) => {
-                const { url, name, price, productId } = e.detail;
-                engine.loadGarment(url);
+                const { url, sourceImage, name, price, productId } = e.detail;
+                engine.loadGarment(url, sourceImage);
                 Alpine.store('tryOn').currentGarmentName = name;
                 Alpine.store('tryOn').currentGarmentPrice = price;
                 Alpine.store('tryOn').currentProduct = { id: productId, name, price };
