@@ -122,11 +122,11 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
                 """
                 SELECT p.id, p.name, p.slug, p.price, p.stock_quantity,
                        p.base_image, p.model_3d_url, p.pipeline_status,
-                       p.asset_category, p.created_at, p.updated_at,
+                       p.asset_category, p.created_at,
                        c.id AS category_id, c.name AS category_name, c.color AS category_color
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
-                ORDER BY p.updated_at DESC NULLS LAST, p.created_at DESC
+                ORDER BY p.created_at DESC NULLS LAST
                 LIMIT 60
                 """
             )
@@ -141,7 +141,7 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
         d["pipeline_status"] = _map_pipeline_status(raw_status)
         d["pipeline_status_raw"] = raw_status
         d["pipeline_label"] = PIPELINE_BADGE_LABEL.get(d["pipeline_status"], "Not started")
-        d["updated_at_human"] = _humanize_dt(d.get("updated_at"))
+        d["updated_at_human"] = _humanize_dt(d.get("created_at"))
         d["price"] = float(d.get("price") or 0)
         products.append(d)
     return products
