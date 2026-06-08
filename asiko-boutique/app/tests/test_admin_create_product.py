@@ -126,7 +126,7 @@ class TestCreateProductEndpoint:
             follow_redirects=False,
         )
         assert response.status_code == 400
-        assert "Product name is required" in response.text
+        assert "Please enter a product name." in response.text
 
     def test_create_product_whitespace_name_returns_400(self):
         """POST /admin/products/create with whitespace-only name returns 400."""
@@ -141,7 +141,7 @@ class TestCreateProductEndpoint:
             follow_redirects=False,
         )
         assert response.status_code == 400
-        assert "Product name is required" in response.text
+        assert "Please enter a product name." in response.text
 
 
 class TestProductsSectionForm:
@@ -183,7 +183,7 @@ class TestProductsSectionForm:
         response = client.get("/admin/section/products")
         assert response.status_code == 200
         assert 'type="submit"' in response.text
-        assert "Create Product" in response.text
+        assert "Save Product" in response.text
 
     def test_products_section_has_new_product_button(self):
         """Products section has button to open modal."""

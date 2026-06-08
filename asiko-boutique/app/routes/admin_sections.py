@@ -649,6 +649,7 @@ async def section_operations(request: Request) -> HTMLResponse:
     inventory: List[Dict[str, Any]] = []
     active_reservations: List[Dict[str, Any]] = []
     pending_waitlists: List[Dict[str, Any]] = []
+    pipeline_products: List[Dict[str, Any]] = []
 
     try:
         async with pool.acquire() as conn:
@@ -684,6 +685,25 @@ async def section_operations(request: Request) -> HTMLResponse:
                 )
             except Exception:
                 waitlist_volume = 0
+
+            # Fetch all products with pipeline status for the 3D section
+            try:
+                pipeline_rows = await conn.fetch(
+                    """
+                    SELECT p.id, p.name, p.base_image, p.pipeline_status,
+                           p.source_2d_image_url, p.model_3d_url, p.pipeline_error_log,
+                           p.stock_quantity, p.price
+                    FROM products p
+                    ORDER BY p.pipeline_status ASC, p.created_at DESC
+                    LIMIT 20
+                    """
+                )
+                for r in pipeline_rows:
+                    d = dict(r)
+                    d["pipeline_status"] = _map_pipeline_status(d.get("pipeline_status"))
+                    pipeline_products.append(d)
+            except Exception as exc:
+                logger.warning("[admin] pipeline products fetch failed: %s", exc)
 
             try:
                 inventory_rows = await conn.fetch(
@@ -748,6 +768,7 @@ async def section_operations(request: Request) -> HTMLResponse:
         "inventory": inventory,
         "reservations": active_reservations,
         "waitlists": pending_waitlists,
+        "pipeline_products": pipeline_products,
     }
     return _section_response(request, "admin/sections/operations.html", context)
 

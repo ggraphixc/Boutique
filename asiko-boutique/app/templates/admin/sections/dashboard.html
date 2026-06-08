@@ -31,7 +31,7 @@
             </div>
             <div class="mt-4">
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Sales</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">${{ '{:,.0f}'.format(kpi_total_sales) }}</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">&#8358;{{ '{:,.0f}'.format(kpi_total_sales) }}</div>
             </div>
             <div class="mt-3 text-xs font-medium text-emerald-600">+12% from last month</div>
         </div>
@@ -288,7 +288,7 @@
                 <div class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{{ p.name }}</div>
                 <div class="flex items-center justify-between mt-1">
                     <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{{ p.units_sold }} sold</span>
-                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">${{ '%.0f'|format(p.price) }}</span>
+                    <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">&#8358;{{ '%.0f'|format(p.price) }}</span>
                 </div>
             </div>
             {% else %}

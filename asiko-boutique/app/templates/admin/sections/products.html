@@ -1,50 +1,68 @@
-<!-- Products section: product cards with 3D pipeline status badge -->
+<!-- Products section — all your products in one place -->
 <section class="space-y-6" data-section="products"
          x-data="{ showNewProduct: false, filename: '' }">
 
-    <div class="flex items-end justify-between">
+    <!-- Header with Add Product button -->
+    <div class="flex items-center justify-between">
         <div>
-            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100">Products</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Each product image is converted to a wearable 3D cloth for the Virtual Atelier avatar.</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">My Products</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">All the items you sell in your shop. Upload a photo and we'll turn it into a 3D model for your online store.</p>
         </div>
-        <div class="flex items-center gap-2">
-            <select class="text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40">
-                <option>All categories</option>
-                <option>Outerwear</option>
-                <option>Tailoring</option>
-                <option>Knitwear</option>
-                <option>Accessories</option>
-            </select>
-            <select class="text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40">
-                <option>All 3D status</option>
-                <option>Generated</option>
-                <option>Processing</option>
-                <option>Failed</option>
-                <option>Not started</option>
-            </select>
-            <button @click="showNewProduct = true"
-                    class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                New Product
-            </button>
+        <button @click="showNewProduct = true"
+                class="bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-sm font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Add New Product
+        </button>
+    </div>
+
+    <!-- Quick stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ products|length }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Total Products</div>
+        </div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            {% set in_stock = products|selectattr('stock_quantity', 'gt', 0)|list|length %}
+            <div class="text-2xl font-bold text-emerald-600">{{ in_stock }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">In Stock</div>
+        </div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            {% set with_3d = products|selectattr('pipeline_status', 'equalto', 'generated')|list|length %}
+            <div class="text-2xl font-bold text-[#D4AF37]">{{ with_3d }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Has 3D Photo</div>
+        </div>
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            {% set sold_out = products|selectattr('stock_quantity', 'equalto', 0)|list|length %}
+            <div class="text-2xl font-bold text-rose-500">{{ sold_out }}</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Sold Out</div>
         </div>
     </div>
 
+    <!-- Product grid -->
     {% if products %}
     <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {% for p in products %}
-        <article class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:border-asiko-gold/30 transition-all duration-300 group">
+        <article class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden hover:shadow-lg transition-all duration-300 group">
 
-            <!-- Image + 3D status badge -->
-            <div class="relative aspect-[4/5] bg-gray-50 dark:bg-[#18181B] overflow-hidden">
-                <img src="{{ p.base_image or '/static/img/placeholder-product.jpg' }}"
+            <!-- Product image -->
+            <div class="relative aspect-[4/5] bg-gray-100 dark:bg-[#18181B] overflow-hidden">
+                {% if p.base_image %}
+                <img src="{{ p.base_image }}"
                      alt="{{ p.name }}"
                      loading="lazy"
                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                {% else %}
+                <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                    <svg class="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    <span class="text-xs">No photo yet</span>
+                </div>
+                {% endif %}
 
-                <!-- 3D Status Badge -->
+                <!-- 3D status badge — plain language -->
                 <div class="absolute top-3 left-3">
                     {% if p.pipeline_status == 'generated' %}
                         <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
@@ -55,8 +73,8 @@
                         </span>
                     {% elif p.pipeline_status == 'processing' %}
                         <span class="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                            <span class="w-2 h-2 bg-white dark:bg-[#111114] rounded-full animate-pulse"></span>
-                            Generating
+                            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
+                            Making 3D...
                         </span>
                     {% elif p.pipeline_status == 'failed' %}
                         <span class="inline-flex items-center gap-1.5 bg-rose-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
@@ -66,26 +84,21 @@
                             3D Failed
                         </span>
                     {% else %}
-                        <span class="inline-flex items-center gap-1.5 bg-white dark:bg-[#111114]/90 backdrop-blur text-gray-600 dark:text-gray-300 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm border border-gray-200 dark:border-gray-800">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            Awaiting
+                        <span class="inline-flex items-center gap-1.5 bg-white/90 dark:bg-[#111114]/90 backdrop-blur text-gray-600 dark:text-gray-300 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm border border-gray-200 dark:border-gray-800">
+                            No 3D yet
                         </span>
                     {% endif %}
                 </div>
 
                 <!-- Stock badge -->
-                {% if p.stock_quantity is defined %}
-                    {% if p.stock_quantity == 0 %}
-                        <div class="absolute top-3 right-3">
-                            <span class="bg-gray-900/80 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded">Sold out</span>
-                        </div>
-                    {% elif p.stock_quantity < 5 %}
-                        <div class="absolute top-3 right-3">
-                            <span class="bg-amber-500/90 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded">Low stock</span>
-                        </div>
-                    {% endif %}
+                {% if p.stock_quantity == 0 %}
+                    <div class="absolute top-3 right-3">
+                        <span class="bg-gray-900/80 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded">Sold out</span>
+                    </div>
+                {% elif p.stock_quantity < 5 %}
+                    <div class="absolute top-3 right-3">
+                        <span class="bg-amber-500/90 backdrop-blur text-white text-[11px] font-medium px-2 py-0.5 rounded">Low stock</span>
+                    </div>
                 {% endif %}
             </div>
 
@@ -93,30 +106,38 @@
             <div class="p-4">
                 <div class="flex items-start justify-between gap-2">
                     <div class="flex-1 min-w-0">
-                        <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ p.name }}</h3>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">{{ p.category_name or 'Uncategorized' }}</p>
+                        <h3 class="font-semibold text-gray-900 dark:text-gray-100 truncate">{{ p.name }}</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ p.category_name or 'General' }}</p>
                     </div>
                     <div class="text-right">
-                        <div class="text-base font-semibold text-gray-900 dark:text-gray-100">${{ '%.0f'|format(p.price) }}</div>
+                        <div class="text-base font-bold text-[#0D2A22] dark:text-gray-100">&#8358;{{ '{:,.0f}'.format(p.price) }}</div>
                     </div>
                 </div>
 
-                <!-- Action row -->
+                <!-- Stock info -->
+                <div class="mt-2 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                    </svg>
+                    {{ p.stock_quantity }} in stock
+                </div>
+
+                <!-- Action buttons — plain language -->
                 <div class="mt-4 flex items-center gap-2">
-                    <button class="flex-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#18181B] hover:bg-gray-100 dark:bg-[#27272A] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 transition-colors">
+                    <button class="flex-1 text-xs font-medium text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-[#18181B] hover:bg-gray-100 dark:hover:bg-[#27272A] border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 transition-colors">
                         Edit
                     </button>
                     {% if p.pipeline_status == 'generated' %}
-                    <button class="flex-1 text-xs font-medium text-white bg-asiko-emerald hover:bg-emerald-900 rounded-lg px-3 py-2 transition-colors flex items-center justify-center gap-1">
+                    <a href="/" target="_blank" class="flex-1 text-xs font-medium text-white bg-[#0D2A22] hover:bg-[#0a1f1a] rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-1">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
                             <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>
                         </svg>
-                        View in Atelier
-                    </button>
+                        View in Shop
+                    </a>
                     {% else %}
-                    <button class="flex-1 text-xs font-medium text-white bg-asiko-gold hover:bg-amber-700 rounded-lg px-3 py-2 transition-colors">
-                        Generate 3D
+                    <button class="flex-1 text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2.5 transition-colors">
+                        Turn Photo to 3D
                     </button>
                     {% endif %}
                 </div>
@@ -128,24 +149,24 @@
     {% else %}
     <!-- Empty state -->
     <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 border-dashed p-16 text-center">
-        <div class="w-16 h-16 rounded-full bg-asiko-gold/10 text-asiko-gold flex items-center justify-center mx-auto mb-4">
+        <div class="w-16 h-16 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] flex items-center justify-center mx-auto mb-4">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
             </svg>
         </div>
-        <h3 class="font-display text-lg text-gray-900 dark:text-gray-100">No products yet</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Upload your first product image. The atelier's image-to-3D pipeline will turn it into a wearable cloth for the avatar.</p>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">No products yet</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Add your first product below. Upload a photo and we'll automatically turn it into a 3D model for your online customers.</p>
         <button @click="showNewProduct = true"
-                class="mt-5 bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-5 py-2.5 rounded-lg inline-flex items-center gap-2">
+                class="mt-5 bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-sm font-medium px-5 py-2.5 rounded-lg inline-flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Upload first product
+            Add your first product
         </button>
     </div>
     {% endif %}
 
-    <!-- New Product Modal -->
+    <!-- New Product Modal — plain language -->
     <div x-show="showNewProduct" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
          @click.self="showNewProduct = false"
@@ -165,7 +186,10 @@
 
             <!-- Modal header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">New Product</h3>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Product</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Upload a photo of your item. We'll turn it into a 3D model.</p>
+                </div>
                 <button @click="showNewProduct = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -182,45 +206,54 @@
                   class="px-6 py-5 space-y-4">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Product name *</label>
-                    <input type="text" name="name" required placeholder="e.g. Merino Wool Overcoat"
-                           class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 placeholder-gray-400">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">What are you selling? *</label>
+                    <input type="text" name="name" required placeholder="e.g. Ankara Lace Blouse"
+                           class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 placeholder-gray-400">
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Price (USD)</label>
-                        <input type="number" name="price" step="0.01" min="0" placeholder="0.00"
-                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 placeholder-gray-400">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Price (&#8358;) *</label>
+                        <input type="number" name="price" step="100" min="0" placeholder="e.g. 15000"
+                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 placeholder-gray-400">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Category</label>
-                        <select name="category" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40">
-                            <option value="">Select category</option>
-                            <option value="Outerwear">Outerwear</option>
-                            <option value="Tailoring">Tailoring</option>
-                            <option value="Knitwear">Knitwear</option>
-                            <option value="Accessories">Accessories</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">How many do you have?</label>
+                        <input type="number" name="stock_quantity" min="0" placeholder="e.g. 20"
+                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 placeholder-gray-400">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Description</label>
-                    <textarea name="description" rows="2" placeholder="Brief product description..."
-                              class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 placeholder-gray-400 resize-none"></textarea>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Type of item</label>
+                    <select name="category" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                        <option value="">Select type...</option>
+                        <option value="Outerwear">Outerwear (Jackets, Coats)</option>
+                        <option value="Tailoring">Tailoring (Suits, Blazers)</option>
+                        <option value="Knitwear">Knitwear (Sweaters, Cardigans)</option>
+                        <option value="Dresses">Dresses & Gowns</option>
+                        <option value="Accessories">Accessories (Bags, Jewellery)</option>
+                        <option value="Footwear">Footwear (Shoes, Sandals)</option>
+                    </select>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Product image</label>
-                    <div class="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg p-4 text-center hover:border-asiko-gold/50 transition-colors">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Describe your item</label>
+                    <textarea name="description" rows="2" placeholder="e.g. Hand-beaded Ankara fabric, made in Lagos..."
+                              class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 placeholder-gray-400 resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Upload a photo</label>
+                    <div class="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-lg p-4 text-center hover:border-[#D4AF37]/50 transition-colors">
                         <input type="file" name="source_2d_file" accept=".jpg,.jpeg,.png,.webp" class="hidden"
                                x-ref="fileInput" @change="filename = $refs.fileInput.files[0]?.name || ''">
                         <div x-show="!filename" @click="$refs.fileInput.click()" class="cursor-pointer">
                             <svg class="w-8 h-8 mx-auto text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Click to upload JPG, PNG, or WebP</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Tap to upload JPG, PNG, or WebP</p>
+                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">A clear photo of the full item works best</p>
                         </div>
                         <div x-show="filename" class="flex items-center justify-center gap-2">
                             <svg class="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
@@ -234,7 +267,7 @@
                             </button>
                         </div>
                     </div>
-                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Optional. Upload now to auto-start the 3D generation pipeline.</p>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Upload now and we'll start making the 3D model right away.</p>
                 </div>
 
                 <!-- Actions -->
@@ -244,12 +277,12 @@
                         Cancel
                     </button>
                     <button type="submit" id="create-product-btn"
-                            class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors inline-flex items-center gap-2">
+                            class="bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors inline-flex items-center gap-2">
                         <svg class="htmx-indicator w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        Create Product
+                        Save Product
                     </button>
                 </div>
             </form>

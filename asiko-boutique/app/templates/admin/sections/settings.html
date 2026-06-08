@@ -26,6 +26,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Display currency</label>
                     <select name="currency" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
+                        <option {% if settings.currency == 'NGN' %}selected{% endif %}>NGN · Nigerian Naira</option>
                         <option {% if settings.currency == 'USD' %}selected{% endif %}>USD · US Dollar</option>
                         <option {% if settings.currency == 'EUR' %}selected{% endif %}>EUR · Euro</option>
                         <option {% if settings.currency == 'GBP' %}selected{% endif %}>GBP · British Pound</option>
@@ -62,7 +63,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Domestic flat rate</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
                         <input type="number" step="0.01" name="shipping_domestic" value="{{ settings.shipping_domestic or '0' }}"
                                class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
                     </div>
@@ -70,7 +71,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">International flat rate</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
                         <input type="number" step="0.01" name="shipping_international" value="{{ settings.shipping_international or '0' }}"
                                class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
                     </div>
@@ -78,7 +79,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Free shipping threshold</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">$</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
                         <input type="number" step="0.01" name="free_shipping_threshold" value="{{ settings.free_shipping_threshold or '0' }}"
                                class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
                     </div>

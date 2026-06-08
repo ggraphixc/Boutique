@@ -251,12 +251,13 @@ async def create_product(request: Request):
     name = (form.get("name") or "").strip()
     price_raw = (form.get("price") or "0").strip()
     category = (form.get("category") or "").strip()
+    stock_raw = (form.get("stock_quantity") or "0").strip()
     description = (form.get("description") or "").strip()
     uploaded_file = form.get("source_2d_file")
 
     if not name:
         return HTMLResponse(
-            "<span class='text-xs text-red-500'>Product name is required.</span>",
+            "<span class='text-xs text-red-500'>Please enter a product name.</span>",
             status_code=400,
         )
 
@@ -264,6 +265,11 @@ async def create_product(request: Request):
         price = float(price_raw)
     except (ValueError, TypeError):
         price = 0.0
+
+    try:
+        stock_quantity = int(float(stock_raw))
+    except (ValueError, TypeError):
+        stock_quantity = 0
 
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
@@ -307,12 +313,19 @@ async def create_product(request: Request):
             suffix += 1
             slug = f"{base_slug}-{suffix}"
 
+        # Resolve category_id from category name
+        category_id = None
+        if category:
+            category_id = await conn.fetchval(
+                "SELECT id FROM categories WHERE name = $1", category
+            )
+
         await conn.execute(
             """
-            INSERT INTO products (store_id, name, slug, price, stock_quantity, base_image, description, pipeline_status)
-            VALUES ($1, $2, $3, $4, 0, $5, $6, 'idle')
+            INSERT INTO products (store_id, name, slug, price, stock_quantity, base_image, description, category_id, pipeline_status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'idle')
             """,
-            store_id, name, slug, price, image_path, description or None,
+            store_id, name, slug, price, stock_quantity, image_path, description or None, category_id,
         )
 
     # Return a success message with HX-Redirect to reload the products section

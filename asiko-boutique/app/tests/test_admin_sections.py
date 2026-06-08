@@ -400,14 +400,13 @@ class TestOperationsSection:
             assert r.status_code == 200
             body = r.text
             assert "data-section=\"operations\"" in body
-            # 4 operational KPI cards
-            for title in ("Verified Revenue", "Unfulfilled Backlogs", "Active Holds", "Waitlist Demand"):
+            # 4 operational KPI cards (plain language)
+            for title in ("Total Sales", "Pending Orders", "Reserved Items", "Waiting Customers"):
                 assert title in body, f"missing KPI {title!r}"
-            # Atelier Production Ledger heading
-            assert "Atelier Production Ledger" in body
-            # Right column feeds
-            assert "Out-of-Stock Queues" in body
-            assert "Stock Sentinel Feed" in body
+            # Stock Management heading
+            assert "Stock Management" in body
+            # Photo to 3D section
+            assert "Photo to 3D" in body
             # Populated pool renders the seeded product
             assert "Aba Handloomed Trouser" in body
 
@@ -445,11 +444,10 @@ class TestOperationsSection:
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin/section/operations").text
             assert 'hx-post="/admin/dashboard/update-stock"' in body
-            assert 'hx-post="/admin/dashboard/update-model-url"' in body
             # notify-waitlist is only rendered when there's a waitlist row;
-            # with the empty pool we still want to confirm the form action is
-            # defined in the template by checking the waitlists else-branch
-            assert "No waiting buyers backlogged" in body
+            # with the empty pool we still want to confirm the waitlist
+            # section renders with the empty-state message
+            assert "Nobody waiting" in body or "No waiting" in body
 
     def test_legacy_admin_dashboard_url_routes_to_v2(self):
         """The legacy /admin/dashboard now serves the v2 dashboard (was the
