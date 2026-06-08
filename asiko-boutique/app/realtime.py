@@ -150,7 +150,7 @@ class ConnectionManager:
         except (json.JSONDecodeError, TypeError):
             data = {"raw": payload}
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         if loop.is_running():
             loop.create_task(self.broadcast(channel, data))
         else:

@@ -4,22 +4,40 @@ import json
 import os
 import shutil
 import logging
-from gradio_client import Client, handle_file
+from typing import Optional
 
 logger = logging.getLogger("asiko.pipeline")
 OPTIMIZED_DIR = "static/uploads/optimized"
 os.makedirs(OPTIMIZED_DIR, exist_ok=True)
 
+# Gradio Space name — configurable via env var so DNS/firewall issues
+# can be worked around without code changes.
+GRADIO_SPACE = os.environ.get("ASIKO_GRADIO_SPACE", "TencentARC/InstantMesh")
+
+
 class AsikoPipelineDaemon:
     def __init__(self, db_pool):
         self.db_pool = db_pool
         self.is_running = True
+        self.ai_client = None
+        self._connect_attempted = False
+
+    def _ensure_client(self) -> bool:
+        """Lazy-connect to the Gradio Space. Returns True if client is ready."""
+        if self.ai_client is not None:
+            return True
+        if self._connect_attempted:
+            return False
+        self._connect_attempted = True
         try:
-            self.ai_client = Client("TencentARC/InstantMesh")
-            print("LOG_SYSTEM: Connected to open-source Gradio node.")
+            from gradio_client import Client
+            self.ai_client = Client(GRADIO_SPACE)
+            logger.info("Connected to Gradio Space: %s", GRADIO_SPACE)
+            return True
         except Exception as e:
-            logger.error(f"Gradio initial connection error: {e}")
+            logger.warning("Gradio connection failed (will retry on next product): %s", e)
             self.ai_client = None
+            return False
 
     async def _notify_pipeline_update(self, product_id: str, status: str, model_url: str = "") -> None:
         """Send a Postgres NOTIFY on pipeline_update channel for WebSocket broadcast."""
@@ -68,9 +86,13 @@ class AsikoPipelineDaemon:
             return
 
         try:
-            if not self.ai_client:
-                self.ai_client = Client("TencentARC/InstantMesh")
+            if not self._ensure_client():
+                raise ConnectionError(
+                    f"Cannot reach Gradio Space '{GRADIO_SPACE}'. "
+                    "Set ASIKO_GRADIO_SPACE env var to override, or check network/DNS."
+                )
 
+            from gradio_client import handle_file
             loop = asyncio.get_running_loop()
             
             # Execute with complete positional architecture array parameters
