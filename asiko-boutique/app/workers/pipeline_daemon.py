@@ -20,22 +20,19 @@ class AsikoPipelineDaemon:
         self.db_pool = db_pool
         self.is_running = True
         self.ai_client = None
-        self._connect_attempted = False
 
     def _ensure_client(self) -> bool:
-        """Lazy-connect to the Gradio Space. Returns True if client is ready."""
+        """Lazy-connect to the Gradio Space. Returns True if client is ready.
+        Retries on each call if previous attempt failed (no permanent flag)."""
         if self.ai_client is not None:
             return True
-        if self._connect_attempted:
-            return False
-        self._connect_attempted = True
         try:
             from gradio_client import Client
             self.ai_client = Client(GRADIO_SPACE)
             logger.info("Connected to Gradio Space: %s", GRADIO_SPACE)
             return True
         except Exception as e:
-            logger.warning("Gradio connection failed (will retry on next product): %s", e)
+            logger.warning("Gradio connection failed (will retry next product): %s", e)
             self.ai_client = None
             return False
 
@@ -66,7 +63,11 @@ class AsikoPipelineDaemon:
                     
                     for item in queued_items:
                         product_id = item["id"]
-                        local_img_path = item["source_2d_image_url"].lstrip("/")
+                        img_url = item["source_2d_image_url"]
+                        if not img_url:
+                            logger.warning("Product %s queued but has no source image — skipping", product_id)
+                            continue
+                        local_img_path = img_url.lstrip("/")
                         category = item["asset_category"] or "apparel"
                         asyncio.create_task(self.process_oss_generation(product_id, local_img_path, category))
                         
@@ -94,31 +95,66 @@ class AsikoPipelineDaemon:
 
             from gradio_client import handle_file
             loop = asyncio.get_running_loop()
-            
-            # Execute with complete positional architecture array parameters
-            result = await loop.run_in_executor(
-                None, 
+
+            # Step 1: Preprocess — remove background
+            print(f"LOG_SYSTEM: Step 1/3 — Preprocessing image for Product {product_id}...")
+            preprocessed = await loop.run_in_executor(
+                None,
                 lambda: self.ai_client.predict(
-                    handle_file(local_img_path),  # arg[0]: Ingestion wrapper
-                    True,                        # arg[1]: Auto-Remove Background
-                    42,                          # arg[2]: Generation Seed
-                    30,                          # arg[3]: Sampling Steps
-                    api_name="/generate_3d"
+                    handle_file(local_img_path),  # input_image
+                    True,                         # do_remove_background
+                    api_name="/preprocess"
                 )
             )
-            
-            temp_output_path = result if isinstance(result, str) else result[0]
+            preprocessed_path = preprocessed if isinstance(preprocessed, str) else preprocessed.get("path") if isinstance(preprocessed, dict) else preprocessed[0]
+            print(f"LOG_SYSTEM: Preprocessed result: {preprocessed_path}")
+
+            # Step 2: Generate multi-view images
+            print(f"LOG_SYSTEM: Step 2/3 — Generating multi-views for Product {product_id}...")
+            multiview = await loop.run_in_executor(
+                None,
+                lambda: self.ai_client.predict(
+                    handle_file(preprocessed_path),  # input_image (preprocessed)
+                    30,                              # sample_steps
+                    42,                              # sample_seed
+                    api_name="/generate_mvs"
+                )
+            )
+            multiview_path = multiview if isinstance(multiview, str) else multiview.get("path") if isinstance(multiview, dict) else multiview[0]
+            print(f"LOG_SYSTEM: Multi-view result: {multiview_path}")
+
+            # Step 3: Generate 3D model from multi-views
+            print(f"LOG_SYSTEM: Step 3/3 — Generating 3D mesh for Product {product_id}...")
+            result = await loop.run_in_executor(
+                None,
+                lambda: self.ai_client.predict(
+                    api_name="/make3d"
+                )
+            )
+            # Result is a tuple: (obj_path, glb_path)
+            if isinstance(result, (list, tuple)) and len(result) >= 2:
+                glb_path = result[1]  # GLB format
+            elif isinstance(result, str):
+                glb_path = result
+            else:
+                glb_path = result[0] if isinstance(result, (list, tuple)) else result
+
+            if isinstance(glb_path, dict):
+                glb_path = glb_path.get("path") or glb_path.get("url")
+
+            print(f"LOG_SYSTEM: 3D model generated: {glb_path}")
+
+            # Copy to final destination
             secure_filename = f"mesh_prod_{product_id}.glb"
             final_destination = os.path.join(OPTIMIZED_DIR, secure_filename)
             
-            shutil.copy(temp_output_path, final_destination)
+            shutil.copy(glb_path, final_destination)
             public_url_path = f"/{final_destination}"
 
             await self.commit_success(product_id, public_url_path)
 
         except Exception as e:
-            # ROBUST FALLBACK RECOVERY MIGRATION: If public endpoints stall, fulfill with local fallback pipeline
-            logger.warning(f"Hugging Face cluster congested or offline ({str(e)}). Deploying automated fallback layer...")
+            logger.warning(f"Gradio pipeline failed ({e}). Deploying fallback...")
             
             secure_filename = f"mesh_prod_{product_id}.glb"
             final_destination = os.path.join(OPTIMIZED_DIR, secure_filename)
@@ -128,7 +164,7 @@ class AsikoPipelineDaemon:
                 shutil.copy(fallback_source, final_destination)
                 public_url_path = f"/{final_destination}"
                 await self.commit_success(product_id, public_url_path)
-                print(f"LOG_SYSTEM: Fallback generation deployed successfully for Product {product_id}.")
+                print(f"LOG_SYSTEM: Fallback model deployed for Product {product_id}.")
             except Exception as fallback_err:
                 await self.mark_as_failed(product_id, f"Pipeline Error: {str(e)} | Fallback Error: {str(fallback_err)}")
 
