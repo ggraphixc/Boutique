@@ -78,8 +78,8 @@ class AsikoPipelineDaemon:
         print(f"LOG_SYSTEM: Initiating 3D reconstruction for Product {product_id}...")
         
         async with self.db_pool.acquire() as conn:
-            await conn.execute("UPDATE products SET pipeline_status = 'processing' WHERE id = $1;", product_id)
-        await self._notify_pipeline_update(product_id, "processing")
+            await conn.execute("UPDATE products SET pipeline_status = 'generating_mesh' WHERE id = $1;", product_id)
+        await self._notify_pipeline_update(product_id, "generating_mesh")
 
         if not os.path.exists(local_img_path):
             await self.mark_as_failed(product_id, f"File {local_img_path} not found on disk.")
