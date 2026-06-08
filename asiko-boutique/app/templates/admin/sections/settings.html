@@ -97,7 +97,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">3D generation provider</label>
                     <select name="mesh_provider" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                        <option {% if settings.mesh_provider == 'instantmesh' %}selected{% endif %}>TencentARC / InstantMesh</option>
+                        <option {% if settings.mesh_provider == 'hunyuan3d2' %}selected{% endif %}>Tencent Hunyuan3D-2</option>
                         <option {% if settings.mesh_provider == 'triposr' %}selected{% endif %}>TripoSR (local)</option>
                         <option {% if settings.mesh_provider == 'none' %}selected{% endif %}>Disabled</option>
                     </select>

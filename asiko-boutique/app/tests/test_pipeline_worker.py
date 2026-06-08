@@ -70,15 +70,16 @@ def test_process_oss_generation_method_signature():
     assert 'category' in params
 
 
-def test_gradio_client_initialized_on_startup():
-    """Verify Gradio client connection attempt is made in constructor."""
+def test_gradio_client_uses_hunyuan3d2_space():
+    """Verify Gradio client targets Hunyuan3D-2 Space when _ensure_client is called."""
     mock_pool = MagicMock()
-    
-    with patch('app.workers.pipeline_daemon.Client') as mock_client:
+
+    with patch('gradio_client.Client') as mock_client:
         from app.workers.pipeline_daemon import AsikoPipelineDaemon
         daemon = AsikoPipelineDaemon(db_pool=mock_pool)
-        # Client should have been called with InstantMesh space
-        mock_client.assert_called_once_with("TencentARC/InstantMesh")
+        # Client is lazy — call _ensure_client to trigger connection
+        daemon._ensure_client()
+        mock_client.assert_called_once_with("tencent/Hunyuan3D-2")
 
 
 def test_fallback_avatar_path_uses_female():
