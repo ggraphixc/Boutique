@@ -151,6 +151,8 @@ class AsikoPipelineDaemon:
                 ),
             )
 
+            logger.debug("Hunyuan3D-2 raw result for product %s: %s", product_id, result)
+
             # /shape_generation returns: (untextured_glb, html_preview, stats, seed)
             # Extract the GLB file path from the result.
             glb_path = self._extract_glb_path(result)
@@ -169,25 +171,16 @@ class AsikoPipelineDaemon:
             await self.commit_success(product_id, public_url_path)
 
         except Exception as e:
-            logger.warning("Hunyuan3D-2 pipeline failed (%s). Deploying fallback...", e)
+            logger.error("Hunyuan3D-2 pipeline failed for product %s: %s", product_id, e)
 
             # If the client seems broken, reset so next product retries fresh
             self._reset_client()
 
-            secure_filename = f"mesh_prod_{product_id}.glb"
-            final_destination = os.path.join(OPTIMIZED_DIR, secure_filename)
-
-            fallback_source = "static/models/avatar_female.glb"
-            try:
-                shutil.copy(fallback_source, final_destination)
-                public_url_path = "/" + final_destination.replace("\\", "/")
-                await self.commit_success(product_id, public_url_path)
-                logger.info("Fallback model deployed for product %s.", product_id)
-            except Exception as fallback_err:
-                await self.mark_as_failed(
-                    product_id,
-                    f"Pipeline Error: {e} | Fallback Error: {fallback_err}",
-                )
+            # Mark as failed with the actual error — DO NOT silently fallback
+            await self.mark_as_failed(
+                product_id,
+                f"Hunyuan3D-2 generation failed: {e}",
+            )
 
     # ------------------------------------------------------------------
     # Result extraction helpers

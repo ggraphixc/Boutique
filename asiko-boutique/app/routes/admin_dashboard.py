@@ -1,6 +1,7 @@
 # ASIKO Boutique - Executive Dashboard
 # Analytics, inline stock updater, waitlist notification trigger.
 
+import asyncio
 import os
 import secrets
 from starlette.requests import Request
@@ -313,6 +314,48 @@ async def simulate_pipeline_processing_worker(request):
     return HTMLResponse(content="", headers={"HX-Refresh": "true"})
 
 
+async def trigger_pipeline_manual(request):
+    """Manually trigger the 3D pipeline for a specific product — useful for testing."""
+    product_id = request.path_params.get("id")
+    db_pool = request.app.state.db_pool
+
+    # Fetch product details
+    async with db_pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, source_2d_image_url, asset_category FROM products WHERE id = $1::UUID;",
+            product_id
+        )
+
+    if not row:
+        return HTMLResponse(content="<span class='text-xs text-red-500'>Product not found</span>", status_code=404)
+
+    img_url = row["source_2d_image_url"]
+    category = row["asset_category"] or "apparel"
+
+    if not img_url:
+        return HTMLResponse(content="<span class='text-xs text-red-500'>No source image set</span>", status_code=400)
+
+    # Mark as queued and trigger pipeline directly
+    async with db_pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE products SET pipeline_status = 'queued', pipeline_error_log = NULL WHERE id = $1::UUID;",
+            product_id
+        )
+
+    # Trigger pipeline daemon directly
+    daemon = request.app.state.pipeline_daemon
+    if daemon:
+        local_img_path = img_url.lstrip("/")
+        asyncio.create_task(daemon.process_oss_generation(product_id, local_img_path, category))
+
+    return HTMLResponse(content=f"""
+        <div id="pipeline-status-{product_id}" hx-get="/admin/dashboard/pipeline-status/{product_id}" hx-trigger="every 3s" class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            <span class="text-xs font-mono uppercase tracking-wider text-amber-400">Processing Started</span>
+        </div>
+    """)
+
+
 routes = [
     Route("/admin/dashboard", endpoint=admin_dashboard_home, methods=["GET"]),
     Route("/admin/dashboard/update-stock", endpoint=inline_update_stock, methods=["POST"]),
@@ -321,4 +364,5 @@ routes = [
     Route("/admin/dashboard/pipeline/link-2d", endpoint=link_2d_source_asset, methods=["POST"]),
     Route("/admin/dashboard/pipeline-status/{id:uuid}", endpoint=get_pipeline_status_fragment, methods=["GET"]),
     Route("/admin/dashboard/pipeline/simulate", endpoint=simulate_pipeline_processing_worker, methods=["POST"]),
+    Route("/admin/dashboard/pipeline/trigger/{id:uuid}", endpoint=trigger_pipeline_manual, methods=["POST"]),
 ]
