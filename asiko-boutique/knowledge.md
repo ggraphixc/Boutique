@@ -16,7 +16,7 @@ ASIKO Boutique is a single-brand luxury e-commerce platform for Nigerian fashion
 - **Sessions:** Server-side with Starlette SessionMiddleware
 - **Email:** Brevo SMTP API for transactional notifications
 - **Payments:** Paystack (reference format: `asiko_{order_id}`, amount in kobo)
-- **3D Engine:** Three.js (~400 lines `TryOnEngine`), loads avatar GLB + clothing GLB
+- **3D Viewer:** Google `<model-viewer>` web component (replaces custom Three.js TryOnEngine)
 - **3D Pipeline:** Hunyuan3D-2 via HF Space `/shape_generation` (texture gen not yet available)
 
 ### Directory Structure
@@ -39,10 +39,10 @@ asiko-boutique/
 │       ├── 08_admin_redesign.sql   # categories, product_reviews, store_settings
 │       ├── 09_admin_redesign.sql   # categories, product_reviews, store_settings (alt)
 │       ├── 10_seed_catalog.sql     # 10 products, 39 variants
-│       └── 11_customers_auth.sql   # customers table, order FK
+│       ├── 11_customers_auth.sql   # customers table, order FK
+│       └── 12_product_images_pipeline.sql  # base_image, source_2d_image_url for 10 products, queue pipeline
 ├ static/
-│   ├── js/atelier-3d.js           # ~400-line TryOnEngine: GLB loader, texture fallback
-│   └── uploads/optimized/         # Generated .glb files from pipeline
+│   └── uploads/optimized/         # Generated .glb files from pipeline (4 files)
 ├ app/
 │   ├── core.py                    # Templates, naira filter, session helpers
 │   ├── main.py                    # App factory, route registration, WebSocket, lifespan
@@ -54,7 +54,7 @@ asiko-boutique/
 │   │   └── dpp_crypto.py          # Digital Product Passport signing
 │   ├── routes/
 │   │   ├── storefront.py          # Homepage, PDP, try-on page, reviews, lookbook, DPP, About
-│   │   ├── virtual.py             # /virtual-experience, showroom items
+│   │   ├── virtual.py             # /virtual-experience, showroom items (deprecated)
 │   │   ├── cart.py                # HTMX cart add/update/drawer
 │   │   ├── checkout.py            # Paystack checkout
 │   │   ├── webhooks.py            # Paystack webhook, Brevo dispatch
@@ -68,7 +68,7 @@ asiko-boutique/
 │   │   └── pipeline_daemon.py     # Hunyuan3D-2 pipeline (/shape_generation)
 │   ├── templates/
 │   │   ├── base.html              # Public shell, dark mode, About nav link
-│   │   ├── virtual_experience.html # Try-on page, gender toggle, 3D viewer
+│   │   ├── virtual_experience.html # Try-on page, model-viewer, Alpine.js in-place swap
 │   │   ├── admin/
 │   │   │   ├── base.html          # v2 shell, 10 nav buttons, dark mode
 │   │   │   └── sections/          # dashboard, products, orders, sales, etc.
@@ -86,7 +86,8 @@ asiko-boutique/
 │       ├── test_admin_sections.py        # 72 tests
 │       ├── test_admin_create_product.py  # 30 tests
 │       ├── test_storefront_pages.py      # 43 tests
-│       └── test_realtime.py             # 37 tests (incl. _extract_glb_path)
+│       ├── test_realtime.py             # 35 tests (incl. _extract_glb_path)
+│       └── test_pipeline_worker.py      # 7 tests
 ```
 
 ---
@@ -111,12 +112,15 @@ asiko-boutique/
 - **Email:** Confirmation via Brevo `send_transactional_email()` with graceful fallback
 - **36-State Shipping:** ₦1,500 (Lagos) to ₦4,000 (Borno, Yobe)
 
-### 4. 3D Try-On Engine
-- **Engine:** `static/js/atelier-3d.js` (~400 lines `TryOnEngine`)
-- **Loads:** Avatar GLB + clothing GLB via Three.js GLTFLoader
-- **Texture fallback:** When GLB has 0 materials, source product image applied as `MeshStandardMaterial.map`
+### 4. 3D Try-On Viewer
+- **Viewer:** Google `<model-viewer>` web component (CDN: `model-viewer.min.js` 3.5.0)
+- **Rendering:** GLB files loaded directly, auto-rotate, camera controls, environment lighting, AR support
+- **In-place swapping:** Alpine.js `tryOnApp()` — clicking a product in browse panel swaps `model-viewer src` + product info with no page navigation
+- **Mobile:** Stacked layout (`lg:grid-cols-3` → single column), toggle button for product details
+- **Poster fallback:** If no GLB, shows `base_image` as poster; if no image, shows placeholder "A"
+- **Covered products:** Benin Bronze Cuff currently has a completed GLB (assigned from stale pipeline file)
 - **Pipeline:** Hunyuan3D-2 via `/shape_generation` endpoint (NOT `/generation_all` — broken on HF Space)
-- **Pipeline status:** `idle → queued → processing → completed | failed`
+- **Pipeline status:** `idle → queued → generating_mesh → completed | failed`
 - **DB columns:** `model_3d_url`, `source_2d_image_url`, `pipeline_status`, `asset_category`
 
 ### 5. Product Reviews
@@ -188,10 +192,10 @@ asiko-boutique/
 - **Output:** Saves to `static/uploads/optimized/mesh_prod_{uuid}.glb`
 - **URL normalization:** Windows backslashes replaced with forward slashes in `model_3d_url`
 
-### Source Image Texture Fallback
-- When GLB has 0 materials, 0 textures → Three.js applies source product photo as texture
-- `source_2d_image_url` wired through: DB → virtual.py → tryon-load-garment event → TryOnEngine
-- `_applySourceImageTexture()` loads photo as `MeshStandardMaterial.map` on all meshes
+### Render Fallback (Poster)
+- `<model-viewer>` uses `poster` attribute to show `base_image` while GLB loads
+- If no `model_3d_url` exists, the poster stays visible (no 3D model)
+- Old texture fallback system (`_applySourceImageTexture` in `atelier-3d.js`) is deprecated — replaced by model-viewer
 
 ---
 
@@ -218,9 +222,9 @@ asiko-boutique/
 3. **Starlette 1.0 TemplateResponse** — `TemplateResponse(request, "name", {context})`
 4. **Graceful email** — Brevo emails skip silently when API key is placeholder
 5. **Atomic stock** — SELECT FOR UPDATE row locking prevents oversell
-6. **Simplified 3D engine** — Old 2100-line parametric mannequin replaced with ~400-line GLB loader
+6. **Model-viewer 3D** — Google `<model-viewer>` web component (not custom Three.js). Built-in AR, camera controls, auto-rotation, environment lighting
 7. **Pipeline daemon** — Lazy HF Space connection, retries on failure
-8. **Source image as texture** — Fallback when GLB lacks materials (AI textures need GPU)
+8. **Poster fallback** — `base_image` shown as model-viewer poster when GLB unavailable
 9. **Client-side search** — Alpine.js filtering (no server round-trip needed)
 10. **Paystack reference** — `asiko_{order_id}` format, kobo amounts
 11. **Customer auth** — SHA-256 + salt (not bcrypt) for simplicity
@@ -236,7 +240,7 @@ asiko-boutique/
 |--------|------|-------------|
 | GET | `/` | Homepage with product grid, search/filter |
 | GET | `/product/{product_id}` | Editorial PDP, 3D badge, reviews |
-| GET | `/try/{product_id}` | 3D try-on page with gender toggle |
+| GET | `/try/{product_id}` | 3D try-on page with model-viewer, Alpine.js in-place swap |
 | POST | `/product/{product_id}/review` | Submit review |
 | GET | `/product/{product_id}/reviews` | Reviews list (HTMX fragment) |
 | GET | `/virtual-experience` | Showroom / 3D experience |
@@ -317,27 +321,31 @@ python -m uvicorn app.main:app --reload --port 8000
 python -m pytest app/tests/test_admin_sections.py -v      # 72 tests
 python -m pytest app/tests/test_admin_create_product.py -v  # 30 tests
 python -m pytest app/tests/test_storefront_pages.py -v      # 43 tests
-python -m pytest app/tests/test_realtime.py -v             # 37 tests
-python -m pytest app/tests/ -v                             # All 182 tests
+python -m pytest app/tests/test_realtime.py -v             # 35 tests
+python -m pytest app/tests/test_pipeline_worker.py -v      # 7 tests
+python -m pytest app/tests/ -v                             # All tests (excluding test_image_to_3d_pipeline.py which times out on DB pool init)
 ```
 
 ---
 
 ## Current State (Live DB)
 
-- **"Ebay" product:** `status=completed`, `model_3d_url` set, `source_2d_image_url` set, `base_image` set
-- **"Lagos Silk Blazer":** `status=failed`
-- **Remaining 8 products:** `status=idle`, no model, no source image, no base image
-- **GLB on disk:** `mesh_prod_709e8d8f-...glb` (11.7MB, 1 mesh, 0 materials, 0 textures)
-- **HF Space:** `/generation_all` broken (NameError, `HAS_TEXTUREGEN = False`), `/shape_generation` works
+- **All 10 products at `generating_mesh`** — Pipeline daemon processing them, none completed yet
+- **Benin Bronze Cuff** — Manually assigned `model_3d_url = /static/uploads/optimized/mesh_prod_f4bcceab.glb`, `pipeline_status = completed` (stale GLB from old product)
+- **Lagos Silk Blazer** — Stale auto-generated path cleared, now at `generating_mesh`
+- **Product images:** All 10 products have `base_image` set to `/static/uploads/prod_*.jpg` (8 from Pexels, 2 from legacy uploads)
+- **GLBs on disk (4 stale):** `mesh_prod_2eb03a95.glb` (1.5MB), `mesh_prod_709e8d8f.glb` (11.7MB), `mesh_prod_f4bcceab.glb` (14.1MB), `mesh_prod_fe644559.glb` (1.5MB) — all generated for deleted/seeded-over products
+- **HF Space:** `/generation_all` broken (NameError, `HAS_TEXTUREGEN = False`), `/shape_generation` works but slow (30-60s per generation on free tier)
+- **No NVIDIA GPU / no Docker** on this machine — cannot self-host Hunyuan3D-2
 - **PAYSTACK_SECRET_KEY:** Placeholder — checkout fails until real test key provided
-- **182 tests pass** (admin sections 72, admin create 30, storefront 43, realtime 37)
+- **187 tests pass** (admin sections 72, admin create 30, storefront 43, realtime 35, pipeline worker 7)
+- **Test files moved away from atelier-3d.js** — model-viewer checks for `ar-button`, `camera-controls` instead of Three.js canvas
 
 ---
 
 ## Remaining Work
 
 1. **Paystack test keys** — Replace placeholder in `.env` to enable checkout
-2. **Product images** — Upload source images for remaining 9 products
-3. **Mobile polish** — Responsive tweaks for try-on experience
-4. **AI textures (future)** — Self-host Hunyuan3D-2 with `--enable_tex` (needs ~16GB VRAM GPU)
+2. **Pipeline completion** — Wait for all 10 products to finish `generating_mesh`; pipeline has cold-start delays on public HF Space
+3. **Self-host Hunyuan3D-2** — Needs GPU VM (RunPod, Vast.ai, or GCP with T4 ~$0.35/hr); not feasible on current dev machine (no NVIDIA GPU, no Docker)
+4. **Proper AI textures (future)** — Self-host with `--enable_tex` flag (~16GB VRAM), or use Meshy/Tripo3D for better quality

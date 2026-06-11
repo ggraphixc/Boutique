@@ -81,6 +81,14 @@
         </div>
 
         <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400">Click a product below to start its 3D conversion.</p>
+                <button hx-get="/admin/section/operations" hx-target="#workspace-content" hx-swap="innerHTML"
+                        class="text-xs font-mono uppercase tracking-wider text-[#D4AF37] hover:text-[#b8961f] transition-colors flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Refresh
+                </button>
+            </div>
             {% if pipeline_products %}
             <div class="space-y-3">
                 {% for p in pipeline_products %}
@@ -105,7 +113,7 @@
                             {% if p.pipeline_status == 'generated' %}
                                 <span class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                    3D Ready — visible in shop
+                                    3D Ready
                                 </span>
                             {% elif p.pipeline_status == 'processing' %}
                                 <span class="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600">
@@ -115,12 +123,17 @@
                             {% elif p.pipeline_status == 'failed' %}
                                 <span class="inline-flex items-center gap-1 text-[11px] font-medium text-rose-600">
                                     <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
-                                    3D failed — try uploading a new photo
+                                    3D failed — try again
+                                </span>
+                            {% elif p.pipeline_status == 'not_started' %}
+                                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
+                                    Not started
                                 </span>
                             {% else %}
                                 <span class="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">
                                     <span class="w-1.5 h-1.5 rounded-full bg-gray-400"></span>
-                                    Waiting for photo upload
+                                    {{ p.pipeline_status }}
                                 </span>
                             {% endif %}
                             <span class="text-[11px] text-gray-400 dark:text-gray-500">&#8358;{{ '{:,.0f}'.format(p.price) }} · {{ p.stock_quantity }} in stock</span>
@@ -130,11 +143,34 @@
                     <!-- Action -->
                     <div id="ops-pipeline-{{ p.id }}" class="flex-shrink-0">
                         {% if p.pipeline_status == 'generated' %}
-                        <a href="/" target="_blank" class="text-xs font-medium text-[#0D2A22] dark:text-gray-200 bg-white dark:bg-[#27272A] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#333] rounded-lg px-3 py-2 transition-colors">
-                            View in Shop
+                        <a href="/try/{{ p.id }}" target="_blank" class="text-xs font-medium text-[#0D2A22] dark:text-gray-200 bg-white dark:bg-[#27272A] border border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#333] rounded-lg px-3 py-2 transition-colors">
+                            View 3D
                         </a>
                         {% elif p.pipeline_status == 'processing' %}
-                        <span class="text-xs text-amber-600 font-medium px-3 py-2">Being made...</span>
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 text-xs text-amber-600 font-medium px-2">
+                                <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+                                Making...
+                            </span>
+                            <form hx-post="/admin/dashboard/pipeline/link-2d"
+                                  hx-target="#ops-pipeline-{{ p.id }}"
+                                  hx-swap="innerHTML"
+                                  onsubmit="return confirm('Already generating. Restart?')">
+                                <input type="hidden" name="product_id" value="{{ p.id }}">
+                                <input type="hidden" name="source_2d_image_url" value="{{ p.base_image or '' }}">
+                                <button type="submit" class="text-[10px] font-medium text-gray-500 hover:text-amber-600 px-1.5 py-1 transition-colors">Restart</button>
+                            </form>
+                        </div>
+                        {% elif p.pipeline_status == 'failed' %}
+                        <form hx-post="/admin/dashboard/pipeline/link-2d"
+                              hx-target="#ops-pipeline-{{ p.id }}"
+                              hx-swap="innerHTML">
+                            <input type="hidden" name="product_id" value="{{ p.id }}">
+                            <input type="hidden" name="source_2d_image_url" value="{{ p.base_image or '' }}">
+                            <button type="submit" class="text-xs font-medium text-white bg-rose-500 hover:bg-rose-600 rounded-lg px-3 py-2 transition-colors">
+                                Retry 3D
+                            </button>
+                        </form>
                         {% else %}
                         <form hx-post="/admin/dashboard/pipeline/link-2d"
                               hx-target="#ops-pipeline-{{ p.id }}"

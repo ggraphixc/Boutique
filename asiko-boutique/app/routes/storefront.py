@@ -384,7 +384,7 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
         products = await conn.fetch(
             """
             SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
-                   p.stock_quantity
+                   p.stock_quantity, p.description
             FROM products p
             WHERE p.model_3d_url IS NOT NULL
             ORDER BY p.name
@@ -393,12 +393,11 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
         )
 
     if not products:
-        # Show all products even without 3D models
         async with pool.acquire() as conn:
             products = await conn.fetch(
                 """
                 SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
-                       p.stock_quantity
+                       p.stock_quantity, p.description
                 FROM products p
                 ORDER BY p.name
                 LIMIT 20
@@ -418,19 +417,17 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
         has_3d = bool(p.get("model_3d_url"))
         img = p.get("base_image") or ""
         stock = p.get("stock_quantity") or 0
+        desc = (p.get("description") or "")[:150]
 
-        # Thumbnail
         if img:
             thumb = f'<img src="{img}" class="w-8 h-8 rounded object-cover" alt="">'
         else:
             thumb = '<div class="w-8 h-8 rounded bg-brand-deep/5 flex items-center justify-center text-[10px] text-brand-deep/30">A</div>'
 
-        # 3D badge
         badge_3d = ""
         if has_3d:
             badge_3d = '<span class="text-[8px] font-mono text-brand-accent bg-brand-accent/10 px-1 py-0.5 rounded">3D</span>'
 
-        # Stock
         if stock == 0:
             stock_cls = "text-red-400"
             stock_txt = "Sold out"
@@ -441,17 +438,13 @@ async def tryon_product_list(request: Request) -> HTMLResponse:
             stock_cls = "text-emerald-600"
             stock_txt = "In stock"
 
-        # Click handler: dispatch event to load garment in 3D viewer
-        # If product has no 3D model, clicking does nothing special
-        click_attrs = ""
-        if has_3d:
-            model_url = p["model_3d_url"]
-            source_img = p.get("source_2d_image_url") or p.get("base_image") or ""
-            click_attrs = f"""onclick="document.dispatchEvent(new CustomEvent('tryon-load-garment', {{ detail: {{ url: '{model_url}', sourceImage: '{source_img}', name: '{name.replace("'", "\\'")}', price: {int(p['price'] or 0)}, productId: '{pid}' }} }}))" """
+        # Escape single quotes in name and description for JS
+        name_js = name.replace("'", "\\'")
+        desc_js = desc.replace("'", "\\'")
 
         rows += f"""
-        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-brand-deep/5 transition-colors cursor-pointer group {('' if has_3d else 'opacity-50')}"
-             {click_attrs}>
+        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-brand-deep/5 transition-colors group {'opacity-50' if not has_3d else ''} cursor-pointer"
+             {'onclick="document.dispatchEvent(new CustomEvent(\'tryon-load-garment\', {detail: {url: \'' + p["model_3d_url"] + '\', name: \'' + name_js + '\', price: ' + str(int(p["price"] or 0)) + ', productId: \'' + pid + '\', base_image: \'' + img + '\', stock: ' + str(stock) + ', description: \'' + desc_js + '\'}}))"' if has_3d else ''}>
             {thumb}
             <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-1">

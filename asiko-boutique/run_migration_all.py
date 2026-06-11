@@ -30,6 +30,12 @@ MIGRATION_ORDER = [
     "05_single_brand.sql",
     "06_schema_alignment.sql",
     "07_gltf_columns.sql",
+    "08_image_to_3d_pipeline.sql",
+    "09_admin_redesign_tables.sql",
+    "10_products_slug.sql",
+    "10_seed_catalog.sql",
+    "11_customers_auth.sql",
+    "12_product_images_pipeline.sql",
 ]
 
 
