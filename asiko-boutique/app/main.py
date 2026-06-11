@@ -130,7 +130,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     logger.info("Database pool bound to app.state.db_pool.")
 
     # 2. SELF-HEALING SCHEMA GUARD: Verify and inject missing tracking definitions
-    print("LOG_SYSTEM: Running database structural validation checks...")
+    logger.info("LOG_SYSTEM: Running database structural validation checks...")
     async with app.state.db_pool.acquire() as conn:
         # Create asset_category enum type if it does not exist
         await conn.execute("""
@@ -147,7 +147,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             ALTER TABLE products 
             ADD COLUMN IF NOT EXISTS asset_category asset_category_type DEFAULT 'apparel';
         """)
-    print("LOG_SYSTEM: Database schema structural validation completed successfully.")
+    logger.info("LOG_SYSTEM: Database schema structural validation completed successfully.")
 
     # 3. Instantiate and launch our autonomous 3D pipeline background daemon
     daemon = AsikoPipelineDaemon(db_pool=app.state.db_pool)
@@ -155,17 +155,17 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
 
     # Spawn the persistent loop as a non-blocking concurrent task on the event loop
     daemon_task = asyncio.create_task(daemon.start_loop(check_interval_seconds=10))
-    print("LOG_SYSTEM: ÀSÌKÒ 3D Pipeline Daemon successfully mounted to application lifespan thread.")
+    logger.info("LOG_SYSTEM: ÀSÌKÒ 3D Pipeline Daemon successfully mounted to application lifespan thread.")
 
     # 4. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
-    print("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
+    logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
 
     try:
         yield
     finally:
         # 5. Graceful teardown sequences on web application shutdown
-        print("LOG_SYSTEM: Shutting down web instance. Dismantling background processes safely...")
+        logger.info("LOG_SYSTEM: Shutting down web instance. Dismantling background processes safely...")
         daemon.is_running = False
         daemon_task.cancel()
         try:
@@ -175,7 +175,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
 
         # Stop real-time listeners
         await realtime_manager.stop_listeners()
-        print("LOG_SYSTEM: Real-time WebSocket listeners stopped.")
+        logger.info("LOG_SYSTEM: Real-time WebSocket listeners stopped.")
 
         # Close connection boundaries
         await close_db_pool()
