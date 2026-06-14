@@ -1,6 +1,6 @@
 # ASIKO Boutique - Checkout & Shipping Routes (Atomic Transactions)
 # DB-backed 36-state matrix, SELECT FOR UPDATE stock validation, Brevo dispatch.
-# Paystack payment initialization for Nigerian payments.
+# OPay payment initialization for Nigerian bank transfer + card payments.
 
 import json
 from starlette.requests import Request
@@ -9,7 +9,7 @@ from starlette.routing import Route
 
 from app.core import templates, get_cart_from_session, save_cart_to_session
 from app.services.brevo import send_transactional_email
-from app.services.settlement import initialize_paystack_transaction
+from app.services.settlement import initialize_payment
 
 
 async def checkout_page(request: Request) -> HTMLResponse:
@@ -19,6 +19,7 @@ async def checkout_page(request: Request) -> HTMLResponse:
         return RedirectResponse("/", status_code=302)
 
     pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     async with pool.acquire() as conn:
         states_raw = await conn.fetch(
             "SELECT code, name, shipping_cost FROM nigerian_states ORDER BY name ASC"
@@ -28,6 +29,7 @@ async def checkout_page(request: Request) -> HTMLResponse:
         "request": request,
         "cart": cart,
         "states": [dict(s) for s in states_raw],
+        "settings": settings,
     }
     return templates.TemplateResponse(request, "checkout/index.html", context)
 
@@ -66,7 +68,7 @@ async def shipping_summary(request: Request) -> HTMLResponse:
 async def checkout_submit(request: Request) -> HTMLResponse:
     """
     Transactional gateway: SELECT FOR UPDATE stock validation, atomic order creation,
-    stock decrement, Paystack initialization, Brevo email dispatch with graceful fallback.
+    stock decrement, OPay initialization, Brevo email dispatch with graceful fallback.
     """
     form_data = await request.form()
     first_name = form_data.get("first_name", "").strip()
@@ -162,25 +164,24 @@ async def checkout_submit(request: Request) -> HTMLResponse:
                         line["quantity"], line["variant_id"],
                     )
 
-        # Initialize Paystack transaction
+        # Initialize OPay payment
         amount_kobo = int(grand_total * 100)  # Convert to kobo
-        paystack_result = await initialize_paystack_transaction(
+        opay_result = await initialize_payment(
             email=email,
             amount_kobo=amount_kobo,
             order_id=str(order_id),
+            customer_name=f"{first_name} {last_name}",
             metadata=metadata_payload,
         )
 
-        if "error" in paystack_result:
-            # Payment initialization failed — still redirect to confirmation
-            # but log the error. In production, you might want to show an error page.
+        if "error" in opay_result:
             request.session["last_order_id"] = str(order_id)
-            request.session["payment_error"] = paystack_result["error"]
-            return RedirectResponse(url="/checkout/confirmation", status_code=302)
+            request.session["payment_error"] = opay_result["error"]
+            return RedirectResponse(url="/checkout/confirmation?success=Order+placed+successfully!", status_code=302)
 
-        # Store Paystack reference in session for verification
+        # Store OPay reference in session for verification
         request.session["last_order_id"] = str(order_id)
-        request.session["paystack_reference"] = paystack_result["reference"]
+        request.session["opay_reference"] = opay_result["reference"]
 
         # Flush cart after successful transaction
         cart["lines"] = []
@@ -203,8 +204,8 @@ async def checkout_submit(request: Request) -> HTMLResponse:
         except Exception:
             pass  # Suppress failures from missing/placeholder API keys
 
-        # Redirect to Paystack payment page
-        return RedirectResponse(url=paystack_result["authorization_url"], status_code=302)
+        # Redirect to OPay payment page
+        return RedirectResponse(url=opay_result["authorization_url"], status_code=302)
 
     except Exception as exc:
         return HTMLResponse(
@@ -218,11 +219,14 @@ async def checkout_confirmation(request: Request) -> HTMLResponse:
     """Render order confirmation from session-stored order_id."""
     order_id = request.session.get("last_order_id")
     if not order_id:
-        return RedirectResponse("/", status_code=302)
+        return RedirectResponse("/?error=Checkout+failed", status_code=302)
 
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     context = {
         "request": request,
         "order_id": order_id,
+        "settings": settings,
     }
     return templates.TemplateResponse(request, "checkout/confirmation.html", context)
 

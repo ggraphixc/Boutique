@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ÀSÌKÒ // Create Account</title>
+    <title>ASIKO // Create Account</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,59 +12,230 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+        [x-cloak] { display: none !important; }
+        @keyframes authFloat1 { 0%, 100% { transform: translateY(0) rotate(-2deg) scale(1); } 50% { transform: translateY(-20px) rotate(3deg) scale(1.02); } }
+        @keyframes authFloat2 { 0%, 100% { transform: translateY(0) rotate(2deg) scale(1); } 50% { transform: translateY(-18px) rotate(-2deg) scale(1.03); } }
+        @keyframes authFloat3 { 0%, 100% { transform: translateY(0) rotate(-1deg) scale(1); } 50% { transform: translateY(-15px) rotate(2deg) scale(1.01); } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        .float-1 { animation: authFloat1 7s ease-in-out infinite; }
+        .float-2 { animation: authFloat2 8s ease-in-out infinite 1s; }
+        .float-3 { animation: authFloat3 9s ease-in-out infinite 0.5s; }
+        .spin-slow { animation: spin-slow 25s linear infinite; }
+        .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+        input[type="checkbox"] { accent-color: #D4AF37; }
+    </style>
 </head>
-<body class="bg-brand-base min-h-screen font-sans text-brand-deep flex items-center justify-center px-4">
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep overflow-x-hidden">
 
-    <div class="w-full max-w-md">
+    <div x-data="{
+        showPassword: false,
+        showConfirm: false,
+        password: '',
+        confirmPassword: '',
+        get passwordsMatch() {
+            return this.confirmPassword.length > 0 && this.password === this.confirmPassword;
+        },
+        get passwordsMismatch() {
+            return this.confirmPassword.length > 0 && this.password !== this.confirmPassword;
+        }
+    }" class="flex min-h-screen">
+        <!-- Left side: decorative -->
+        <div class="hidden lg:flex lg:w-1/2 bg-[#0D2A22] relative overflow-hidden items-center justify-center">
+            <!-- Grid overlay -->
+            <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
 
-        <!-- Brand -->
-        <div class="text-center mb-8">
-            <a href="/" class="font-display text-2xl tracking-wide">ÀSÌKÒ</a>
-            <p class="text-xs text-brand-deep/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
-        </div>
+            <div class="relative w-full h-full">
+                <!-- Large ring -->
+                <div class="absolute top-1/3 right-1/4 spin-slow">
+                    <div class="w-36 h-36 rounded-full border-2 border-[#D4AF37]/20"></div>
+                    <div class="absolute inset-4 rounded-full border border-[#D4AF37]/10"></div>
+                </div>
 
-        <!-- Register Card -->
-        <div class="bg-white rounded-xl border border-brand-deep/10 p-8 shadow-sm">
-            <h1 class="font-display text-xl text-brand-deep mb-1">Create Account</h1>
-            <p class="text-sm text-brand-deep/50 mb-6">Join ÀSÌKÒ to track orders and try on clothes in 3D.</p>
+                <!-- 3D Hoody image (represents bags/casual) -->
+                <div class="absolute top-[12%] left-[12%] float-1 w-40">
+                    <img src="/static/images/icon-image/hoody.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow"></div>
+                </div>
 
-            {% if error %}
-            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
-                {{ error }}
+                <!-- 3D Beanie hat image -->
+                <div class="absolute bottom-[22%] right-[10%] float-2 w-36">
+                    <img src="/static/images/icon-image/beanie hat.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow" style="animation-delay: 1s;"></div>
+                </div>
+
+                <!-- 3D Necklace image -->
+                <div class="absolute top-[52%] left-[28%] float-3 w-32">
+                    <img src="/static/images/icon-image/necklace.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow" style="animation-delay: 2s;"></div>
+                </div>
+
+                <!-- Pulsing orbs -->
+                <div class="absolute top-[30%] right-[30%] w-28 h-28 bg-[#D4AF37]/5 rounded-full pulse-glow blur-xl"></div>
+                <div class="absolute bottom-[20%] left-[25%] w-20 h-20 bg-[#D4AF37]/8 rounded-full pulse-glow blur-xl" style="animation-delay: 1s;"></div>
+
+                <!-- Center text -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-12">
+                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">ASIKO</span>
+                    <p class="text-white/40 text-sm tracking-widest uppercase">Boutique</p>
+                    <div class="w-12 h-px bg-[#D4AF37]/30 mt-6"></div>
+                    <p class="text-white/30 text-xs mt-4 max-w-xs">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
+                </div>
             </div>
-            {% endif %}
-
-            <form method="POST" action="/register" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Full Name</label>
-                    <input type="text" name="full_name" required
-                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
-                           placeholder="Your name">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Email</label>
-                    <input type="email" name="email" required
-                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
-                           placeholder="you@example.com">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Password</label>
-                    <input type="password" name="password" required minlength="6"
-                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
-                           placeholder="At least 6 characters">
-                </div>
-                <button type="submit"
-                        class="w-full bg-brand-deep text-white py-3 rounded-lg text-sm font-medium hover:bg-brand-deep/90 transition-colors">
-                    Create Account
-                </button>
-            </form>
         </div>
 
-        <!-- Footer -->
-        <p class="text-center text-xs text-brand-deep/40 mt-6">
-            Already have an account? <a href="/login" class="text-brand-accent hover:text-brand-deep">Sign in</a>
-        </p>
+        <!-- Right side: form -->
+        <div class="flex-1 flex items-center justify-center px-4 sm:px-6 pb-8 pt-8 sm:pt-12">
+            <div class="w-full max-w-md mx-auto">
+                <!-- Mobile brand -->
+                <div class="text-center mb-8 lg:hidden">
+                    <a href="/" class="font-display text-3xl tracking-wide text-[#0D2A22]">ASIKO</a>
+                    <p class="text-xs text-[#0D2A22]/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
+                </div>
 
+                <!-- Form card -->
+                <div class="bg-white rounded-2xl border border-[#0D2A22]/8 p-5 sm:p-8 shadow-xl shadow-[#0D2A22]/5">
+                    <div class="mb-6">
+                        <h1 class="font-display text-2xl text-[#0D2A22] mb-1">Create your account</h1>
+                        <p class="text-sm text-[#0D2A22]/50">Join ASIKO to track orders and manage your wardrobe.</p>
+                    </div>
+
+                    {% if error %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5 flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="/register" class="space-y-4" novalidate>
+                        <!-- Full Name -->
+                        <div>
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Full Name</label>
+                            <input type="text" name="full_name" required
+                                   class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                   placeholder="Your name">
+                        </div>
+
+                        <!-- Email -->
+                        <div>
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Email</label>
+                            <input type="email" name="email" required
+                                   class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                   placeholder="you@example.com">
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Password</label>
+                            <div class="relative">
+                                <input :type="showPassword ? 'text' : 'password'" name="password" required minlength="6"
+                                       x-model="password"
+                                       class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                       placeholder="At least 6 characters">
+                                <button type="button" @click="showPassword = !showPassword" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#0D2A22]/30 hover:text-[#0D2A22]/60 transition-colors" tabindex="-1">
+                                    <svg x-show="!showPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg x-show="showPassword" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Confirm Password -->
+                        <div>
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Confirm Password</label>
+                            <div class="relative">
+                                <input :type="showConfirm ? 'text' : 'password'" name="confirm_password" required minlength="6"
+                                       x-model="confirmPassword"
+                                       :class="passwordsMismatch ? 'border-red-400 focus:ring-red-300/40 focus:border-red-400' : passwordsMatch ? 'border-emerald-400 focus:ring-emerald-300/40 focus:border-emerald-400' : ''"
+                                       class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                       placeholder="Repeat your password">
+                                <button type="button" @click="showConfirm = !showConfirm" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#0D2A22]/30 hover:text-[#0D2A22]/60 transition-colors" tabindex="-1">
+                                    <svg x-show="!showConfirm" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg x-show="showConfirm" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                                </button>
+                            </div>
+                            <!-- Match / mismatch indicators -->
+                            <p x-show="passwordsMatch" x-cloak class="text-xs text-emerald-600 mt-1.5 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                Passwords match
+                            </p>
+                            <p x-show="passwordsMismatch" x-cloak class="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                Passwords do not match
+                            </p>
+                        </div>
+
+                        <!-- Agree to Terms -->
+                        <div class="flex items-start gap-3 pt-1">
+                            <input type="checkbox" name="agree_terms" required id="agree_terms"
+                                   class="mt-0.5 w-4 h-4 rounded border-[#0D2A22]/12 text-[#D4AF37] focus:ring-[#D4AF37]/40 shrink-0">
+                            <label for="agree_terms" class="text-xs text-[#0D2A22]/50 leading-relaxed">
+                                I agree to the <a href="#" class="text-[#D4AF37] font-medium hover:text-[#0D2A22] transition-colors underline underline-offset-2">Terms &amp; Privacy Policy</a>
+                            </label>
+                        </div>
+
+                        <!-- Submit -->
+                        <button type="submit"
+                                class="w-full bg-[#0D2A22] text-white py-3.5 rounded-xl text-sm font-semibold hover:bg-[#0D2A22]/90 transition-all duration-200 mt-2 shadow-lg shadow-[#0D2A22]/20 hover:shadow-xl hover:shadow-[#0D2A22]/30">
+                            Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Footer link -->
+                <p class="text-center text-sm text-[#0D2A22]/40 mt-6 px-4 pb-2">
+                    Already have an account? <a href="/login" class="text-[#D4AF37] font-medium hover:text-[#0D2A22] transition-colors">Sign in</a>
+                </p>
+            </div>
+        </div>
     </div>
+
+    <!-- Toast -->
+    <div id="asiko-toast" class="hidden fixed top-4 right-4 z-[9999] max-w-sm">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex items-start gap-3">
+            <div id="asiko-toast-icon" class="flex-shrink-0 mt-0.5"></div>
+            <div class="flex-1 min-w-0">
+                <p id="asiko-toast-title" class="text-sm font-semibold text-gray-900"></p>
+                <p id="asiko-toast-msg" class="text-xs text-gray-500 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('asiko-toast').classList.add('hidden')" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <script>
+    function asikoToast(type, title, msg) {
+        const t = document.getElementById('asiko-toast');
+        const icon = document.getElementById('asiko-toast-icon');
+        const titleEl = document.getElementById('asiko-toast-title');
+        const msgEl = document.getElementById('asiko-toast-msg');
+        if (type === 'success') {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>';
+        } else {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>';
+        }
+        titleEl.textContent = title;
+        msgEl.textContent = msg;
+        t.classList.remove('hidden');
+        clearTimeout(window._asikoToastTimer);
+        window._asikoToastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
+    }
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const success = params.get('success');
+        const error = params.get('error');
+        if (success) asikoToast('success', 'Success', decodeURIComponent(success));
+        if (error) asikoToast('error', 'Error', decodeURIComponent(error));
+        if (success || error) {
+            const url = new URL(window.location);
+            url.searchParams.delete('success');
+            url.searchParams.delete('error');
+            window.history.replaceState({}, '', url);
+        }
+    })();
+    </script>
 </body>
 </html>

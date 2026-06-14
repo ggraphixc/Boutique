@@ -97,7 +97,7 @@ class TestCreateProductEndpoint:
             follow_redirects=False,
         )
         assert "HX-Redirect" in response.headers
-        assert response.headers["HX-Redirect"] == "/admin/section/products"
+        assert response.headers["HX-Redirect"] == "/admin/section/products?success=Product+created"
 
     def test_create_product_success_message(self):
         """POST /admin/products/create returns success message."""
@@ -260,7 +260,7 @@ class TestEditProductEndpoint:
             follow_redirects=False,
         )
         assert "HX-Redirect" in response.headers
-        assert response.headers["HX-Redirect"] == "/admin/section/products"
+        assert response.headers["HX-Redirect"] == "/admin/section/products?success=Product+updated"
 
     def test_edit_product_success_message(self):
         """POST /admin/products/{id}/edit returns success message."""
@@ -373,8 +373,6 @@ class TestProductsSectionUI:
                     "price": 25000.0,
                     "stock_quantity": 5,
                     "base_image": "/static/uploads/test.jpg",
-                    "model_3d_url": None,
-                    "pipeline_status": "idle",
                     "asset_category": None,
                     "created_at": None,
                     "category_id": "cat-1",
@@ -443,8 +441,6 @@ class TestProductsSectionUI:
                     "price": 30000.0,
                     "stock_quantity": 10,
                     "base_image": "/static/uploads/test.jpg",
-                    "model_3d_url": None,
-                    "pipeline_status": "idle",
                     "asset_category": None,
                     "created_at": None,
                     "category_id": "cat-1",
@@ -484,14 +480,12 @@ class TestProductDetailPage:
                 "stock_quantity": 8,
                 "base_image": "/static/uploads/green.jpg",
                 "model_3d_url": None,
-                "pipeline_status": "idle",
                 "description": "Hand-stitched traditional agbada",
                 "category_id": "cat-1",
                 "category_name": "Outerwear",
                 "category_color": None,
                 "created_at": None,
                 "updated_at": None,
-                "pipeline_error_log": None,
             }
 
             async def fetchrow_side_effect(sql, *args):

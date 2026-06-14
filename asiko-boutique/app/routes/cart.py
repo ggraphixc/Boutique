@@ -23,30 +23,47 @@ def _recalculate_cart(cart: dict) -> dict:
 async def cart_add(request: Request) -> HTMLResponse:
     """
     Validates on-hand stock via product_variants and injects into session.
-    Returns the isolated cart counter badge partial via HTMX.
+    Accepts either variant_id (preferred) or product_id (auto-selects first variant).
+    Returns the cart badge + drawer content via HTMX.
     """
     if request.method != "POST":
         return HTMLResponse("Method Not Allowed", status_code=405)
 
     form_data = await request.form()
     variant_id = form_data.get("variant_id")
+    product_id = form_data.get("product_id")
     quantity = int(form_data.get("quantity", 1))
 
-    if not variant_id:
-        return HTMLResponse("Missing Variant Pointer Identifier", status_code=400)
+    if not variant_id and not product_id:
+        return HTMLResponse("Missing product or variant identifier", status_code=400)
 
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
-        variant = await conn.fetchrow(
-            """
-            SELECT v.id, v.size, v.color, v.stock_qty,
-                   p.id AS product_id, p.name, p.price, p.base_image
-            FROM product_variants v
-            JOIN products p ON v.product_id = p.id
-            WHERE v.id = $1
-            """,
-            variant_id,
-        )
+        # If only product_id provided, auto-select first in-stock variant
+        if not variant_id and product_id:
+            variant = await conn.fetchrow(
+                """
+                SELECT v.id, v.size, v.color, v.stock_qty,
+                       p.id AS product_id, p.name, p.price, p.base_image
+                FROM product_variants v
+                JOIN products p ON v.product_id = p.id
+                WHERE v.product_id = $1 AND v.stock_qty > 0
+                ORDER BY v.size ASC
+                LIMIT 1
+                """,
+                product_id,
+            )
+        else:
+            variant = await conn.fetchrow(
+                """
+                SELECT v.id, v.size, v.color, v.stock_qty,
+                       p.id AS product_id, p.name, p.price, p.base_image
+                FROM product_variants v
+                JOIN products p ON v.product_id = p.id
+                WHERE v.id = $1
+                """,
+                variant_id,
+            )
 
         if not variant:
             return HTMLResponse(
@@ -87,8 +104,16 @@ async def cart_add(request: Request) -> HTMLResponse:
     cart = _recalculate_cart(cart)
     save_cart_to_session(request, cart)
 
-    context = {"request": request, "cart": cart}
-    return templates.TemplateResponse(request, "cart/cart_badge.html", context)
+    # Return badge update + drawer content, and signal to open the drawer
+    badge_html = templates.get_template("cart/cart_badge.html").render({"request": request, "cart": cart})
+    drawer_html = templates.get_template("cart/cart_content.html").render({"request": request, "cart": cart})
+
+    combined = (
+        f"{badge_html}"
+        f"<div id='cart-drawer-content' hx-swap-oob='innerHTML'>{drawer_html}</div>"
+        f"<script>document.getElementById('cart-drawer').classList.remove('hidden')</script>"
+    )
+    return HTMLResponse(combined)
 
 
 async def cart_update(request: Request) -> HTMLResponse:

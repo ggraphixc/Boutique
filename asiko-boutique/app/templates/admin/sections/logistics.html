@@ -1,0 +1,198 @@
+<!-- Logistics section: delivery providers + shipments + tracking -->
+<section class="space-y-6" data-section="logistics">
+
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+        <p class="text-sm text-gray-500 mt-1">Delivery providers, shipments, and tracking</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Total Shipments</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.total_shipments }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">In Transit</div>
+            <div class="text-2xl font-bold text-blue-600">{{ stats.in_transit }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Delivered</div>
+            <div class="text-2xl font-bold text-emerald-600">{{ stats.delivered }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Pending Pickup</div>
+            <div class="text-2xl font-bold text-amber-600">{{ stats.pending }}</div>
+        </div>
+    </div>
+
+    <!-- Delivery Providers -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6" data-section="logistics">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Delivery Providers</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Nigerian logistics partners</p>
+            </div>
+            <button onclick="document.getElementById('add-provider-modal').classList.remove('hidden')" class="text-xs font-semibold text-white bg-[#0D2A22] px-4 py-2 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">+ Add Provider</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {% for p in providers %}
+            <div class="border border-gray-100 rounded-lg p-4 hover:border-blue-200 transition-all">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm font-bold text-gray-900">{{ p.name }}</span>
+                    <div class="flex items-center gap-1.5">
+                        {% if p.is_active %}
+                            <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Active</span>
+                        {% else %}
+                            <span class="text-[10px] font-semibold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">Inactive</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="space-y-1.5 text-xs text-gray-500 mb-3">
+                    <div>Base rate: <span class="font-semibold text-gray-900">&#8358;{{ '{:,.0f}'.format(p.base_rate or 0) }}</span></div>
+                    <div>Tracking: <span class="font-semibold text-gray-900">{{ "Yes" if p.supports_tracking else "No" }}</span></div>
+                    {% if p.states_served %}
+                    <div>States: <span class="font-medium text-gray-700">{{ p.states_served|length }}</span></div>
+                    {% endif %}
+                </div>
+                <div class="flex gap-2">
+                    <form hx-post="/admin/section/logistics" hx-swap="none">
+                        <input type="hidden" name="action" value="toggle_provider">
+                        <input type="hidden" name="provider_id" value="{{ p.id }}">
+                        <button type="submit" class="text-[10px] font-semibold px-2.5 py-1 rounded border {% if p.is_active %}text-amber-700 border-amber-200 hover:bg-amber-50{% else %}text-emerald-700 border-emerald-200 hover:bg-emerald-50{% endif %} transition-colors">
+                            {{ "Deactivate" if p.is_active else "Activate" }}
+                        </button>
+                    </form>
+                    <form hx-post="/admin/section/logistics" hx-swap="none" id="delete-provider-{{ p.id }}">
+                        <input type="hidden" name="action" value="delete_provider">
+                        <input type="hidden" name="provider_id" value="{{ p.id }}">
+                        <button type="button" onclick="asikoConfirm('Delete provider?', 'Delete {{ p.name }}? Shipments using it will keep their records.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) document.getElementById('delete-provider-{{ p.id }}').submit(); })" class="text-[10px] font-semibold text-red-600 border border-red-200 px-2.5 py-1 rounded hover:bg-red-50 transition-colors">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-4 text-sm text-gray-500 text-center py-6">No delivery providers configured.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Recent Shipments -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6" data-section="logistics">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Recent Shipments</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Latest delivery activity</p>
+            </div>
+        </div>
+        {% if shipments %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wider text-gray-400 font-mono border-b border-gray-100">
+                        <th class="pb-3 font-medium">Tracking #</th>
+                        <th class="pb-3 font-medium">Provider</th>
+                        <th class="pb-3 font-medium">Receiver</th>
+                        <th class="pb-3 font-medium">State</th>
+                        <th class="pb-3 font-medium">Cost</th>
+                        <th class="pb-3 font-medium">Status</th>
+                        <th class="pb-3 font-medium">Date</th>
+                        <th class="pb-3 font-medium">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for s in shipments %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 font-mono text-xs text-gray-900">{{ s.tracking_number or "—" }}</td>
+                        <td class="py-3 text-gray-700">{{ s.provider_name or "—" }}</td>
+                        <td class="py-3 text-gray-700">{{ s.receiver_name or "—" }}</td>
+                        <td class="py-3 text-gray-700">{{ s.receiver_state or "—" }}</td>
+                        <td class="py-3 font-semibold text-gray-900">&#8358;{{ '{:,.0f}'.format(s.shipping_cost or 0) }}</td>
+                        <td class="py-3">
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border
+                                {% if s.status == 'delivered' %}bg-emerald-50 text-emerald-700 border-emerald-200
+                                {% elif s.status in ('in_transit','out_for_delivery') %}bg-blue-50 text-blue-700 border-blue-200
+                                {% elif s.status == 'pending' %}bg-amber-50 text-amber-700 border-amber-200
+                                {% else %}bg-gray-50 text-gray-700 border-gray-200{% endif %}">
+                                {{ s.status_label }}
+                            </span>
+                        </td>
+                        <td class="py-3 text-xs text-gray-500">{{ s.created_at_human }}</td>
+                        <td class="py-3">
+                            <div class="flex items-center gap-1">
+                                <form hx-post="/admin/section/logistics" hx-swap="none" class="inline-flex">
+                                    <input type="hidden" name="action" value="update_shipment_status">
+                                    <input type="hidden" name="shipment_id" value="{{ s.id }}">
+                                    <select name="new_status" onchange="this.form.submit()" class="text-[10px] border border-gray-200 rounded px-1.5 py-1 bg-white text-gray-700 cursor-pointer">
+                                        {% for st in ['pending','picked_up','in_transit','out_for_delivery','delivered','failed','returned','cancelled'] %}
+                                        <option value="{{ st }}" {% if s.status == st %}selected{% endif %}>{{ st.replace('_',' ').title() }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                                <form hx-post="/admin/section/logistics" hx-swap="none" class="inline-flex" id="delete-shipment-{{ s.id }}">
+                                    <input type="hidden" name="action" value="delete_shipment">
+                                    <input type="hidden" name="shipment_id" value="{{ s.id }}">
+                                    <button type="button" onclick="asikoConfirm('Delete shipment?', 'Delete shipment {{ s.tracking_number or s.id[:8] }}? This cannot be undone.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) document.getElementById('delete-shipment-{{ s.id }}').submit(); })" class="text-[10px] text-red-500 hover:text-red-700 px-1" title="Delete">&#10005;</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-sm text-gray-500 text-center py-8">
+            No shipments yet. Shipments are created when orders are dispatched.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Add Provider Modal -->
+    <div id="add-provider-modal" class="hidden fixed inset-0 z-[9998] bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#111114] rounded-2xl shadow-2xl w-full max-w-lg border border-gray-200 dark:border-gray-800">
+            <div class="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-800">
+                <h3 class="font-bold text-gray-900 dark:text-gray-100">Add Delivery Provider</h3>
+                <button onclick="this.closest('#add-provider-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <form hx-post="/admin/section/logistics" hx-swap="none"
+                  onsubmit="document.getElementById('add-provider-modal').classList.add('hidden')">
+                <input type="hidden" name="action" value="add_provider">
+                <div class="p-5 space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Name *</label>
+                            <input type="text" name="name" required placeholder="e.g. KwikDelivery" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Slug *</label>
+                            <input type="text" name="slug" required placeholder="e.g. kwik" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Base Rate (&#8358;)</label>
+                        <input type="number" name="base_rate" value="1500" min="0" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">States Served (comma-separated)</label>
+                        <input type="text" name="states_served" placeholder="e.g. lagos, abuja, ogun" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#18181B] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="supports_tracking" checked class="w-4 h-4 rounded border-gray-300 text-[#0D2A22] focus:ring-[#D4AF37]">
+                            <span class="text-sm text-gray-700 dark:text-gray-200">Supports Tracking</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="supports_pickup" class="w-4 h-4 rounded border-gray-300 text-[#0D2A22] focus:ring-[#D4AF37]">
+                            <span class="text-sm text-gray-700 dark:text-gray-200">Supports Pickup</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-800">
+                    <button type="button" onclick="this.closest('#add-provider-modal').classList.add('hidden')" class="text-sm font-semibold text-gray-600 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors">Cancel</button>
+                    <button type="submit" class="text-sm font-semibold text-white bg-[#0D2A22] px-5 py-2 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Add Provider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+</section>

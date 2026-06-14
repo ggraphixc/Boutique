@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ÀSÌKÒ // Sign In</title>
+    <title>ASIKO // Sign In</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -12,53 +12,187 @@
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        body { font-family: 'Inter', system-ui, sans-serif; }
+        .font-display { font-family: 'Playfair Display', Georgia, serif; }
+        @keyframes authFloat1 { 0%, 100% { transform: translateY(0) rotate(-3deg) scale(1); } 50% { transform: translateY(-22px) rotate(3deg) scale(1.02); } }
+        @keyframes authFloat2 { 0%, 100% { transform: translateY(0) rotate(2deg) scale(1); } 50% { transform: translateY(-16px) rotate(-2deg) scale(1.03); } }
+        @keyframes authFloat3 { 0%, 100% { transform: translateY(0) rotate(-1deg) scale(1); } 50% { transform: translateY(-20px) rotate(2deg) scale(1.01); } }
+        @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes pulse-glow { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.6; } }
+        .float-1 { animation: authFloat1 7s ease-in-out infinite; }
+        .float-2 { animation: authFloat2 9s ease-in-out infinite 1.2s; }
+        .float-3 { animation: authFloat3 8s ease-in-out infinite 0.6s; }
+        .spin-slow { animation: spin-slow 25s linear infinite; }
+        .pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+    </style>
 </head>
-<body class="bg-brand-base min-h-screen font-sans text-brand-deep flex items-center justify-center px-4">
+<body class="bg-brand-base min-h-screen font-sans text-brand-deep overflow-x-hidden">
 
-    <div class="w-full max-w-md">
+    <div class="flex min-h-screen">
+        <!-- Left side: decorative -->
+        <div class="hidden lg:flex lg:w-1/2 bg-[#0D2A22] relative overflow-hidden items-center justify-center">
+            <!-- Grid overlay -->
+            <div class="absolute inset-0 opacity-[0.03]" style="background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size: 40px 40px;"></div>
 
-        <!-- Brand -->
-        <div class="text-center mb-8">
-            <a href="/" class="font-display text-2xl tracking-wide">ÀSÌKÒ</a>
-            <p class="text-xs text-brand-deep/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
-        </div>
+            <!-- Floating 3D clothing images -->
+            <div class="relative w-full h-full">
+                <!-- Large ring -->
+                <div class="absolute top-1/4 left-1/3 spin-slow">
+                    <div class="w-40 h-40 rounded-full border-2 border-[#D4AF37]/20"></div>
+                    <div class="absolute inset-3 rounded-full border border-[#D4AF37]/10"></div>
+                </div>
 
-        <!-- Login Card -->
-        <div class="bg-white rounded-xl border border-brand-deep/10 p-8 shadow-sm">
-            <h1 class="font-display text-xl text-brand-deep mb-1">Welcome Back</h1>
-            <p class="text-sm text-brand-deep/50 mb-6">Sign in to your ÀSÌKÒ account.</p>
+                <!-- 3D Dress image -->
+                <div class="absolute top-[8%] right-[12%] float-1 w-44">
+                    <img src="/static/images/icon-image/dress.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow"></div>
+                </div>
 
-            {% if error %}
-            <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-lg mb-4">
-                {{ error }}
+                <!-- 3D Shoe image -->
+                <div class="absolute bottom-[20%] left-[10%] float-2 w-40">
+                    <img src="/static/images/icon-image/leather shoe.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow" style="animation-delay: 1s;"></div>
+                </div>
+
+                <!-- 3D Jacket image -->
+                <div class="absolute top-[50%] right-[6%] float-3 w-36">
+                    <img src="/static/images/icon-image/black jacket.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+                    <div class="absolute -inset-4 rounded-full bg-[#D4AF37]/10 blur-xl -z-10 pulse-glow" style="animation-delay: 2s;"></div>
+                </div>
+
+                <!-- Pulsing orbs -->
+                <div class="absolute top-[20%] left-[20%] w-32 h-32 bg-[#D4AF37]/5 rounded-full pulse-glow blur-xl"></div>
+                <div class="absolute bottom-[30%] right-[25%] w-24 h-24 bg-[#D4AF37]/8 rounded-full pulse-glow blur-xl" style="animation-delay: 1.5s;"></div>
+
+                <!-- Center text -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-12">
+                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">ASIKO</span>
+                    <p class="text-white/40 text-sm tracking-widest uppercase">Boutique</p>
+                    <div class="w-12 h-px bg-[#D4AF37]/30 mt-6"></div>
+                    <p class="text-white/30 text-xs mt-4 max-w-xs">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
+                </div>
             </div>
-            {% endif %}
-
-            <form method="POST" action="/login" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Email</label>
-                    <input type="email" name="email" required
-                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
-                           placeholder="you@example.com">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-brand-deep/60 mb-1">Password</label>
-                    <input type="password" name="password" required
-                           class="w-full border border-brand-deep/15 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand-accent bg-brand-base"
-                           placeholder="Your password">
-                </div>
-                <button type="submit"
-                        class="w-full bg-brand-deep text-white py-3 rounded-lg text-sm font-medium hover:bg-brand-deep/90 transition-colors">
-                    Sign In
-                </button>
-            </form>
         </div>
 
-        <!-- Footer -->
-        <p class="text-center text-xs text-brand-deep/40 mt-6">
-            Don't have an account? <a href="/register" class="text-brand-accent hover:text-brand-deep">Create one</a>
-        </p>
+        <!-- Right side: form -->
+        <div class="flex-1 min-h-screen lg:min-h-0 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 pb-8">
+            <div class="w-full max-w-md mx-auto">
+                <!-- Mobile brand -->
+                <div class="text-center mb-6 lg:mb-8 lg:hidden">
+                    <a href="/" class="font-display text-3xl tracking-wide text-[#0D2A22]">ASIKO</a>
+                    <p class="text-xs text-[#0D2A22]/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
+                </div>
 
+                <!-- Form card -->
+                <div class="bg-white rounded-2xl border border-[#0D2A22]/8 p-5 sm:p-8 shadow-xl shadow-[#0D2A22]/5 overflow-hidden">
+                    <div class="mb-5 sm:mb-6">
+                        <h1 class="font-display text-2xl text-[#0D2A22] mb-1">Welcome back</h1>
+                        <p class="text-sm text-[#0D2A22]/50">Sign in to your ASIKO account.</p>
+                    </div>
+
+                    {% if error %}
+                    <div class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl mb-5 flex items-center gap-2">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                        {{ error }}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="/login" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Email</label>
+                            <input type="email" name="email" required
+                                   class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                   placeholder="you@example.com">
+                        </div>
+                        <div x-data="{ show: false }">
+                            <label class="block text-xs font-semibold text-[#0D2A22]/60 mb-1.5">Password</label>
+                            <div class="relative">
+                                <input :type="show ? 'text' : 'password'" name="password" required
+                                       class="w-full border border-[#0D2A22]/12 rounded-xl px-4 py-3 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] bg-[#FBF9F6] transition-all"
+                                       placeholder="Your password">
+                                <button type="button" @click="show = !show" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#0D2A22]/30 hover:text-[#0D2A22]/60 transition-colors" tabindex="-1">
+                                    <svg x-show="!show" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <svg x-show="show" x-cloak class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember me toggle + Forgot password -->
+                        <div class="flex items-center justify-between">
+                            <div x-data="{ remember: false }">
+                                <input type="hidden" name="remember" :value="remember ? 'on' : ''">
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <button type="button" @click="remember = !remember" class="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:ring-offset-2 focus:ring-offset-white"
+                                            :class="remember ? 'bg-[#0D2A22]' : 'bg-[#0D2A22]/15'">
+                                        <span class="inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform duration-200"
+                                              :class="remember ? 'translate-x-[18px]' : 'translate-x-[3px]'"></span>
+                                    </button>
+                                    <span class="text-xs text-[#0D2A22]/50 font-medium">Remember me</span>
+                                </label>
+                            </div>
+                            <a href="/forgot-password" class="text-xs text-[#D4AF37] font-medium hover:text-[#0D2A22] transition-colors">Forgot password?</a>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full bg-[#0D2A22] text-white py-3.5 rounded-xl text-sm font-semibold hover:bg-[#0D2A22]/90 transition-all duration-200 shadow-lg shadow-[#0D2A22]/20 hover:shadow-xl hover:shadow-[#0D2A22]/30">
+                            Sign In
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Footer link -->
+                <p class="text-center text-sm text-[#0D2A22]/40 mt-6 px-4 break-words">
+                    Don't have an account? <a href="/register" class="text-[#D4AF37] font-medium hover:text-[#0D2A22] transition-colors">Create one</a>
+                </p>
+            </div>
+        </div>
     </div>
+
+    <!-- Toast -->
+    <div id="asiko-toast" class="hidden fixed top-4 right-4 z-[9999] max-w-sm">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex items-start gap-3">
+            <div id="asiko-toast-icon" class="flex-shrink-0 mt-0.5"></div>
+            <div class="flex-1 min-w-0">
+                <p id="asiko-toast-title" class="text-sm font-semibold text-gray-900"></p>
+                <p id="asiko-toast-msg" class="text-xs text-gray-500 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('asiko-toast').classList.add('hidden')" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <script>
+    function asikoToast(type, title, msg) {
+        const t = document.getElementById('asiko-toast');
+        const icon = document.getElementById('asiko-toast-icon');
+        const titleEl = document.getElementById('asiko-toast-title');
+        const msgEl = document.getElementById('asiko-toast-msg');
+        if (type === 'success') {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>';
+        } else {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>';
+        }
+        titleEl.textContent = title;
+        msgEl.textContent = msg;
+        t.classList.remove('hidden');
+        clearTimeout(window._asikoToastTimer);
+        window._asikoToastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
+    }
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const success = params.get('success');
+        const error = params.get('error');
+        if (success) asikoToast('success', 'Success', decodeURIComponent(success));
+        if (error) asikoToast('error', 'Error', decodeURIComponent(error));
+        if (success || error) {
+            const url = new URL(window.location);
+            url.searchParams.delete('success');
+            url.searchParams.delete('error');
+            window.history.replaceState({}, '', url);
+        }
+    })();
+    </script>
 </body>
 </html>

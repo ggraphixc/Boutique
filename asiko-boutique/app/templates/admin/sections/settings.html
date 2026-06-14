@@ -1,158 +1,363 @@
-<!-- Settings section: store config -->
-<section class="space-y-6" data-section="settings">
+<!-- Settings section: per-section save buttons + new feature configs -->
+<section class="space-y-4 sm:space-y-5" data-section="settings">
 
-    <div class="flex items-end justify-between">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100">Store settings</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1">Currency, shipping, payment, and atelier integrations.</p>
-        </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">Last saved · just now</span>
-            <button class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-                Save changes
-            </button>
+            <h2 class="font-display text-xl sm:text-2xl text-gray-900 dark:text-gray-100">Store settings</h2>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">Each section saves independently. Changes take effect immediately.</p>
         </div>
     </div>
 
-    <form class="space-y-5" hx-post="/admin/section/settings" hx-target="#workspace-content" hx-swap="outerHTML">
-
-        <!-- Currency & locale -->
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <span class="w-1 h-5 bg-asiko-gold rounded-full"></span>
-                Currency &amp; locale
+    <!-- ==================== STORE PROFILE ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="store_profile">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Store Profile
             </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Display currency</label>
-                    <select name="currency" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                        <option {% if settings.currency == 'NGN' %}selected{% endif %}>NGN · Nigerian Naira</option>
-                        <option {% if settings.currency == 'USD' %}selected{% endif %}>USD · US Dollar</option>
-                        <option {% if settings.currency == 'EUR' %}selected{% endif %}>EUR · Euro</option>
-                        <option {% if settings.currency == 'GBP' %}selected{% endif %}>GBP · British Pound</option>
-                        <option {% if settings.currency == 'NGN' %}selected{% endif %}>NGN · Nigerian Naira</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Timezone</label>
-                    <select name="timezone" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                        <option {% if settings.timezone == 'UTC' %}selected{% endif %}>UTC</option>
-                        <option {% if settings.timezone == 'Africa/Lagos' %}selected{% endif %}>Africa/Lagos</option>
-                        <option {% if settings.timezone == 'America/New_York' %}selected{% endif %}>America/New_York</option>
-                        <option {% if settings.timezone == 'Europe/London' %}selected{% endif %}>Europe/London</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Default locale</label>
-                    <select name="locale" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                        <option {% if settings.locale == 'en' %}selected{% endif %}>English</option>
-                        <option {% if settings.locale == 'fr' %}selected{% endif %}>Français</option>
-                        <option {% if settings.locale == 'yo' %}selected{% endif %}>Yorùbá</option>
-                    </select>
-                </div>
-            </div>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
         </div>
-
-        <!-- Shipping -->
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <span class="w-1 h-5 bg-asiko-gold rounded-full"></span>
-                Shipping
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Domestic flat rate</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
-                        <input type="number" step="0.01" name="shipping_domestic" value="{{ settings.shipping_domestic or '0' }}"
-                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">International flat rate</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
-                        <input type="number" step="0.01" name="shipping_international" value="{{ settings.shipping_international or '0' }}"
-                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Free shipping threshold</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">&#8358;</span>
-                        <input type="number" step="0.01" name="free_shipping_threshold" value="{{ settings.free_shipping_threshold or '0' }}"
-                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Atelier / 3D pipeline -->
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <span class="w-1 h-5 bg-asiko-gold rounded-full"></span>
-                Atelier · 3D pipeline
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">3D generation provider</label>
-                    <select name="mesh_provider" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-asiko-gold/40 focus:border-asiko-gold">
-                        <option {% if settings.mesh_provider == 'hunyuan3d2' %}selected{% endif %}>Tencent Hunyuan3D-2</option>
-                        <option {% if settings.mesh_provider == 'triposr' %}selected{% endif %}>TripoSR (local)</option>
-                        <option {% if settings.mesh_provider == 'none' %}selected{% endif %}>Disabled</option>
-                    </select>
-                    <p class="text-[11px] text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-1.5">Source for converting product images into wearable 3D cloth.</p>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Auto-process on upload</label>
-                    <label class="flex items-center gap-2 mt-2 cursor-pointer">
-                        <input type="checkbox" name="auto_mesh" {% if settings.auto_mesh %}checked{% endif %}
-                               class="w-4 h-4 text-asiko-gold border-gray-300 dark:border-gray-700 rounded focus:ring-asiko-gold/40">
-                        <span class="text-sm text-gray-700 dark:text-gray-200">Queue 3D generation automatically when a product image is uploaded</span>
-                    </label>
-                </div>
-            </div>
-        </div>
-
-        <!-- Integrations -->
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-            <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <span class="w-1 h-5 bg-asiko-gold rounded-full"></span>
-                Integrations
-            </h3>
-            <div class="space-y-3">
-                {% for integ in [
-                    {'name': 'Stripe', 'desc': 'Payment processing', 'connected': true},
-                    {'name': 'Neon Postgres', 'desc': 'Primary database', 'connected': true},
-                    {'name': 'Cloudflare R2', 'desc': 'Asset storage', 'connected': true},
-                    {'name': 'Gradio Client', 'desc': '3D mesh generation', 'connected': settings.mesh_provider != 'none'},
-                    {'name': 'Mailgun', 'desc': 'Transactional email', 'connected': false},
-                ] %}
-                <div class="flex items-center gap-4 px-4 py-3 border border-gray-100 dark:border-gray-800 rounded-lg">
-                    <div class="w-9 h-9 rounded-lg bg-gray-50 dark:bg-[#18181B] text-gray-500 dark:text-gray-400 dark:text-gray-500 flex items-center justify-center">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ integ.name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{{ integ.desc }}</div>
-                    </div>
-                    {% if integ.connected %}
-                        <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">Connected</span>
-                    {% else %}
-                        <button class="text-[11px] font-semibold text-asiko-gold border border-asiko-gold/40 hover:bg-asiko-gold/5 px-3 py-1 rounded-full">Connect</button>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="flex justify-end pt-2">
-            <button type="submit"
-                    class="bg-asiko-emerald hover:bg-emerald-900 text-white text-sm font-medium px-6 py-2.5 rounded-lg transition-colors">
-                Save all settings
-            </button>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Store name</label><input type="text" name="store_name" value="{{ settings.store_name or 'ASIKO Boutique' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Contact email</label><input type="email" name="contact_email" value="{{ settings.contact_email or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Store description</label><textarea name="store_description" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ settings.store_description or '' }}</textarea></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Phone</label><input type="tel" name="phone" value="{{ settings.phone or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="+234 800 000 0000"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Address</label><input type="text" name="store_address" value="{{ settings.store_address or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="Lagos, Nigeria"></div>
         </div>
     </form>
+
+    <!-- ==================== AI PROVIDER ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="ai_provider">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> AI Stylist · Provider
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Provider</label>
+                <select name="ai_provider" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="openrouter" {% if settings.ai_provider=='openrouter' %}selected{% endif %}>OpenRouter (free)</option>
+                    <option value="openai" {% if settings.ai_provider=='openai' %}selected{% endif %}>OpenAI</option>
+                    <option value="anthropic" {% if settings.ai_provider=='anthropic' %}selected{% endif %}>Anthropic</option>
+                    <option value="none" {% if settings.ai_provider=='none' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">API Key</label><input type="password" name="ai_api_key" value="{{ settings.ai_api_key or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="Optional for OpenRouter free"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Model</label>
+                <select name="ai_model" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="google/gemini-2.0-flash-001" {% if settings.ai_model=='google/gemini-2.0-flash-001' %}selected{% endif %}>Gemini 2.0 Flash</option>
+                    <option value="meta-llama/llama-3.3-70b-instruct:free" {% if settings.ai_model=='meta-llama/llama-3.3-70b-instruct:free' %}selected{% endif %}>Llama 3.3 70B</option>
+                    <option value="mistralai/mistral-small-3.1-24b-instruct:free" {% if settings.ai_model=='mistralai/mistral-small-3.1-24b-instruct:free' %}selected{% endif %}>Mistral Small</option>
+                    <option value="qwen/qwen3-235b-a22b:free" {% if settings.ai_model=='qwen/qwen3-235b-a22b:free' %}selected{% endif %}>Qwen3 235B</option>
+                </select>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Max tokens</label><input type="number" name="ai_max_tokens" value="{{ settings.ai_max_tokens or 1024 }}" min="100" max="4096" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+                <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Temperature</label><input type="number" name="ai_temperature" value="{{ settings.ai_temperature or 0.7 }}" min="0" max="2" step="0.1" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            </div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Custom System Prompt</label><textarea name="ai_system_prompt" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 font-mono text-xs">{{ settings.ai_system_prompt or '' }}</textarea></div>
+        </div>
+    </form>
+
+    <!-- ==================== AI STYLIST PAGE ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="ai_stylist_page">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> AI Stylist · Page
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between py-2">
+                <div><div class="text-sm font-medium text-gray-900 dark:text-gray-100">Enable AI Stylist</div><div class="text-xs text-gray-500">Show the Stylist page and chatbot widget</div></div>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="ai_stylist_enabled" {% if settings.ai_stylist_enabled %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Welcome message</label><textarea name="ai_stylist_welcome" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ settings.ai_stylist_welcome or '' }}</textarea></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Quick suggestions (comma-separated)</label><input type="text" name="ai_stylist_suggestions" value="{{ settings.ai_stylist_suggestions or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="What should I wear to a wedding?"></div>
+        </div>
+    </form>
+
+    <!-- ==================== CHATBOT WIDGET ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="chatbot">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Chatbot Widget
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between py-2">
+                <div><div class="text-sm font-medium text-gray-900 dark:text-gray-100">Enable chatbot widget</div><div class="text-xs text-gray-500">Show floating chat bubble on all storefront pages</div></div>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="chatbot_enabled" {% if settings.chatbot_enabled is not defined or settings.chatbot_enabled %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Welcome message</label><textarea name="chatbot_welcome" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ settings.chatbot_welcome or '' }}</textarea></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Primary color</label><input type="color" name="chatbot_color_primary" value="{{ settings.chatbot_color_primary or '#0D2A22' }}" class="w-full h-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer"></div>
+                <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Accent color</label><input type="color" name="chatbot_color_accent" value="{{ settings.chatbot_color_accent or '#D4AF37' }}" class="w-full h-10 rounded-lg border border-gray-200 dark:border-gray-800 cursor-pointer"></div>
+            </div>
+        </div>
+    </form>
+
+    <!-- ==================== HOMEPAGE HERO ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="hero">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Homepage · Hero
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Badge text</label><input type="text" name="hero_badge_text" value="{{ settings.hero_badge_text or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Title (white)</label><input type="text" name="hero_title" value="{{ settings.hero_title or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Title accent (gold)</label><input type="text" name="hero_title_accent" value="{{ settings.hero_title_accent or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Subtitle</label><textarea name="hero_subtitle" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ settings.hero_subtitle or '' }}</textarea></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">CTA text</label><input type="text" name="hero_cta_text" value="{{ settings.hero_cta_text or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">CTA link</label><input type="text" name="hero_cta_link" value="{{ settings.hero_cta_link or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="#storefront"></div>
+        </div>
+    </form>
+
+    <!-- ==================== SHOP ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="shop">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Shop
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Products per page</label>
+                <select name="shop_products_per_page" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="8" {% if settings.shop_products_per_page==8 %}selected{% endif %}>8</option>
+                    <option value="12" {% if settings.shop_products_per_page==12 %}selected{% endif %}>12</option>
+                    <option value="16" {% if settings.shop_products_per_page==16 %}selected{% endif %}>16</option>
+                    <option value="24" {% if settings.shop_products_per_page==24 %}selected{% endif %}>24</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Default sort</label>
+                <select name="shop_default_sort" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="newest" {% if settings.shop_default_sort=='newest' %}selected{% endif %}>Newest</option>
+                    <option value="price_asc" {% if settings.shop_default_sort=='price_asc' %}selected{% endif %}>Price Low→High</option>
+                    <option value="price_desc" {% if settings.shop_default_sort=='price_desc' %}selected{% endif %}>Price High→Low</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- ==================== LOOKBOOK ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="lookbook">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Lookbook</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Page title</label><input type="text" name="lookbook_title" value="{{ settings.lookbook_title or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Subtitle</label><input type="text" name="lookbook_subtitle" value="{{ settings.lookbook_subtitle or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+        </div>
+    </form>
+
+    <!-- ==================== ABOUT PAGE ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="about">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> About Page</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Title</label><input type="text" name="about_title" value="{{ settings.about_title or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Tagline</label><input type="text" name="about_tagline" value="{{ settings.about_tagline or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Brand story</label><textarea name="about_story" rows="3" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ settings.about_story or '' }}</textarea></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Location</label><input type="text" name="about_location" value="{{ settings.about_location or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Email</label><input type="email" name="about_email" value="{{ settings.about_email or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Founded year</label><input type="number" name="about_founded_year" value="{{ settings.about_founded_year or 2024 }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+        </div>
+    </form>
+
+    <!-- ==================== CUSTOMER DASHBOARD ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="customer_dashboard">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Customer Dashboard</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Welcome title</label><input type="text" name="customer_welcome_title" value="{{ settings.customer_welcome_title or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Welcome subtitle</label><input type="text" name="customer_welcome_subtitle" value="{{ settings.customer_welcome_subtitle or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
+        </div>
+    </form>
+
+    <!-- ==================== CURRENCY & LOCALE ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="currency_locale">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Currency &amp; Locale</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Currency</label>
+                <select name="currency" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option {% if settings.currency=='NGN' %}selected{% endif %}>NGN</option><option {% if settings.currency=='USD' %}selected{% endif %}>USD</option><option {% if settings.currency=='EUR' %}selected{% endif %}>EUR</option><option {% if settings.currency=='GBP' %}selected{% endif %}>GBP</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Timezone</label>
+                <select name="timezone" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option {% if settings.timezone=='Africa/Lagos' %}selected{% endif %}>Africa/Lagos</option><option {% if settings.timezone=='UTC' %}selected{% endif %}>UTC</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Locale</label>
+                <select name="locale" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option {% if settings.locale=='en' %}selected{% endif %}>English</option><option {% if settings.locale=='fr' %}selected{% endif %}>Français</option><option {% if settings.locale=='yo' %}selected{% endif %}>Yorùbá</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- ==================== SHIPPING ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="shipping">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Shipping</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Domestic rate</label><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">&#8358;</span><input type="number" step="0.01" name="shipping_domestic" value="{{ settings.shipping_domestic or '0' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">International rate</label><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">&#8358;</span><input type="number" step="0.01" name="shipping_international" value="{{ settings.shipping_international or '0' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Free shipping threshold</label><div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">&#8358;</span><input type="number" step="0.01" name="free_shipping_threshold" value="{{ settings.free_shipping_threshold or '0' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg pl-7 pr-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div></div>
+        </div>
+    </form>
+
+    <!-- ==================== PAGES & BLOG ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="pages_blog">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Pages &amp; Blog</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between py-2">
+                <div><div class="text-sm font-medium text-gray-900 dark:text-gray-100">Enable blog</div><div class="text-xs text-gray-500">Show blog listing on the storefront</div></div>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="blog_enabled" {% if settings.blog_enabled is not defined or settings.blog_enabled %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Posts per page</label>
+                <select name="blog_posts_per_page" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="6" {% if settings.blog_posts_per_page==6 %}selected{% endif %}>6</option>
+                    <option value="9" {% if settings.blog_posts_per_page==9 %}selected{% endif %}>9</option>
+                    <option value="12" {% if settings.blog_posts_per_page==12 %}selected{% endif %}>12</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- ==================== SECURITY ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="security">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Security</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-4">
+            <div class="flex items-center justify-between py-2">
+                <div><div class="text-sm font-medium text-gray-900 dark:text-gray-100">Admin auth</div><div class="text-xs text-gray-500">Require password for admin panel</div></div>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="admin_auth" {% if settings.admin_auth %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            <div class="flex items-center justify-between py-2">
+                <div><div class="text-sm font-medium text-gray-900 dark:text-gray-100">Session timeout</div></div>
+                <select name="session_timeout" class="text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-1.5 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="30">30 min</option><option value="60" {% if settings.session_timeout==60 %}selected{% endif %}>1 hr</option><option value="240">4 hr</option><option value="480">8 hr</option>
+                </select>
+            </div>
+        </div>
+    </form>
+
+    <!-- ==================== NOTIFICATIONS ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="notifications">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Notifications</h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-3">
+            {% for notif in [
+                {'name': 'New order alerts', 'key': 'notif_new_order'},
+                {'name': 'New review alerts', 'key': 'notif_review'},
+                {'name': 'Low stock warnings', 'key': 'notif_low_stock'},
+            ] %}
+            <div class="flex items-center justify-between py-2">
+                <span class="text-sm text-gray-900 dark:text-gray-100">{{ notif.name }}</span>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="{{ notif.key }}" {% if settings.get(notif.key, true) %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    <!-- ==================== EMAIL / BREVO ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="email_config">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Email · Brevo
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Brevo API Key</label><input type="password" name="brevo_api_key" value="{{ settings.brevo_api_key or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="xkeysib-..."></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Sender Email</label><input type="email" name="sender_email" value="{{ settings.sender_email or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="orders@asikoboutique.com"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Sender Name</label><input type="text" name="sender_name" value="{{ settings.sender_name or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="ASIKO Boutique"></div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Admin Notification Email</label><input type="email" name="admin_email" value="{{ settings.admin_email or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="hello@asikoboutique.com"></div>
+        </div>
+    </form>
+
+    <!-- ==================== EMAIL NOTIFICATIONS ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="email_notifications">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Email Notifications
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="space-y-3">
+            {% for notif in [
+                {'name': 'Welcome greeting (new customer)', 'key': 'email_welcome_enabled'},
+                {'name': 'Order confirmation (customer)', 'key': 'email_order_enabled'},
+                {'name': 'Shipping updates (customer)', 'key': 'email_shipping_enabled'},
+                {'name': 'Newsletter confirmation', 'key': 'email_newsletter_enabled'},
+                {'name': 'Password reset emails', 'key': 'email_password_reset_enabled'},
+            ] %}
+            <div class="flex items-center justify-between py-2">
+                <span class="text-sm text-gray-900 dark:text-gray-100">{{ notif.name }}</span>
+                <label class="relative inline-flex items-center cursor-pointer"><input type="checkbox" name="{{ notif.key }}" {% if settings.get(notif.key, true) %}checked{% endif %} class="sr-only peer"><div class="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#D4AF37]"></div></label>
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+
+    <!-- ==================== INTEGRATIONS (read-only) ==================== -->
+    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Integrations</h3>
+        <div class="space-y-2">
+            {% for integ in [
+                {'name': 'OPay', 'desc': 'Payments', 'ok': true},
+                {'name': 'Neon Postgres', 'desc': 'Database', 'ok': true},
+                {'name': 'OpenRouter', 'desc': 'AI provider', 'ok': settings.ai_provider=='openrouter'},
+                {'name': 'Brevo', 'desc': 'Email', 'ok': settings.get('brevo_api_key', '') and not settings.get('brevo_api_key', '').startswith('your_')},
+            ] %}
+            <div class="flex items-center gap-3 px-3 py-2 border border-gray-100 dark:border-gray-800 rounded-lg">
+                <span class="text-sm font-medium text-gray-900 dark:text-gray-100 flex-1">{{ integ.name }}</span>
+                <span class="text-[11px] text-gray-500">{{ integ.desc }}</span>
+                {% if integ.ok %}<span class="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Connected</span>
+                {% else %}<span class="text-[10px] font-semibold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">Not connected</span>{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
 </section>

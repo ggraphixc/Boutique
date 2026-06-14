@@ -15,13 +15,11 @@ logger = logging.getLogger("asiko.realtime")
 # ---------------------------------------------------------------------------
 # Channel constants
 # ---------------------------------------------------------------------------
-CH_PIPELINE_UPDATE = "pipeline_update"
 CH_NEW_REVIEW = "new_review"
 CH_NEW_ORDER = "new_order"
 CH_STOCK_UPDATE = "stock_update"
 
 ALL_CHANNELS = [
-    CH_PIPELINE_UPDATE,
     CH_NEW_REVIEW,
     CH_NEW_ORDER,
     CH_STOCK_UPDATE,

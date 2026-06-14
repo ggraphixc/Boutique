@@ -1,88 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ÀSÌKÒ // Order #{{ order.id[:8] }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: { extend: { colors: { brand: { base: '#FBF9F6', deep: '#0D2A22', accent: '#D4AF37' } } } },
-        }
-    </script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
-</head>
-<body class="bg-brand-base min-h-screen font-sans text-brand-deep">
+{% extends "base.html" %}
+{% block title %}Order #{{ order.id[:8] }} — ASIKO Boutique{% endblock %}
+{% block content %}
+<main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
 
-    <!-- Nav -->
-    <header class="border-b border-brand-deep/5">
-        <div class="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
-            <a href="/" class="font-display text-lg tracking-wide">ÀSÌKÒ</a>
-            <div class="flex items-center gap-4 text-xs">
-                <a href="/account" class="text-brand-deep/50 hover:text-brand-deep">← Back to Account</a>
-            </div>
+    <!-- Breadcrumb -->
+    <nav class="mb-6 lg:mb-8">
+        <a href="/account" class="inline-flex items-center gap-2 text-sm text-[#1A1A1A]/50 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Account
+        </a>
+    </nav>
+
+    <!-- Order header -->
+    <div class="flex items-start justify-between mb-8">
+        <div>
+            <h1 class="font-display text-2xl text-[#0D2A22] dark:text-white mb-1">Order #{{ order.id[:8] }}</h1>
+            <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">{{ order.created }}</p>
         </div>
-    </header>
+        <span class="text-[10px] font-mono px-3 py-1 rounded-full {{ order.status_cls }}">{{ order.status }}</span>
+    </div>
 
-    <main class="max-w-4xl mx-auto px-4 py-8">
-
-        <!-- Order header -->
-        <div class="flex items-start justify-between mb-8">
-            <div>
-                <h1 class="font-display text-xl text-brand-deep mb-1">Order #{{ order.id[:8] }}</h1>
-                <p class="text-xs text-brand-deep/50">{{ order.created }}</p>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded {{ order.status_cls }}">{{ order.status }}</span>
+    <!-- Shipping info -->
+    <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5 mb-6">
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mb-3">Shipping Address</h2>
+        <div class="text-sm text-[#1A1A1A]/70 dark:text-gray-300 space-y-1">
+            <p class="font-medium text-[#0D2A22] dark:text-white">{{ order.customer_name }}</p>
+            <p>{{ order.address }}</p>
+            <p>{{ order.state }}</p>
         </div>
+    </div>
 
-        <!-- Shipping info -->
-        <div class="bg-white rounded-lg border border-brand-deep/10 p-4 mb-6">
-            <h2 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-3">Shipping</h2>
-            <div class="text-sm text-brand-deep/70 space-y-1">
-                <p>{{ order.customer_name }}</p>
-                <p>{{ order.address }}</p>
-                <p>{{ order.state }}</p>
-            </div>
-        </div>
-
-        <!-- Order items -->
-        <div class="bg-white rounded-lg border border-brand-deep/10 p-4 mb-6">
-            <h2 class="text-xs font-mono uppercase tracking-widest text-brand-deep/40 mb-3">Items</h2>
-            <div class="space-y-3">
-                {% for item in items %}
-                <div class="flex items-center gap-3">
-                    {% if item.image %}
-                    <img src="{{ item.image }}" class="w-12 h-12 rounded object-cover" alt="">
-                    {% else %}
-                    <div class="w-12 h-12 rounded bg-brand-deep/5 flex items-center justify-center text-xs text-brand-deep/30">A</div>
-                    {% endif %}
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-brand-deep">{{ item.name }}</p>
-                        <p class="text-xs text-brand-deep/50">Qty: {{ item.quantity }}</p>
-                    </div>
-                    <span class="font-mono text-sm text-brand-deep">&#8358;{{ "{:,.0f}".format(item.price * item.quantity) }}</span>
+    <!-- Order items -->
+    <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5 mb-6">
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mb-3">Items</h2>
+        <div class="space-y-3">
+            {% for item in items %}
+            <div class="flex items-center gap-4 p-3 rounded-lg bg-[#FBF9F6] dark:bg-[#111]">
+                {% if item.image %}
+                <img src="{{ item.image }}" class="w-14 h-14 rounded-lg object-cover" alt="">
+                {% else %}
+                <div class="w-14 h-14 rounded-lg bg-[#0D2A22]/5 dark:bg-gray-800 flex items-center justify-center">
+                    <span class="font-display text-lg text-[#0D2A22]/20 dark:text-white/10">A</span>
                 </div>
-                {% endfor %}
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium text-[#0D2A22] dark:text-white truncate">{{ item.name }}</p>
+                    <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">Qty: {{ item.quantity }}</p>
+                </div>
+                <span class="font-mono text-sm font-semibold text-[#0D2A22] dark:text-[#D4AF37]">&#8358;{{ "{:,.0f}".format(item.price * item.quantity) }}</span>
             </div>
+            {% endfor %}
         </div>
+    </div>
 
-        <!-- Order total -->
-        <div class="bg-white rounded-lg border border-brand-deep/10 p-4">
-            <div class="flex justify-between text-sm mb-2">
-                <span class="text-brand-deep/50">Subtotal</span>
-                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.total - order.shipping) }}</span>
-            </div>
-            <div class="flex justify-between text-sm mb-3">
-                <span class="text-brand-deep/50">Shipping</span>
-                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.shipping) }}</span>
-            </div>
-            <div class="flex justify-between text-sm font-medium border-t border-brand-deep/10 pt-3">
-                <span>Total</span>
-                <span class="font-mono text-brand-deep">&#8358;{{ "{:,.0f}".format(order.total) }}</span>
-            </div>
+    <!-- Order total -->
+    <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5">
+        <div class="flex justify-between text-sm mb-2">
+            <span class="text-[#1A1A1A]/50 dark:text-gray-400">Subtotal</span>
+            <span class="font-mono text-[#0D2A22] dark:text-gray-300">&#8358;{{ "{:,.0f}".format(order.total - order.shipping) }}</span>
         </div>
+        <div class="flex justify-between text-sm mb-3">
+            <span class="text-[#1A1A1A]/50 dark:text-gray-400">Shipping</span>
+            <span class="font-mono text-[#0D2A22] dark:text-gray-300">&#8358;{{ "{:,.0f}".format(order.shipping) }}</span>
+        </div>
+        <div class="flex justify-between text-sm font-semibold border-t border-[#D4AF37]/10 dark:border-gray-800 pt-3">
+            <span class="text-[#0D2A22] dark:text-white">Total</span>
+            <span class="font-mono text-[#0D2A22] dark:text-[#D4AF37]">&#8358;{{ "{:,.0f}".format(order.total) }}</span>
+        </div>
+    </div>
 
-    </main>
-</body>
-</html>
+</main>
+{% endblock %}

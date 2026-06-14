@@ -10,6 +10,7 @@ from django.core.signing import Signer
 import hashlib
 
 from app.core import templates
+from app.settings_service import get_settings
 
 signer = Signer(salt="asiko.concierge.vector")
 
@@ -26,10 +27,12 @@ def _slugify(text: str) -> str:
 async def homepage(request: Request) -> HTMLResponse:
     """Render the unified single-brand editorial catalog index."""
     pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             "SELECT p.id, p.name, p.description, p.price, p.stock_quantity, "
-            "p.base_image, p.model_3d_url, c.name AS category_name "
+            "p.base_image, c.name AS category_name "
             "FROM products p LEFT JOIN categories c ON c.id = p.category_id "
             "ORDER BY p.id DESC"
         )
@@ -39,12 +42,11 @@ async def homepage(request: Request) -> HTMLResponse:
         d = dict(p)
         d["slug"] = _slugify(d["name"])
         d["base_price"] = d["price"]
-        d["has_3d_model"] = d.get("model_3d_url") is not None
         products.append(d)
 
     return templates.TemplateResponse(
         request, "storefront/index.html",
-        {"request": request, "products": products},
+        {"request": request, "products": products, "settings": settings},
     )
 
 
@@ -135,7 +137,7 @@ async def product_grid_fragment(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
         rows = await conn.fetch(
-            "SELECT id, name, price, base_image, model_3d_url "
+            "SELECT id, name, price, base_image "
             "FROM products ORDER BY id DESC"
         )
 
@@ -144,7 +146,6 @@ async def product_grid_fragment(request: Request) -> HTMLResponse:
         d = dict(p)
         d["slug"] = _slugify(d["name"])
         d["base_price"] = d["price"]
-        d["has_3d_model"] = d.get("model_3d_url") is not None
         products.append(d)
 
     return templates.TemplateResponse(
@@ -156,22 +157,23 @@ async def product_grid_fragment(request: Request) -> HTMLResponse:
 async def lookbook(request: Request) -> HTMLResponse:
     """Editorial lookbook page — curated product showcase."""
     pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             "SELECT id, name, description, price, stock_quantity, "
-            "base_image, model_3d_url "
+            "base_image "
             "FROM products ORDER BY id DESC"
         )
 
     products = []
     for p in rows:
         d = dict(p)
-        d["has_3d_model"] = d.get("model_3d_url") is not None
         products.append(d)
 
     return templates.TemplateResponse(
         request, "storefront/lookbook.html",
-        {"request": request, "products": products},
+        {"request": request, "products": products, "settings": settings},
     )
 
 
@@ -185,8 +187,7 @@ async def product_detail(request: Request) -> HTMLResponse:
 
     async with pool.acquire() as conn:
         p_row = await conn.fetchrow(
-            "SELECT id, name, description, price, base_image, "
-            "model_3d_url "
+            "SELECT id, name, description, price, base_image "
             "FROM products WHERE id = $1",
             product_id,
         )
@@ -250,7 +251,6 @@ async def product_detail(request: Request) -> HTMLResponse:
         "description": p_row["description"],
         "base_image": p_row["base_image"],
         "primary_image_url": p_row["base_image"],
-        "model_3d_url": p_row.get("model_3d_url"),
         "gallery_images": gallery_images,
         "capsule_look": {
             "items": capsule_items,
@@ -258,11 +258,13 @@ async def product_detail(request: Request) -> HTMLResponse:
     }
 
     cart = request.session.get("cart", {"item_count": 0, "total": 0.0, "lines": []})
+    settings = await get_settings(pool)
     context = {
         "request": request,
         "concierge_token": concierge_token,
         "product": product_data,
         "cart": cart,
+        "settings": settings,
     }
     return templates.TemplateResponse(
         request, "storefront/product_detail.html", context,
@@ -284,185 +286,6 @@ async def stock_badge_fragment(request: Request) -> HTMLResponse:
         html = f'<span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Only {qty} left</span>'
     else:
         html = '<span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">In stock</span>'
-    return HTMLResponse(html)
-
-
-# ============================================================
-# 3D Try-On Routes
-# ============================================================
-
-async def try_on_page(request: Request) -> HTMLResponse:
-    """Main try-on page: 3D viewer + product panel."""
-    product_id = request.path_params["product_id"]
-    pool = request.app.state.db_pool
-
-    product = None
-    async with pool.acquire() as conn:
-        product = await conn.fetchrow(
-            """
-            SELECT p.id, p.name, p.description, p.price, p.base_image,
-                   p.model_3d_url, p.source_2d_image_url, p.stock_quantity,
-                   c.name AS category_name
-            FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
-            WHERE p.id = $1
-            """,
-            product_id,
-        )
-
-    if not product:
-        return HTMLResponse("Product not found", status_code=404)
-
-    ctx = {
-        "request": request,
-        "product": dict(product),
-        "product_id": str(product["id"]),
-        "product_info_url": f"/tryon/product-info/{product['id']}",
-    }
-    return templates.TemplateResponse(request, "virtual_experience.html", ctx)
-
-
-async def tryon_product_info(request: Request) -> HTMLResponse:
-    """HTMX fragment: product info card for the try-on panel."""
-    product_id = request.path_params["product_id"]
-    pool = request.app.state.db_pool
-
-    product = None
-    async with pool.acquire() as conn:
-        product = await conn.fetchrow(
-            """
-            SELECT p.id, p.name, p.description, p.price, p.base_image,
-                   p.model_3d_url, p.source_2d_image_url, p.stock_quantity,
-                   c.name AS category_name
-            FROM products p
-            LEFT JOIN categories c ON c.id = p.category_id
-            WHERE p.id = $1
-            """,
-            product_id,
-        )
-
-    if not product:
-        return HTMLResponse('<div class="text-xs text-red-500 p-4">Product not found.</div>')
-
-    p = dict(product)
-    price_str = f"&#8358;{int(p['price']):,}" if p["price"] else "&#8358;0"
-    has_3d = bool(p.get("model_3d_url"))
-    stock = p.get("stock_quantity") or 0
-    img_html = ""
-    if p.get("base_image"):
-        img_html = f'<img src="{p["base_image"]}" alt="{p["name"]}" class="w-full h-32 object-cover rounded-lg mb-3">'
-
-    stock_badge = ""
-    if stock == 0:
-        stock_badge = '<span class="text-[10px] font-mono text-red-600 bg-red-50 px-2 py-0.5 rounded">Sold out</span>'
-    elif stock <= 5:
-        stock_badge = f'<span class="text-[10px] font-mono text-amber-700 bg-amber-50 px-2 py-0.5 rounded">Only {stock} left</span>'
-    else:
-        stock_badge = '<span class="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">In stock</span>'
-
-    html = f"""
-    <div class="bg-white rounded-lg border border-brand-deep/10 p-4">
-        {img_html}
-        <div class="flex items-start justify-between gap-2 mb-2">
-            <h2 class="font-display text-lg text-brand-deep leading-tight">{p['name']}</h2>
-            {stock_badge}
-        </div>
-        <p class="text-xs text-brand-deep/50 mb-1">{p.get('category_name') or ''}</p>
-        <p class="font-mono text-sm text-brand-deep mb-3">{price_str}</p>
-        <p class="text-xs text-brand-deep/60 leading-relaxed mb-3 line-clamp-3">{p.get('description') or ''}</p>
-    </div>
-    """
-    return HTMLResponse(html)
-
-
-async def tryon_product_list(request: Request) -> HTMLResponse:
-    """HTMX fragment: browseable list of products with 3D models for the try-on panel."""
-    pool = request.app.state.db_pool
-
-    products = []
-    async with pool.acquire() as conn:
-        products = await conn.fetch(
-            """
-            SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
-                   p.stock_quantity, p.description
-            FROM products p
-            WHERE p.model_3d_url IS NOT NULL
-            ORDER BY p.name
-            LIMIT 20
-            """
-        )
-
-    if not products:
-        async with pool.acquire() as conn:
-            products = await conn.fetch(
-                """
-                SELECT p.id, p.name, p.price, p.base_image, p.model_3d_url,
-                       p.stock_quantity, p.description
-                FROM products p
-                ORDER BY p.name
-                LIMIT 20
-                """
-            )
-
-    if not products:
-        return HTMLResponse(
-            '<div class="text-xs text-brand-deep/40 p-4 text-center">No products yet.</div>'
-        )
-
-    rows = ""
-    for p in products:
-        pid = str(p["id"])
-        name = p["name"]
-        price = f"&#8358;{int(p['price']):,}" if p["price"] else "&#8358;0"
-        has_3d = bool(p.get("model_3d_url"))
-        img = p.get("base_image") or ""
-        stock = p.get("stock_quantity") or 0
-        desc = (p.get("description") or "")[:150]
-
-        if img:
-            thumb = f'<img src="{img}" class="w-8 h-8 rounded object-cover" alt="">'
-        else:
-            thumb = '<div class="w-8 h-8 rounded bg-brand-deep/5 flex items-center justify-center text-[10px] text-brand-deep/30">A</div>'
-
-        badge_3d = ""
-        if has_3d:
-            badge_3d = '<span class="text-[8px] font-mono text-brand-accent bg-brand-accent/10 px-1 py-0.5 rounded">3D</span>'
-
-        if stock == 0:
-            stock_cls = "text-red-400"
-            stock_txt = "Sold out"
-        elif stock <= 5:
-            stock_cls = "text-amber-600"
-            stock_txt = f"{stock} left"
-        else:
-            stock_cls = "text-emerald-600"
-            stock_txt = "In stock"
-
-        # Escape single quotes in name and description for JS
-        name_js = name.replace("'", "\\'")
-        desc_js = desc.replace("'", "\\'")
-
-        rows += f"""
-        <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-brand-deep/5 transition-colors group {'opacity-50' if not has_3d else ''} cursor-pointer"
-             {'onclick="document.dispatchEvent(new CustomEvent(\'tryon-load-garment\', {detail: {url: \'' + p["model_3d_url"] + '\', name: \'' + name_js + '\', price: ' + str(int(p["price"] or 0)) + ', productId: \'' + pid + '\', base_image: \'' + img + '\', stock: ' + str(stock) + ', description: \'' + desc_js + '\'}}))"' if has_3d else ''}>
-            {thumb}
-            <div class="flex-1 min-w-0">
-                <div class="flex items-center gap-1">
-                    <span class="text-xs font-medium text-brand-deep truncate">{name}</span>
-                    {badge_3d}
-                </div>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-mono text-brand-deep/50">{price}</span>
-                    <span class="text-[9px] font-mono {stock_cls}">{stock_txt}</span>
-                </div>
-            </div>
-            <div class="text-[9px] text-brand-deep/30 group-hover:text-brand-accent transition-colors">
-                {'Try →' if has_3d else 'No 3D'}
-            </div>
-        </div>
-        """
-
-    html = f'<div class="space-y-1 max-h-[300px] overflow-y-auto">{rows}</div>'
     return HTMLResponse(html)
 
 
@@ -544,24 +367,122 @@ async def product_reviews_fragment(request: Request) -> HTMLResponse:
 async def about_page(request: Request) -> HTMLResponse:
     """Public About page. GET /about"""
     pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+
     async with pool.acquire() as conn:
         about = await conn.fetchrow("SELECT * FROM about_me LIMIT 1")
 
     ctx = {}
     if about:
         ctx = {
-            "name": about.get("name") or "ASIKO Boutique",
+            "name": about.get("name") or settings.get("about_title", "ASIKO Boutique"),
             "role": about.get("role") or "",
-            "tagline": about.get("tagline") or "",
-            "story": about.get("story") or "",
-            "location": about.get("location") or "",
-            "email": about.get("email") or "",
-            "founded_year": about.get("founded_year") or "",
+            "tagline": about.get("tagline") or settings.get("about_tagline", ""),
+            "story": about.get("story") or settings.get("about_story", ""),
+            "location": about.get("location") or settings.get("about_location", ""),
+            "email": about.get("email") or settings.get("about_email", ""),
+            "founded_year": about.get("founded_year") or settings.get("about_founded_year", 2024),
+        }
+    else:
+        ctx = {
+            "name": settings.get("about_title", "ASIKO Boutique"),
+            "role": "",
+            "tagline": settings.get("about_tagline", ""),
+            "story": settings.get("about_story", ""),
+            "location": settings.get("about_location", ""),
+            "email": settings.get("about_email", ""),
+            "founded_year": settings.get("about_founded_year", 2024),
         }
 
     return templates.TemplateResponse(request, "storefront/about.html", {
         "request": request,
         "about": ctx,
+        "settings": settings,
+    })
+
+
+async def fashion_assistant_page(request: Request) -> HTMLResponse:
+    """Render the AI Fashion Assistant page."""
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "fashion_assistant.html", {
+        "request": request,
+        "settings": settings,
+    })
+
+
+async def dynamic_page(request: Request) -> HTMLResponse:
+    """Render a custom page by slug (e.g. /page/size-guide)."""
+    pool = request.app.state.db_pool
+    slug = request.path_params.get("slug", "")
+    settings = await get_settings(pool)
+
+    async with pool.acquire() as conn:
+        page = await conn.fetchrow(
+            "SELECT id, title, slug, body_html, excerpt, meta_description, featured_image "
+            "FROM custom_pages WHERE slug = $1 AND is_live = TRUE",
+            slug,
+        )
+
+    if not page:
+        return HTMLResponse("<h1>Page not found</h1>", status_code=404)
+
+    return templates.TemplateResponse(request, "storefront/page.html", {
+        "request": request,
+        "page": dict(page),
+        "settings": settings,
+    })
+
+
+async def blog_listing(request: Request) -> HTMLResponse:
+    """Render blog listing (all published posts across all pages)."""
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            "SELECT bp.id, bp.title, bp.slug, bp.excerpt, bp.featured_image, "
+            "bp.published_at, bp.author_name, "
+            "cp.title AS page_title, cp.slug AS page_slug "
+            "FROM blog_posts bp "
+            "JOIN custom_pages cp ON cp.id = bp.page_id "
+            "WHERE bp.is_published = TRUE "
+            "ORDER BY bp.published_at DESC NULLS LAST"
+        )
+
+    posts = [dict(r) for r in rows]
+
+    return templates.TemplateResponse(request, "storefront/blog_listing.html", {
+        "request": request,
+        "posts": posts,
+        "settings": settings,
+    })
+
+
+async def blog_post_detail(request: Request) -> HTMLResponse:
+    """Render a single blog post by slug."""
+    pool = request.app.state.db_pool
+    slug = request.path_params.get("slug", "")
+    settings = await get_settings(pool)
+
+    async with pool.acquire() as conn:
+        post = await conn.fetchrow(
+            "SELECT bp.id, bp.title, bp.slug, bp.content_html, bp.excerpt, "
+            "bp.featured_image, bp.published_at, bp.author_name, "
+            "cp.title AS page_title, cp.slug AS page_slug "
+            "FROM blog_posts bp "
+            "JOIN custom_pages cp ON cp.id = bp.page_id "
+            "WHERE bp.slug = $1 AND bp.is_published = TRUE",
+            slug,
+        )
+
+    if not post:
+        return HTMLResponse("<h1>Post not found</h1>", status_code=404)
+
+    return templates.TemplateResponse(request, "storefront/blog_post.html", {
+        "request": request,
+        "post": dict(post),
+        "settings": settings,
     })
 
 
@@ -575,7 +496,8 @@ routes = [
     Route("/product/{product_id}/reviews", endpoint=product_reviews_fragment, methods=["GET"]),
     Route("/dpp", endpoint=dpp_verification, methods=["GET"]),
     Route("/ws/store/product/{product_id}/stock-badge", endpoint=stock_badge_fragment, methods=["GET"]),
-    Route("/try/{product_id}", endpoint=try_on_page, methods=["GET"]),
-    Route("/tryon/product-info/{product_id}", endpoint=tryon_product_info, methods=["GET"]),
-    Route("/tryon/product-list", endpoint=tryon_product_list, methods=["GET"]),
+    Route("/stylist", endpoint=fashion_assistant_page, methods=["GET"]),
+    Route("/page/{slug}", endpoint=dynamic_page, methods=["GET"]),
+    Route("/blog", endpoint=blog_listing, methods=["GET"]),
+    Route("/blog/{slug}", endpoint=blog_post_detail, methods=["GET"]),
 ]

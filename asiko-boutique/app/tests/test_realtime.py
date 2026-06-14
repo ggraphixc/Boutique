@@ -9,7 +9,6 @@ from app.realtime import (
     ConnectionManager,
     manager,
     notify,
-    CH_PIPELINE_UPDATE,
     CH_NEW_REVIEW,
     CH_NEW_ORDER,
     CH_STOCK_UPDATE,
@@ -45,12 +44,12 @@ class TestConnectionManagerConnect:
         ws = AsyncMock()
         ws.accept = AsyncMock()
 
-        await mgr.connect(ws, [CH_PIPELINE_UPDATE, CH_NEW_REVIEW])
+        await mgr.connect(ws, [CH_STOCK_UPDATE, CH_NEW_REVIEW])
 
         ws.accept.assert_called_once()
-        assert ws in mgr._channels[CH_PIPELINE_UPDATE]
+        assert ws in mgr._channels[CH_STOCK_UPDATE]
         assert ws in mgr._channels[CH_NEW_REVIEW]
-        assert ws not in mgr._channels[CH_STOCK_UPDATE]
+        assert ws not in mgr._channels[CH_NEW_ORDER]
 
     @pytest.mark.anyio
     async def test_connect_ignores_unknown_channels(self):
@@ -62,7 +61,7 @@ class TestConnectionManagerConnect:
 
         ws.accept.assert_called_once()
         # Should not crash, just ignore unknown channel
-        assert ws not in mgr._channels[CH_PIPELINE_UPDATE]
+        assert ws not in mgr._channels[CH_STOCK_UPDATE]
 
 
 class TestConnectionManagerDisconnect:
@@ -74,11 +73,11 @@ class TestConnectionManagerDisconnect:
         ws = AsyncMock()
         ws.accept = AsyncMock()
 
-        await mgr.connect(ws, [CH_PIPELINE_UPDATE, CH_NEW_REVIEW])
-        assert ws in mgr._channels[CH_PIPELINE_UPDATE]
+        await mgr.connect(ws, [CH_STOCK_UPDATE, CH_NEW_REVIEW])
+        assert ws in mgr._channels[CH_STOCK_UPDATE]
 
-        await mgr.disconnect(ws, [CH_PIPELINE_UPDATE])
-        assert ws not in mgr._channels[CH_PIPELINE_UPDATE]
+        await mgr.disconnect(ws, [CH_STOCK_UPDATE])
+        assert ws not in mgr._channels[CH_STOCK_UPDATE]
         assert ws in mgr._channels[CH_NEW_REVIEW]
 
     @pytest.mark.anyio
@@ -148,15 +147,15 @@ class TestConnectionManagerBroadcast:
         ws_err.accept = AsyncMock()
         ws_err.send_text = AsyncMock(side_effect=Exception("connection lost"))
 
-        await mgr.connect(ws_err, [CH_PIPELINE_UPDATE])
+        await mgr.connect(ws_err, [CH_STOCK_UPDATE])
 
         from starlette.websockets import WebSocketState
         ws_err.client_state = WebSocketState.CONNECTED
 
-        sent = await mgr.broadcast(CH_PIPELINE_UPDATE, {"type": "test"})
+        sent = await mgr.broadcast(CH_STOCK_UPDATE, {"type": "test"})
 
         assert sent == 0
-        assert ws_err not in mgr._channels[CH_PIPELINE_UPDATE]
+        assert ws_err not in mgr._channels[CH_STOCK_UPDATE]
 
     @pytest.mark.anyio
     async def test_broadcast_unknown_channel_returns_zero(self):
@@ -202,7 +201,7 @@ class TestNotifyHelper:
         mock_pool.acquire.return_value.__aenter__ = AsyncMock(return_value=mock_conn)
         mock_pool.acquire.return_value.__aexit__ = AsyncMock(return_value=False)
 
-        await notify(mock_pool, CH_PIPELINE_UPDATE, {"product_id": "abc"})
+        await notify(mock_pool, CH_STOCK_UPDATE, {"product_id": "abc"})
 
         mock_conn.execute.assert_called_once()
         call_args = mock_conn.execute.call_args[0]
@@ -217,103 +216,6 @@ class TestNotifyHelper:
         await notify(mock_pool, CH_STOCK_UPDATE, {"data": "test"})
 
 
-# ---------------------------------------------------------------------------
-# Pipeline daemon lazy connection tests
-# ---------------------------------------------------------------------------
-
-class TestPipelineDaemonLazyConnection:
-    """AsikoPipelineDaemon lazy-connects to Gradio Space."""
-
-    def test_daemon_init_does_not_connect(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        mock_pool = MagicMock()
-        daemon = AsikoPipelineDaemon(db_pool=mock_pool)
-
-        assert daemon.ai_client is None
-
-    @patch("gradio_client.Client", side_effect=Exception("DNS fail"))
-    def test_ensure_client_returns_false_on_failure(self, mock_client_cls):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        mock_pool = MagicMock()
-        daemon = AsikoPipelineDaemon(db_pool=mock_pool)
-
-        result = daemon._ensure_client()
-
-        assert result is False
-        assert daemon.ai_client is None
-
-    @patch("gradio_client.Client")
-    def test_ensure_client_returns_true_on_success(self, mock_client_cls):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        mock_pool = MagicMock()
-        daemon = AsikoPipelineDaemon(db_pool=mock_pool)
-
-        result = daemon._ensure_client()
-
-        assert result is True
-        assert daemon.ai_client is not None
-
-    def test_ensure_client_does_not_retry_after_first_failure(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        with patch("gradio_client.Client", side_effect=Exception("DNS fail")):
-            mock_pool = MagicMock()
-            daemon = AsikoPipelineDaemon(db_pool=mock_pool)
-
-            daemon._ensure_client()
-            # Second call should not attempt connection
-            result = daemon._ensure_client()
-            assert result is False
-
-
-class TestExtractGlbPath:
-    """_extract_glb_path parses all known Gradio result shapes."""
-
-    def test_none_returns_none(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        assert AsikoPipelineDaemon._extract_glb_path(None) is None
-
-    def test_string_glb_path(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        assert AsikoPipelineDaemon._extract_glb_path("/tmp/mesh.glb") == "/tmp/mesh.glb"
-
-    def test_string_non_glb_returns_none(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        assert AsikoPipelineDaemon._extract_glb_path("/tmp/result.html") is None
-
-    def test_dict_with_value_key(self):
-        """Gradio update format: {'value': '/path/to/mesh.glb', '__type__': 'update'}"""
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        result = {"value": "/tmp/gradio/abc/white_mesh.glb", "__type__": "update"}
-        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/gradio/abc/white_mesh.glb"
-
-    def test_dict_with_path_key(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        result = {"path": "/tmp/mesh.glb"}
-        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/mesh.glb"
-
-    def test_tuple_with_gradio_update_and_html(self):
-        """Actual Hunyuan3D-2 result format."""
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        result = (
-            {"value": "C:\\Users\\USER\\AppData\\Local\\Temp\\gradio\\abc\\white_mesh.glb", "__type__": "update"},
-            '<div><iframe src="/static/abc/white_mesh.html"></iframe></div>',
-            {"model": {"shapegen": "tencent/Hunyuan3D-2"}},
-            7176669,
-        )
-        path = AsikoPipelineDaemon._extract_glb_path(result)
-        assert path is not None
-        assert path.endswith("white_mesh.glb")
-
-    def test_nested_list(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        result = [["/tmp/deep/mesh.glb", "other"], "nope"]
-        assert AsikoPipelineDaemon._extract_glb_path(result) == "/tmp/deep/mesh.glb"
-
-    def test_empty_returns_none(self):
-        from app.workers.pipeline_daemon import AsikoPipelineDaemon
-        assert AsikoPipelineDaemon._extract_glb_path([]) is None
-        assert AsikoPipelineDaemon._extract_glb_path(()) is None
-
 
 # ---------------------------------------------------------------------------
 # Fragment render function tests
@@ -321,26 +223,6 @@ class TestExtractGlbPath:
 
 class TestFragmentRenderers:
     """WS fragment renderers produce valid HTML fragments."""
-
-    def test_render_pipeline_status_completed(self):
-        from app.routes.ws_admin import _render_pipeline_status_fragment
-        html = _render_pipeline_status_fragment({
-            "product_id": "abc-123",
-            "status": "completed",
-            "model_url": "/static/optimized/mesh.glb",
-        })
-        assert "abc-123" in html
-        assert "Ready" in html
-        assert "pipeline-status-abc-123" in html
-
-    def test_render_pipeline_status_processing(self):
-        from app.routes.ws_admin import _render_pipeline_status_fragment
-        html = _render_pipeline_status_fragment({
-            "product_id": "abc-123",
-            "status": "processing",
-        })
-        assert "abc-123" in html
-        assert "animate-spin" in html
 
     def test_render_review_summary(self):
         from app.routes.ws_admin import _render_review_summary_fragment
@@ -393,7 +275,7 @@ class TestWSRouteRegistration:
 
     def test_ws_admin_routes_count(self):
         from app.routes.ws_admin import ws_admin_routes
-        assert len(ws_admin_routes) == 3
+        assert len(ws_admin_routes) == 2
 
     def test_ws_store_routes_count(self):
         from app.routes.ws_store import ws_store_routes
@@ -404,8 +286,6 @@ class TestWSRouteRegistration:
         paths = [r.path for r in ws_admin_routes]
         assert "/ws/admin/dashboard" in paths
         assert "/ws/admin/reviews" in paths
-        # pipeline has {product_id} param
-        assert any("pipeline" in p for p in paths)
 
     def test_ws_store_route_path(self):
         from app.routes.ws_store import ws_store_routes

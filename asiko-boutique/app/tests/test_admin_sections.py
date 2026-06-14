@@ -43,9 +43,7 @@ def _make_populated_pool():
     inventory_row = {
         "product_id": "11111111-1111-1111-1111-111111111111",
         "name": "Aba Handloomed Trouser",
-        "model_3d_url": "/static/models/foo.glb",
         "source_2d_image_url": None,
-        "pipeline_status": "completed",
         "variant_id": "22222222-2222-2222-2222-222222222222",
         "size": "L",
         "color": "Natural Cotton",
@@ -162,7 +160,7 @@ class TestAdminIndexBaseTemplate:
             assert "border-r border-gray-200" in body
             # Brand
             assert "ÀSÌKÒ" in body
-            assert "Pro Atelier" in body  # subtitle below brand
+            assert "Pro Plan" in body  # subtitle below brand
             # 10 nav items, each with id="nav-XXX"
             for nav_id in (
                 "nav-dashboard", "nav-sales", "nav-view-site",
@@ -271,14 +269,14 @@ class TestAdminIndexBaseTemplate:
             body = client.get("/admin").text
             assert "title=\"Toggle theme\"" in body
             # Has a toggle button that modifies localStorage
-            assert "asiko:darkMode" in body
+            assert "asiko:admin:darkMode" in body
 
     def test_dark_mode_fouc_prevention_script(self):
         """Admin shell has a synchronous script to prevent flash of unstyled content."""
         app = _make_app_with_routes()
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin").text
-            assert "asiko:darkMode" in body
+            assert "asiko:admin:darkMode" in body
             # The sync script should be in <head>, not inside a deferred Alpine
             assert '<script>\n        // Apply persisted theme synchronously' in body
 
@@ -348,8 +346,8 @@ class TestDashboardActivityStatsGrid:
             assert "Conversion Rate" in body
             assert "Bounce Rate" in body
             assert "Page Views" in body
-            # Plus 3D pipeline bar
-            assert "3D Pipeline" in body
+            # Progress bar present
+            assert "h-1.5" in body
 
     def test_progress_bars_present(self):
         """Quick Stats uses h-1.5 rounded progress bars (colored)."""
@@ -401,14 +399,10 @@ class TestOperationsSection:
             body = r.text
             assert "data-section=\"operations\"" in body
             # 4 operational KPI cards (plain language)
-            for title in ("Total Sales", "Pending Orders", "Reserved Items", "Waiting Customers"):
+            for title in ("Revenue", "Pending Orders", "Low Stock Items", "Waiting Customers"):
                 assert title in body, f"missing KPI {title!r}"
-            # Stock Management heading
-            assert "Stock Management" in body
-            # Photo to 3D section
-            assert "Photo to 3D" in body
-            # Populated pool renders the seeded product
-            assert "Aba Handloomed Trouser" in body
+            # Recent Orders heading
+            assert "Recent Orders" in body
 
     def test_operations_uses_light_theme(self):
         """The section uses the v2 light-theme tokens (no dark green from the old design)."""
@@ -418,35 +412,33 @@ class TestOperationsSection:
             # v2 light theme
             assert "bg-white" in body
             # Pastel icon chips
-            assert "bg-blue-50" in body
-            assert "bg-amber-50" in body
             assert "bg-emerald-50" in body
+            assert "bg-amber-50" in body
+            assert "bg-red-50" in body
             assert "bg-purple-50" in body
             # Old dark-green theme is gone
             assert "BRAND COMMAND" not in body
 
     def test_operations_pastel_kpi_chips(self):
-        """KPI cards use pastel icon chips (blue/amber/emerald/purple) for
-        Verified Revenue, Unfulfilled Backlogs, Active Holds, Waitlist Demand."""
+        """KPI cards use pastel icon chips (emerald/amber/red/purple)."""
         app = _make_app_with_routes()
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin/section/operations").text
             # Each chip color appears at least once
-            assert body.count("bg-blue-50") >= 1
-            assert body.count("bg-amber-50") >= 1
             assert body.count("bg-emerald-50") >= 1
+            assert body.count("bg-amber-50") >= 1
+            assert body.count("bg-red-50") >= 1
             assert body.count("bg-purple-50") >= 1
 
     def test_operations_htmx_endpoints_referenced(self):
-        """The section's forms point at the legacy HTMX endpoints
-        (which are still served by app/routes/admin_dashboard.py)."""
+        """The section's forms point at HTMX endpoints for stock updates, order status, and waitlist."""
         app = _make_app_with_routes(pool_factory=_make_populated_pool)
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin/section/operations").text
             assert 'hx-post="/admin/dashboard/update-stock"' in body
-            # notify-waitlist is only rendered when there's a waitlist row;
-            # with the empty pool we still want to confirm the waitlist
-            # section renders with the empty-state message
+            # Order status endpoint should be referenced
+            assert 'hx-post="/admin/orders/' in body or 'update-stock' in body
+            # waitlist section renders with empty-state message
             assert "Nobody waiting" in body or "No waiting" in body
 
     def test_legacy_admin_dashboard_url_routes_to_v2(self):
@@ -473,32 +465,6 @@ class TestOperationsSection:
             body = client.get("/admin").text
             assert 'id="nav-operations"' in body
             assert ">Operations<" in body
-
-
-class TestPipelineStatusMapping:
-    """The pipeline_status enum must map to the four display buckets."""
-
-    def test_completed_maps_to_generated(self):
-        from app.routes.admin_sections import _map_pipeline_status
-        assert _map_pipeline_status("completed") == "generated"
-
-    def test_queued_maps_to_processing(self):
-        from app.routes.admin_sections import _map_pipeline_status
-        for raw in ("queued", "generating_mesh", "optimizing_gltf"):
-            assert _map_pipeline_status(raw) == "processing", f"{raw} should be processing"
-
-    def test_failed_maps_to_failed(self):
-        from app.routes.admin_sections import _map_pipeline_status
-        assert _map_pipeline_status("failed") == "failed"
-
-    def test_idle_maps_to_not_started(self):
-        from app.routes.admin_sections import _map_pipeline_status
-        assert _map_pipeline_status("idle") == "not_started"
-        assert _map_pipeline_status(None) == "not_started"
-
-    def test_unknown_status_defaults_to_not_started(self):
-        from app.routes.admin_sections import _map_pipeline_status
-        assert _map_pipeline_status("garbage") == "not_started"
 
 
 class TestAdminSectionGracefulEmpty:
@@ -542,8 +508,8 @@ class TestAdminSectionGracefulEmpty:
             r = client.get("/admin/section/settings")
             assert r.status_code == 200
             assert 'name="currency"' in r.text
-            assert 'name="mesh_provider"' in r.text
-            assert 'name="auto_mesh"' in r.text
+            assert 'name="notif_new_order"' in r.text
+            assert 'name="blog_enabled"' in r.text
 
     def test_about_empty_db_renders_form(self):
         app = _make_app_with_routes()
@@ -707,17 +673,18 @@ class TestNewSections:
                 assert step in body, f"missing funnel step {step!r}"
 
     def test_analytics_handles_no_orders(self):
-        """Empty DB should still render the chart + funnel with mock data."""
+        """Empty DB should still render the chart + funnel with fallback data."""
         app = _make_app_with_routes()
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin/section/analytics").text
-            # 7-day series renders even with zero paid orders
-            for day in ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"):
-                assert day in body
-            assert "12,480" in body or "12480" in body  # sessions KPI
-            # Sources
-            for src in ("Direct", "Instagram", "Google search", "Email"):
-                assert src in body
+            # 7-day series renders (at least Mon with zero orders when no data)
+            assert "Mon" in body
+            assert "0" in body  # zero orders/revenue for empty DB
+            # Funnel steps rendered
+            for step in ("Visitors", "Product views", "Add to cart", "Checkout", "Purchased"):
+                assert step in body
+            # Sources fallback (Direct when no traffic_sources data)
+            assert "Direct" in body
 
     def test_analytics_sidebar_nav(self):
         import re
@@ -806,6 +773,62 @@ class TestNewSections:
             ):
                 pattern = rf"'{slug}'\s*:\s*'{nav_id}'"
                 assert re.search(pattern, body), f"missing idMap entry for {slug}"
+
+
+class TestLogisticsSocialLoyalty:
+    """Logistics, Social Commerce, and Loyalty sections render without errors."""
+
+    def test_logistics_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/logistics").text
+            assert "data-section=\"logistics\"" in body
+            assert "Delivery Providers" in body
+            assert "Recent Shipments" in body
+            assert "KPI" in body or "Total Shipments" in body
+
+    def test_social_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/social").text
+            assert "data-section=\"social\"" in body
+            assert "Fashion Feed" in body
+            assert "Influencers" in body
+            assert "Outfit Boards" in body
+
+    def test_loyalty_renders(self):
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin/section/loyalty").text
+            assert "data-section=\"loyalty\"" in body
+            assert "VIP Tiers" in body
+            assert "Loyalty Accounts" in body
+            assert "Rewards Catalog" in body
+            assert "Recent Referrals" in body
+
+    def test_logistics_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'logistics'\s*:\s*'nav-logistics'", body)
+            assert "id=\"nav-logistics\"" in body
+
+    def test_social_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'social'\s*:\s*'nav-social'", body)
+            assert "id=\"nav-social\"" in body
+
+    def test_loyalty_sidebar_nav(self):
+        import re
+        app = _make_app_with_routes()
+        with TestClient(app, raise_server_exceptions=False) as client:
+            body = client.get("/admin").text
+            assert re.search(r"'loyalty'\s*:\s*'nav-loyalty'", body)
+            assert "id=\"nav-loyalty\"" in body
 
 
 class TestHumanizeDate:

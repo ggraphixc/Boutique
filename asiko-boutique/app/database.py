@@ -24,19 +24,26 @@ async def init_db_pool() -> asyncpg.Pool:
         print("[DATABASE ERROR] CRITICAL: DATABASE_URL variable is missing from environment.")
         sys.exit(1)
 
-    try:
-        _pool = await asyncpg.create_pool(
-            dsn=database_url,
-            min_size=2,
-            max_size=10,
-            command_timeout=30.0,
-            max_inactive_connection_lifetime=300.0,
-        )
-        print("[DATABASE] Connection pool allocated via asyncpg.")
-        return _pool
-    except Exception as e:
-        print(f"[DATABASE ERROR] Pool allocation failure: {e}")
-        sys.exit(1)
+    import asyncio
+    for attempt in range(4):
+        try:
+            _pool = await asyncpg.create_pool(
+                dsn=database_url,
+                min_size=2,
+                max_size=10,
+                command_timeout=60.0,
+                max_inactive_connection_lifetime=300.0,
+            )
+            print("[DATABASE] Connection pool allocated via asyncpg.")
+            return _pool
+        except Exception as e:
+            wait = 2 ** attempt * 2
+            print(f"[DATABASE] Attempt {attempt+1}/4 failed: {e}")
+            if attempt < 3:
+                print(f"[DATABASE] Retrying in {wait}s...")
+                await asyncio.sleep(wait)
+    print("[DATABASE ERROR] CRITICAL: Could not connect after 4 attempts.")
+    sys.exit(1)
 
 
 async def close_db_pool() -> None:

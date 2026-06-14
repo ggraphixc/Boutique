@@ -2,6 +2,7 @@
 # Lifespan manages async pool lifecycle; Mount-based routing for all modules.
 
 import os
+import time
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -31,29 +32,26 @@ STATIC_DIR = BASE_DIR / "static"
 # NO-CACHE STATIC FILES HANDLER (anti-304 bypass for local dev hot-reload)
 # ---------------------------------------------------------------------------
 class NoCacheStaticFiles(StaticFiles):
-    """
-    Custom StaticFiles handler that completely intercepts caching handshakes,
-    forcing the browser to drop 304 validations and fetch fresh code updates
-    on every request. Used in development to prevent stale 3D engine code
-    (atelier-3d.js) and CSS from being served from the browser cache after
-    edits.
+    """StaticFiles with optional no-cache mode for development.
 
-    Two-layer enforcement:
-      1. is_not_modified() always returns False → disables Starlette's
-         If-Modified-Since / If-None-Match 304 short-circuit
-      2. __call__() intercepts the http.response.start message and injects
-         aggressive cache-invalidation headers (Cache-Control, Pragma,
-         Expires) on every response
+    In debug mode: forces fresh fetch on every request (no 304).
+    In production: normal browser caching applies.
     """
+    def __init__(self, *args, debug: bool = True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._debug = debug
+
     def is_not_modified(self, response_headers: dict, request_headers: dict) -> bool:
-        # Forcing False completely deactivates the 304 Not Modified optimization path
-        return False
+        if self._debug:
+            return False
+        return super().is_not_modified(response_headers, request_headers)
 
     async def __call__(self, scope, receive, send) -> None:
+        if not self._debug:
+            return await super().__call__(scope, receive, send)
         async def intercepted_send(message: dict) -> None:
             if message["type"] == "http.response.start":
                 headers = dict(message.get("headers", []))
-                # Inject aggressive cache invalidation control vectors
                 headers[b"cache-control"] = b"no-cache, no-store, must-revalidate, max-age=0"
                 headers[b"pragma"] = b"no-cache"
                 headers[b"expires"] = b"0"
@@ -111,7 +109,6 @@ async def debug_root(request: Request):
 # ---------------------------------------------------------------------------
 # Application Lifespan
 # Sets app.state.db_pool from init_db_pool(); closes cleanly on shutdown.
-# Binds the 3D pipeline daemon to application lifecycle.
 # ---------------------------------------------------------------------------
 
 @asynccontextmanager
@@ -120,9 +117,7 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     Manages global application lifecycle resource allocation,
     guaranteeing relational schema structural sync loops on startup.
     """
-    import asyncio
     from app.database import init_db_pool, close_db_pool
-    from app.workers.pipeline_daemon import AsikoPipelineDaemon
     from app.realtime import manager as realtime_manager
 
     # 1. Initialize our high-throughput Neon Postgres connection cluster pool
@@ -149,29 +144,44 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         """)
     logger.info("LOG_SYSTEM: Database schema structural validation completed successfully.")
 
-    # 3. Instantiate and launch our autonomous 3D pipeline background daemon
-    daemon = AsikoPipelineDaemon(db_pool=app.state.db_pool)
-    app.state.pipeline_daemon = daemon
+    # Migration 23: password reset tokens table
+    async with app.state.db_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+                token VARCHAR(64) NOT NULL UNIQUE,
+                expires_at TIMESTAMP NOT NULL,
+                used BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS idx_prt_token ON password_reset_tokens(token);
+            CREATE INDEX IF NOT EXISTS idx_prt_customer ON password_reset_tokens(customer_id);
+        """)
+    logger.info("LOG_SYSTEM: Migration 23 — password_reset_tokens table ready.")
 
-    # Spawn the persistent loop as a non-blocking concurrent task on the event loop
-    daemon_task = asyncio.create_task(daemon.start_loop(check_interval_seconds=10))
-    logger.info("LOG_SYSTEM: ÀSÌKÒ 3D Pipeline Daemon successfully mounted to application lifespan thread.")
+    # Migration 24: add email settings columns to store_settings
+    async with app.state.db_pool.acquire() as conn:
+        for col in ["brevo_api_key", "sender_email", "sender_name", "admin_email"]:
+            await conn.execute(
+                f"ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS {col} VARCHAR(500) DEFAULT ''"
+            )
+        for col in ["email_welcome_enabled", "email_order_enabled", "email_shipping_enabled",
+                     "email_newsletter_enabled", "email_password_reset_enabled"]:
+            await conn.execute(
+                f"ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS {col} BOOLEAN DEFAULT TRUE"
+            )
+    logger.info("LOG_SYSTEM: Migration 24 — email settings columns added.")
 
-    # 4. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
+    # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
 
     try:
         yield
     finally:
-        # 5. Graceful teardown sequences on web application shutdown
+        # Graceful teardown sequences on web application shutdown
         logger.info("LOG_SYSTEM: Shutting down web instance. Dismantling background processes safely...")
-        daemon.is_running = False
-        daemon_task.cancel()
-        try:
-            await daemon_task
-        except asyncio.CancelledError:
-            pass
 
         # Stop real-time listeners
         await realtime_manager.stop_listeners()
@@ -218,13 +228,13 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.admin_sections import routes as admin_sections_routes
     from app.routes.admin import routes as admin_crud_routes
     from app.routes.waitlist import routes as waitlist_routes
-    from app.routes.virtual import routes as virtual_routes
-    from app.routes.virtual_experience import routes as virtual_experience_routes
     from app.routes.dpp_verification import routes as dpp_routes
     from app.routes.customer import routes as customer_routes
     from app.services.settlement import routes as settlement_routes
     from app.routes.ws_admin import ws_admin_routes
     from app.routes.ws_store import ws_store_routes
+    from app.routes.fashion_chat import routes as fashion_chat_routes
+    from app.routes.wardrobe import routes as wardrobe_routes
 
     for route_list in [
         storefront_routes,
@@ -237,13 +247,13 @@ def _register_route_modules(app: Starlette) -> None:
         admin_sections_routes,
         admin_crud_routes,
         waitlist_routes,
-        virtual_routes,
-        virtual_experience_routes,
         dpp_routes,
         customer_routes,
         settlement_routes,
         ws_admin_routes,
         ws_store_routes,
+        fashion_chat_routes,
+        wardrobe_routes,
     ]:
         app.routes.extend(route_list)
 
@@ -263,6 +273,47 @@ global_middleware = [
 
 
 # ---------------------------------------------------------------------------
+# Custom Pages Middleware — injects nav/footer pages into every request
+# ---------------------------------------------------------------------------
+
+class CustomPagesMiddleware:
+    """Caches custom pages in-memory — 1 DB query every 30s instead of 2 per request."""
+
+    _nav_pages: list = []
+    _footer_pages: list = []
+    _cache_ts: float = 0.0
+    CACHE_TTL: int = 30
+
+    async def __call__(self, scope, receive, send):
+        from starlette.types import ASGIApp
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        request = Request(scope, receive, send)
+        now = time.monotonic()
+        if (now - self._cache_ts) >= self.CACHE_TTL:
+            pool = getattr(request.app.state, "db_pool", None)
+            if pool:
+                try:
+                    async with pool.acquire() as conn:
+                        rows = await conn.fetch(
+                            "SELECT title, slug, show_in_nav, show_in_footer FROM custom_pages "
+                            "WHERE is_live = TRUE ORDER BY sort_order, title"
+                        )
+                    self._nav_pages = [{"title": r["title"], "slug": r["slug"]} for r in rows if r["show_in_nav"]]
+                    self._footer_pages = [{"title": r["title"], "slug": r["slug"]} for r in rows if r["show_in_footer"]]
+                    self._cache_ts = now
+                except Exception:
+                    pass
+        request.state.nav_pages = self._nav_pages
+        request.state.footer_pages = self._footer_pages
+        return await self.app(scope, receive, send)
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+
+# ---------------------------------------------------------------------------
 # Initialize Starlette App Instance
 # ---------------------------------------------------------------------------
 
@@ -273,8 +324,12 @@ app = Starlette(
     middleware=global_middleware,
 )
 
+# Inject custom pages middleware after app creation
+app.add_middleware(CustomPagesMiddleware)
+
 _register_route_modules(app)
-app.routes.append(Mount("/static", app=NoCacheStaticFiles(directory=str(STATIC_DIR)), name="static"))
+_is_debug = os.getenv("ASIKO_DEBUG", "true").lower() in ("true", "1", "yes")
+app.routes.append(Mount("/static", app=NoCacheStaticFiles(directory=str(STATIC_DIR), debug=_is_debug), name="static"))
 
 
 if __name__ == "__main__":

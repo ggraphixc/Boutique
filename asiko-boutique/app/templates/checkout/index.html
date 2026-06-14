@@ -1,103 +1,170 @@
 {% extends "base.html" %}
-{% block title %}Checkout - ASIKO Boutique{% endblock %}
+{% block title %}Checkout — ASIKO Boutique{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <h1 class="font-display text-3xl text-[#0D2A22] mb-8">Checkout</h1>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Order Summary -->
-        <div class="space-y-6">
-            <h2 class="font-display text-xl text-[#0D2A22]">Order Summary</h2>
-            <div class="space-y-4">
-                {% for item in cart.lines %}
-                <div class="flex gap-4 p-4 rounded-lg border border-[#D4AF37]/20">
-                    <div class="w-16 h-16 bg-[#FBF9F6] rounded-md flex items-center justify-center flex-shrink-0">
-                        <span class="font-display text-[#0D2A22]/30 text-xl">A</span>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-medium text-[#0D2A22] text-sm truncate">{{ item.name }}</h4>
-                        <div class="flex items-center justify-between mt-2">
-                            <span class="text-sm font-semibold text-[#0D2A22]">{{ item.price|naira }}</span>
-                            <span class="text-xs text-[#1A1A1A]/50">Qty: {{ item.quantity }}</span>
+<main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+
+    <!-- Header -->
+    <div class="mb-8">
+        <h1 class="font-display text-3xl text-[#0D2A22] dark:text-white mb-2">Checkout</h1>
+        <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400">Complete your order in a few simple steps.</p>
+    </div>
+
+    <!-- Steps indicator -->
+    <div class="flex items-center gap-1.5 sm:gap-2 mb-6 sm:mb-8">
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <span class="w-7 h-7 rounded-full bg-[#D4AF37] text-[#0D2A22] text-xs font-bold flex items-center justify-center shrink-0">1</span>
+            <span class="text-xs font-medium text-[#0D2A22] dark:text-white hidden sm:inline">Shipping</span>
+        </div>
+        <div class="flex-1 h-px bg-[#D4AF37]/30 dark:bg-gray-700"></div>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <span class="w-7 h-7 rounded-full border border-[#D4AF37]/30 dark:border-gray-600 text-[#1A1A1A]/40 dark:text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">2</span>
+            <span class="text-xs text-[#1A1A1A]/40 dark:text-gray-500 hidden sm:inline">Payment</span>
+        </div>
+        <div class="flex-1 h-px bg-[#D4AF37]/15 dark:bg-gray-800"></div>
+        <div class="flex items-center gap-1.5 sm:gap-2">
+            <span class="w-7 h-7 rounded-full border border-[#D4AF37]/30 dark:border-gray-600 text-[#1A1A1A]/40 dark:text-gray-500 text-xs font-bold flex items-center justify-center shrink-0">3</span>
+            <span class="text-xs text-[#1A1A1A]/40 dark:text-gray-500 hidden sm:inline">Confirm</span>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+        <!-- Left: Form (3 cols) -->
+        <div class="lg:col-span-3">
+            <form hx-post="/checkout/submit" hx-target="#checkout-form" hx-swap="innerHTML" id="checkout-form" class="space-y-6">
+
+                <!-- Contact -->
+                <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5">
+                    <h2 class="font-display text-lg text-[#0D2A22] dark:text-white mb-4">Contact Details</h2>
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">First Name</label>
+                                <input type="text" name="first_name" required
+                                    class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors"
+                                    placeholder="Adebayo">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Last Name</label>
+                                <input type="text" name="last_name" required
+                                    class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors"
+                                    placeholder="Okonkwo">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Email</label>
+                            <input type="email" name="email" required
+                                class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors"
+                                placeholder="you@email.com">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Phone Number</label>
+                            <input type="tel" name="phone" required
+                                class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors"
+                                placeholder="0801 234 5678">
                         </div>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-            <div class="border-t border-[#D4AF37]/20 pt-4 space-y-3">
-                <div class="flex justify-between">
-                    <span class="text-[#1A1A1A]/70">Subtotal</span>
-                    <span class="font-medium text-[#0D2A22]">{{ cart.total|naira }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-[#1A1A1A]/70">Shipping</span>
-                    <span id="shipping-cost" class="font-medium text-[#0D2A22]">—</span>
-                </div>
-                <div class="flex justify-between text-lg font-semibold">
-                    <span class="text-[#0D2A22]">Total</span>
-                    <span id="order-total" class="text-[#0D2A22]">{{ cart.total|naira }}</span>
-                </div>
-            </div>
-        </div>
 
-        <!-- Shipping & Payment Form -->
-        <div class="space-y-6">
-            <form hx-post="/checkout/submit" hx-target="#checkout-form" hx-swap="innerHTML" id="checkout-form" class="space-y-6">
-                <h2 class="font-display text-xl text-[#0D2A22]">Shipping Information</h2>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-[#0D2A22] mb-1">First Name</label>
-                        <input type="text" name="first_name" required
-                            class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-[#0D2A22] mb-1">Last Name</label>
-                        <input type="text" name="last_name" required
-                            class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
+                <!-- Delivery -->
+                <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5">
+                    <h2 class="font-display text-lg text-[#0D2A22] dark:text-white mb-4">Delivery Address</h2>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Street Address</label>
+                            <textarea name="address" rows="2" required
+                                class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors resize-none"
+                                placeholder="123 Admiralty Way, Lekki Phase 1"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">State</label>
+                            <select name="state" required id="state-select"
+                                hx-get="/checkout/shipping-summary"
+                                hx-trigger="change"
+                                hx-target="#shipping-cost"
+                                hx-swap="outerHTML"
+                                hx-include="#state-select"
+                                class="w-full px-3 py-2.5 border border-[#D4AF37]/20 dark:border-gray-700 rounded-lg text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white focus:outline-none focus:border-[#D4AF37] transition-colors">
+                                <option value="">Select your state</option>
+                                {% for state in states %}
+                                <option value="{{ state.code }}">{{ state.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Email Address</label>
-                    <input type="email" name="email" required
-                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Phone Number</label>
-                    <input type="tel" name="phone" required
-                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">Delivery Address</label>
-                    <textarea name="address" rows="2" required
-                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]"></textarea>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-[#0D2A22] mb-1">State</label>
-                    <select name="state" required id="state-select"
-                        hx-get="/checkout/shipping-summary"
-                        hx-trigger="change"
-                        hx-target="#shipping-cost"
-                        hx-swap="outerHTML"
-                        hx-include="#state-select"
-                        class="w-full px-3 py-2 border border-[#D4AF37]/40 rounded-md focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 focus:border-[#0D2A22]">
-                        <option value="">Select State</option>
-                        {% for state in states %}
-                        <option value="{{ state.code }}">{{ state.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div class="pt-4">
-                    <button type="submit" class="w-full px-6 py-3 text-sm font-medium text-white bg-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 transition-colors">
-                        Place Order
+                <!-- Submit -->
+                <div class="lg:hidden">
+                    <button type="submit" class="w-full px-6 py-3.5 text-sm font-semibold text-[#0D2A22] bg-[#D4AF37] rounded-xl hover:bg-[#E6C875] transition-colors shadow-lg">
+                        Continue to Payment
                     </button>
                 </div>
             </form>
         </div>
+
+        <!-- Right: Order Summary (2 cols) -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 p-5 lg:sticky lg:top-24">
+                <h2 class="font-display text-lg text-[#0D2A22] dark:text-white mb-4">Your Order</h2>
+
+                <div class="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                    {% for item in cart.lines %}
+                    <div class="flex gap-3 p-3 rounded-lg bg-[#FBF9F6] dark:bg-[#111]">
+                        <div class="w-14 h-14 bg-[#0D2A22]/5 dark:bg-gray-800 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {% if item.image %}
+                            <img src="{{ item.image }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                            {% else %}
+                            <span class="font-display text-[#0D2A22]/20 dark:text-white/10 text-sm">A</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="font-medium text-[#0D2A22] dark:text-white text-sm truncate">{{ item.name }}</h4>
+                            <div class="flex items-center justify-between mt-1">
+                                <span class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">Qty: {{ item.quantity }}</span>
+                                <span class="font-mono text-sm font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ item.price|naira }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="border-t border-[#D4AF37]/10 dark:border-gray-800 pt-4 space-y-2">
+                    <div class="flex justify-between text-sm">
+                        <span class="text-[#1A1A1A]/60 dark:text-gray-400">Subtotal</span>
+                        <span class="font-mono text-[#0D2A22] dark:text-gray-300">{{ cart.total|naira }}</span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-[#1A1A1A]/60 dark:text-gray-400">Delivery</span>
+                        <span id="shipping-cost" class="font-mono text-[#0D2A22] dark:text-gray-300">Select state</span>
+                    </div>
+                    <div class="flex justify-between text-lg font-semibold pt-2 border-t border-[#D4AF37]/10 dark:border-gray-800">
+                        <span class="text-[#0D2A22] dark:text-white">Total</span>
+                        <span id="order-total" class="font-mono text-[#0D2A22] dark:text-[#D4AF37]">{{ cart.total|naira }}</span>
+                    </div>
+                </div>
+
+                <div class="mt-4 hidden lg:block">
+                    <button type="submit" form="checkout-form"
+                            class="w-full px-6 py-3.5 text-sm font-semibold text-[#0D2A22] bg-[#D4AF37] rounded-xl hover:bg-[#E6C875] transition-colors shadow-lg cursor-pointer">
+                        Continue to Payment
+                    </button>
+                </div>
+
+                <!-- Trust signals -->
+                <div class="mt-4 flex items-center justify-center gap-4 text-[10px] text-[#1A1A1A]/40 dark:text-gray-500">
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        Secure Payment
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                        OPay Verified
+                    </span>
+                </div>
+            </div>
+        </div>
+
     </div>
-</div>
+</main>
 {% endblock %}

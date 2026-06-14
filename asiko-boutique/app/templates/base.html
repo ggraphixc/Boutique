@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full" x-data="{ darkMode: (localStorage.getItem('asiko:darkMode') ?? 'false') === 'true' }" x-init="$root.classList.toggle('dark', darkMode)" :class="{ 'dark': darkMode }">
+<html lang="en" class="h-full" x-data="{ darkMode: (localStorage.getItem('asiko:store:darkMode') ?? 'false') === 'true' }" x-init="$root.classList.toggle('dark', darkMode)" :class="{ 'dark': darkMode }">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
         // Apply persisted theme synchronously to prevent FOUC.
         (function() {
             try {
-                if ((localStorage.getItem('asiko:darkMode') ?? 'false') === 'true') {
+                if ((localStorage.getItem('asiko:store:darkMode') ?? 'false') === 'true') {
                     document.documentElement.classList.add('dark');
                 }
             } catch (e) {}
@@ -31,11 +31,17 @@
             },
         }
     </script>
+    <!-- Chatbot settings (read by widget JS) -->
+    <meta name="chatbot-enabled" content="{{ settings.get('chatbot_enabled', true) }}">
+    <meta name="chatbot-welcome" content="{{ settings.get('chatbot_welcome', 'Hi! I''m your personal ASIKO stylist. How can I help you find the perfect look today?') }}">
+    <meta name="chatbot-primary" content="{{ settings.get('chatbot_color_primary', '#0D2A22') }}">
+    <meta name="chatbot-accent" content="{{ settings.get('chatbot_color_accent', '#D4AF37') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/ws.js"></script>
+    <script defer src="https://unpkg.com/@alpinejs/collapse@3.14.3/dist/cdn.min.js"></script>
     <script defer src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js"></script>
     <style>
         [x-cloak] { display: none !important; }
@@ -45,7 +51,7 @@
 </head>
 <body class="h-full bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100 antialiased">
     <div class="min-h-full flex flex-col">
-        <header class="sticky top-0 z-40 bg-white/80 dark:bg-[#0E0E10]/80 backdrop-blur-md border-b border-[#D4AF37]/20 dark:border-gray-800">
+        <header x-data="{ mobileOpen: false }" class="sticky top-0 z-40 bg-white/80 dark:bg-[#0E0E10]/80 backdrop-blur-md border-b border-[#D4AF37]/20 dark:border-gray-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-3">
@@ -54,18 +60,16 @@
                     </div>
                     <nav class="hidden md:flex items-center gap-6">
                         <a href="/" class="text-sm font-medium text-[#0D2A22] dark:text-gray-200 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors">Home</a>
+                        <a href="/#storefront" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Shop</a>
                         <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Lookbook</a>
                         <a href="/about" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">About</a>
-                        <a href="/virtual-experience" class="text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
-                            <span class="inline-flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/></svg>
-                                3D Atelier
-                            </span>
-                        </a>
+                        {% for page in request.state.nav_pages %}
+                        <a href="/page/{{ page.slug }}" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">{{ page.title }}</a>
+                        {% endfor %}
                     </nav>
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2 sm:gap-3">
                         <button
-                            @click="darkMode = !darkMode; localStorage.setItem('asiko:darkMode', darkMode); $root.classList.toggle('dark', darkMode); document.dispatchEvent(new CustomEvent('asiko:theme-changed', { detail: { dark: darkMode } }))"
+                            @click="darkMode = !darkMode; localStorage.setItem('asiko:store:darkMode', darkMode); $root.classList.toggle('dark', darkMode); document.dispatchEvent(new CustomEvent('asiko:theme-changed', { detail: { dark: darkMode } }))"
                             class="relative w-9 h-9 inline-flex items-center justify-center text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors"
                             title="Toggle theme"
                             aria-label="Toggle dark mode"
@@ -99,27 +103,142 @@
                         >
                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                             <span class="hidden sm:inline">Cart</span>
-                            <span id="cart-counter" class="font-mono text-xs tracking-widest">
+                            <span id="cart-badge" class="font-mono text-xs tracking-widest">
                                 {% if cart and cart.item_count > 0 %}
                                 <span class="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-black text-xs flex items-center justify-center">{{ cart.item_count }}</span>
                                 {% endif %}
                             </span>
                         </button>
+
+                        <!-- Mobile hamburger -->
+                        <button @click="mobileOpen = !mobileOpen" class="md:hidden relative inline-flex items-center justify-center w-9 h-9 text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors" aria-label="Menu">
+                            <svg x-show="!mobileOpen" class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                            <svg x-show="mobileOpen" x-cloak class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Mobile menu panel -->
+            <div x-show="mobileOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-2" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-2" x-cloak class="md:hidden border-t border-[#D4AF37]/10 dark:border-gray-800 bg-white dark:bg-[#0E0E10]">
+                <div class="max-w-7xl mx-auto px-4 py-4 space-y-1">
+                    <a href="/" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22] dark:text-gray-200 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Home</a>
+                    <a href="/#storefront" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Shop</a>
+                    <a href="/lookbook" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Lookbook</a>
+                    <a href="/about" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">About</a>
+                    {% for page in request.state.nav_pages %}
+                    <a href="/page/{{ page.slug }}" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">{{ page.title }}</a>
+                    {% endfor %}
+                    <div class="border-t border-[#D4AF37]/10 dark:border-gray-800 my-2"></div>
+                    {% if request.session.get("customer_email") %}
+                    <a href="/account" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">My Account</a>
+                    <a href="/orders" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">My Orders</a>
+                    <a href="/logout" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Sign Out</a>
+                    {% else %}
+                    <a href="/login" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Sign In</a>
+                    <a href="/register" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Create Account</a>
+                    {% endif %}
                 </div>
             </div>
         </header>
 
         <main class="flex-1">{% block content %}{% endblock %}</main>
 
-        <footer class="border-t border-[#D4AF37]/20 dark:border-gray-800 bg-white dark:bg-[#0E0E10] mt-12">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div class="text-center">
-                    <span class="font-display text-xl text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">ASIKO</span>
-                    <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-500 mt-2">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
+        {% block footer %}
+        <footer class="border-t border-[#D4AF37]/20 dark:border-gray-800 bg-[#0D2A22] text-white mt-12 relative overflow-hidden">
+            <!-- Subtle 3D fashion accents -->
+            <div class="absolute top-0 right-0 w-24 opacity-[0.07] pointer-events-none" aria-hidden="true">
+                <img src="/static/images/icon-image/dress.png" alt="" class="w-full h-auto" loading="lazy">
+            </div>
+            <div class="absolute bottom-0 left-0 w-20 opacity-[0.05] pointer-events-none" aria-hidden="true">
+                <img src="/static/images/icon-image/leather shoe.png" alt="" class="w-full h-auto" loading="lazy">
+            </div>
+            <!-- Newsletter band -->
+            <div class="border-b border-white/10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-display text-lg text-[#D4AF37]">Stay in the loop</h3>
+                            <p class="text-sm text-white/60 mt-1">New drops, styling tips, and exclusive offers.</p>
+                        </div>
+                        <form class="flex w-full md:w-auto" method="POST" action="/newsletter/subscribe">
+                            <input type="email" name="email" required placeholder="your@email.com" class="flex-1 md:w-64 px-4 py-2.5 bg-white/10 border border-white/20 rounded-l-lg text-sm text-white placeholder:text-white/40 focus:outline-none focus:border-[#D4AF37]">
+                            <button type="submit" class="px-5 py-2.5 bg-[#D4AF37] text-[#0D2A22] text-sm font-semibold rounded-r-lg hover:bg-[#E6C875] transition-colors">Subscribe</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main footer -->
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                    <!-- Brand -->
+                    <div class="col-span-2 md:col-span-1">
+                        <span class="font-display text-2xl text-[#D4AF37] tracking-wider">ASIKO</span>
+                        <p class="text-sm text-white/50 mt-3 leading-relaxed">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
+                        <div class="flex items-center gap-3 mt-4">
+                            <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37]/20 transition-colors" aria-label="Instagram">
+                                <svg class="w-4 h-4 text-white/70" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                            </a>
+                            <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37]/20 transition-colors" aria-label="Twitter">
+                                <svg class="w-4 h-4 text-white/70" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            </a>
+                            <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37]/20 transition-colors" aria-label="TikTok">
+                                <svg class="w-4 h-4 text-white/70" fill="currentColor" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.43v-7.15a8.16 8.16 0 005.58 2.18v-3.45a4.85 4.85 0 01-3.77-1.53V6.69h3.77z"/></svg>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Shop -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-[#D4AF37] uppercase tracking-widest mb-4">Shop</h4>
+                        <ul class="space-y-2.5">
+                            <li><a href="/" class="text-sm text-white/60 hover:text-white transition-colors">New Arrivals</a></li>
+                            <li><a href="/#storefront" class="text-sm text-white/60 hover:text-white transition-colors">Collection</a></li>
+                            <li><a href="/lookbook" class="text-sm text-white/60 hover:text-white transition-colors">Lookbook</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Info -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-[#D4AF37] uppercase tracking-widest mb-4">Info</h4>
+                        <ul class="space-y-2.5">
+                            {% for page in request.state.footer_pages %}
+                            <li><a href="/page/{{ page.slug }}" class="text-sm text-white/60 hover:text-white transition-colors">{{ page.title }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+
+                    <!-- Account -->
+                    <div>
+                        <h4 class="text-xs font-semibold text-[#D4AF37] uppercase tracking-widest mb-4">Account</h4>
+                        <ul class="space-y-2.5">
+                            {% if request.session.get("customer_email") %}
+                            <li><a href="/account" class="text-sm text-white/60 hover:text-white transition-colors">My Account</a></li>
+                            {% else %}
+                            <li><a href="/login" class="text-sm text-white/60 hover:text-white transition-colors">Sign In</a></li>
+                            <li><a href="/register" class="text-sm text-white/60 hover:text-white transition-colors">Create Account</a></li>
+                            {% endif %}
+                            <li><a href="/stylist" class="text-sm text-white/60 hover:text-white transition-colors">AI Stylist</a></li>
+                            <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Gift Cards</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom bar -->
+            <div class="border-t border-white/10">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <p class="text-xs text-white/40">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
+                    <div class="flex items-center gap-4">
+                        <a href="#" class="text-xs text-white/40 hover:text-white/60 transition-colors">Privacy</a>
+                        <a href="#" class="text-xs text-white/40 hover:text-white/60 transition-colors">Terms</a>
+                        <span class="text-xs text-white/30">NGN &#8358;</span>
+                    </div>
                 </div>
             </div>
         </footer>
+        {% endblock footer %}
 
         <!-- Cart Drawer -->
         <div id="cart-drawer" class="hidden fixed inset-0 z-50" x-data="{ open: true }" x-show="open" x-cloak>
@@ -135,6 +254,282 @@
             </div>
         </div>
     </div>
+
+    <!-- AI Stylist Chatbot Widget (hidden on /stylist page) -->
+    {% if request.url.path != '/stylist' %}
+    <div x-data="asikoChatbot()" x-init="init()" x-cloak
+         class="fixed bottom-5 right-5 z-50 font-sans"
+         x-show="true">
+
+        <!-- Chat Bubble Button -->
+        <button @click="toggleChat()"
+                x-show="!open"
+                class="group w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-xl bg-[#1A3D36]">
+            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/>
+            </svg>
+            <!-- Unread pulse -->
+            <span x-show="unreadCount > 0" x-text="unreadCount"
+                  class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse"></span>
+        </button>
+
+        <!-- Chat Panel -->
+        <div x-show="open" x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+             x-transition:leave-end="opacity-0 translate-y-4 scale-95"
+             class="fixed bottom-5 right-5 w-[380px] max-w-[calc(100vw-2.5rem)] h-[560px] max-h-[calc(100vh-2.5rem)] bg-white dark:bg-[#0E0E10] rounded-2xl shadow-2xl border border-[#D4AF37]/20 dark:border-gray-700 flex flex-col overflow-hidden">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between px-4 py-3 border-b border-[#D4AF37]/20 dark:border-gray-800"
+                 :style="`background: linear-gradient(135deg, ${primaryColor}10, ${accentColor}10)`">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                         :style="`background: linear-gradient(135deg, ${primaryColor}, ${accentColor})`">
+                        A
+                    </div>
+                    <div>
+                        <div class="text-sm font-semibold text-[#0D2A22] dark:text-[#D4AF37]">ASIKO Stylist</div>
+                        <div class="text-[10px] text-green-500 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span> Online
+                        </div>
+                    </div>
+                </div>
+                <button @click="open = false" class="p-1.5 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 text-[#0D2A22] dark:text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+            </div>
+
+            <!-- Messages -->
+            <div id="chatbot-messages" class="flex-1 overflow-y-auto p-4 space-y-3 scroll-smooth">
+                <template x-for="(msg, i) in messages" :key="i">
+                    <div :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'">
+                        <div :class="msg.role === 'user'
+                            ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] rounded-2xl rounded-br-md max-w-[80%]'
+                            : 'bg-gray-100 dark:bg-gray-800 text-[#1A1A1A] dark:text-gray-200 rounded-2xl rounded-bl-md max-w-[80%]'"
+                             class="px-4 py-2.5 text-sm leading-relaxed">
+                            <div x-html="formatMessage(msg.text)"></div>
+                            <!-- Product cards -->
+                            <template x-if="msg.products && msg.products.length > 0">
+                                <div class="mt-3 space-y-2">
+                                    <template x-for="(prod, j) in msg.products.slice(0, 3)" :key="j">
+                                        <a :href="'/product/' + prod.id"
+                                           class="flex items-center gap-3 p-2 rounded-lg bg-white dark:bg-gray-700 border border-[#D4AF37]/20 dark:border-gray-600 hover:border-[#D4AF37] transition-colors">
+                                            <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-600 flex-shrink-0 overflow-hidden">
+                                                <img x-show="prod.image" :src="prod.image" class="w-full h-full object-cover" alt="">
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="text-xs font-semibold text-[#0D2A22] dark:text-white truncate" x-text="prod.name"></div>
+                                                <div class="text-[10px] text-[#D4AF37] font-bold" x-text="prod.price_fmt"></div>
+                                            </div>
+
+                                        </a>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+                <!-- Typing indicator -->
+                <div x-show="loading" class="flex justify-start">
+                    <div class="bg-gray-100 dark:bg-gray-800 rounded-2xl rounded-bl-md px-4 py-3 flex items-center gap-1.5">
+                        <span class="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                        <span class="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                        <span class="w-2 h-2 bg-[#D4AF37] rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input -->
+            <div class="border-t border-[#D4AF37]/20 dark:border-gray-800 p-3">
+                <form @submit.prevent="sendMessage()" class="flex items-center gap-2">
+                    <input type="text" x-model="userInput" :disabled="loading"
+                           placeholder="Ask me about fashion..."
+                           class="flex-1 px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-sm text-[#1A1A1A] dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/50 border border-transparent focus:border-[#D4AF37]/40 transition-all">
+                    <button type="submit" :disabled="loading || !userInput.trim()"
+                            class="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                            :style="`background: linear-gradient(135deg, ${primaryColor}, ${accentColor})`">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+    function asikoChatbot() {
+        return {
+            open: false,
+            loading: false,
+            userInput: '',
+            messages: [],
+            unreadCount: 0,
+            primaryColor: '#0D2A22',
+            accentColor: '#D4AF37',
+            init() {
+                // Load settings from meta tags
+                const p = document.querySelector('meta[name="chatbot-primary"]');
+                const a = document.querySelector('meta[name="chatbot-accent"]');
+                if (p) this.primaryColor = p.content;
+                if (a) this.accentColor = a.content;
+                // Welcome message
+                const welcome = document.querySelector('meta[name="chatbot-welcome"]');
+                const welcomeText = welcome ? welcome.content : 'Hi! I\'m your personal ASIKO stylist. How can I help you find the perfect look today?';
+                this.messages.push({ role: 'assistant', text: welcomeText });
+            },
+            toggleChat() {
+                this.open = !this.open;
+                if (this.open) this.unreadCount = 0;
+                this.$nextTick(() => this.scrollToBottom());
+            },
+            async sendMessage() {
+                const text = this.userInput.trim();
+                if (!text || this.loading) return;
+                this.messages.push({ role: 'user', text: text });
+                this.userInput = '';
+                this.loading = true;
+                this.$nextTick(() => this.scrollToBottom());
+                try {
+                    const resp = await fetch('/api/fashion/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: text }),
+                    });
+                    const data = await resp.json();
+                    this.messages.push({
+                        role: 'assistant',
+                        text: data.response || 'Sorry, I couldn\'t process that.',
+                        products: data.products || [],
+                    });
+                } catch (e) {
+                    this.messages.push({ role: 'assistant', text: 'Something went wrong. Please try again.' });
+                }
+                this.loading = false;
+                this.$nextTick(() => this.scrollToBottom());
+                if (!this.open) this.unreadCount++;
+            },
+            scrollToBottom() {
+                const el = document.getElementById('chatbot-messages');
+                if (el) el.scrollTop = el.scrollHeight;
+            },
+            formatMessage(text) {
+                return text.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            },
+        };
+    }
+    </script>
+    {% endif %}
+
+    <!-- ASIKO Confirm Dialog -->
+    <div id="asiko-confirm-overlay" class="hidden fixed inset-0 z-[9999]">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="asiko-confirm-backdrop"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-sm overflow-hidden" id="asiko-confirm-panel">
+                <div class="px-6 pt-6 pb-4 text-center">
+                    <div class="w-12 h-12 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-1" id="asiko-confirm-title"></h3>
+                    <p class="text-sm text-gray-500" id="asiko-confirm-message"></p>
+                </div>
+                <div class="flex border-t border-gray-100">
+                    <button id="asiko-confirm-cancel" class="flex-1 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <div class="w-px bg-gray-100"></div>
+                    <button id="asiko-confirm-ok" class="flex-1 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                        Yes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        var _resolve = null;
+        var overlay = document.getElementById('asiko-confirm-overlay');
+        var titleEl = document.getElementById('asiko-confirm-title');
+        var msgEl = document.getElementById('asiko-confirm-message');
+        var okBtn = document.getElementById('asiko-confirm-ok');
+        var cancelBtn = document.getElementById('asiko-confirm-cancel');
+        var backdrop = document.getElementById('asiko-confirm-backdrop');
+
+        function open(title, message, opts) {
+            opts = opts || {};
+            titleEl.textContent = title;
+            msgEl.textContent = message;
+            okBtn.textContent = opts.confirmText || 'Yes';
+            if (opts.danger) {
+                okBtn.className = 'flex-1 px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors';
+            } else {
+                okBtn.className = 'flex-1 px-4 py-3 text-sm font-medium text-[#0D2A22] hover:bg-gray-50 transition-colors';
+            }
+            overlay.classList.remove('hidden');
+            return new Promise(function(r) { _resolve = r; });
+        }
+        function close(val) {
+            overlay.classList.add('hidden');
+            if (_resolve) { _resolve(val); _resolve = null; }
+        }
+        okBtn.addEventListener('click', function() { close(true); });
+        cancelBtn.addEventListener('click', function() { close(false); });
+        backdrop.addEventListener('click', function() { close(false); });
+
+        window.asikoConfirm = open;
+    })();
+    </script>
+
+    <!-- Universal toast notification -->
+    <div id="asiko-toast" class="hidden fixed top-4 right-4 z-[9999] max-w-sm">
+        <div class="bg-white border border-gray-200 rounded-xl shadow-2xl p-4 flex items-start gap-3">
+            <div id="asiko-toast-icon" class="flex-shrink-0 mt-0.5"></div>
+            <div class="flex-1 min-w-0">
+                <p id="asiko-toast-title" class="text-sm font-semibold text-gray-900"></p>
+                <p id="asiko-toast-msg" class="text-xs text-gray-500 mt-0.5"></p>
+            </div>
+            <button onclick="document.getElementById('asiko-toast').classList.add('hidden')" class="flex-shrink-0 text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <script>
+    function asikoToast(type, title, msg) {
+        const t = document.getElementById('asiko-toast');
+        const icon = document.getElementById('asiko-toast-icon');
+        const titleEl = document.getElementById('asiko-toast-title');
+        const msgEl = document.getElementById('asiko-toast-msg');
+        if (type === 'success') {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center"><svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></div>';
+        } else if (type === 'warning') {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center"><svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg></div>';
+        } else {
+            icon.innerHTML = '<div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center"><svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></div>';
+        }
+        titleEl.textContent = title;
+        msgEl.textContent = msg;
+        t.classList.remove('hidden');
+        clearTimeout(window._asikoToastTimer);
+        window._asikoToastTimer = setTimeout(() => t.classList.add('hidden'), 4000);
+    }
+    /* Auto-show toast from query params */
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const success = params.get('success');
+        const error = params.get('error');
+        if (success) asikoToast('success', 'Success', decodeURIComponent(success));
+        if (error) asikoToast('error', 'Error', decodeURIComponent(error));
+        if (success || error) {
+            const url = new URL(window.location);
+            url.searchParams.delete('success');
+            url.searchParams.delete('error');
+            window.history.replaceState({}, '', url);
+        }
+    })();
+    </script>
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

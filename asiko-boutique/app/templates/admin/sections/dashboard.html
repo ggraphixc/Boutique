@@ -1,4 +1,4 @@
-<!-- Dashboard section: 4 KPI cards + 2-col (Recent Activity + Quick Stats) + 3D pipeline + Top sellers -->
+<!-- Dashboard section: 4 KPI cards + 2-col (Recent Activity + Quick Stats) + Top sellers -->
 <section class="space-y-6" data-section="dashboard"
          hx-ws="connect:/ws/admin/dashboard">
 
@@ -98,10 +98,10 @@
     <!-- Two column: Recent Activity (left, wider) + Quick Stats (right) -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        <!-- Recent Activity (col-span-2) — auto-refreshes on new reviews/pipeline events -->
+        <!-- Recent Activity (col-span-2) — auto-refreshes on new reviews -->
         <div class="lg:col-span-2 bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6"
              hx-get="/admin/rt/activity"
-             hx-trigger="ws:message[type=new_review], ws:message[type=pipeline_update]"
+             hx-trigger="ws:message[type=new_review]"
              hx-swap="innerHTML"
              hx-target="this">
             <div class="flex items-center justify-between mb-5">
@@ -127,10 +127,6 @@
                         {% elif item.kind == 'review' %}
                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                        {% elif item.kind == 'pipeline' %}
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"/>
                         </svg>
                         {% else %}
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -181,90 +177,6 @@
                         <div class="h-full bg-emerald-500 rounded-full transition-all" style="width: {{ quick_stats.page_views_pct }}%"></div>
                     </div>
                 </div>
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200">3D Pipeline</span>
-                        <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ pipeline.generated }}/{{ pipeline.generated + pipeline.processing + pipeline.failed + pipeline.not_started }}</span>
-                    </div>
-                    <div class="h-1.5 bg-gray-100 dark:bg-[#27272A] rounded-full overflow-hidden flex">
-                        {% set p_total = (pipeline.generated + pipeline.processing + pipeline.failed + pipeline.not_started) or 1 %}
-                        <div class="h-full bg-emerald-500" style="width: {{ (pipeline.generated / p_total * 100) or 0 }}%"></div>
-                        <div class="h-full bg-amber-400" style="width: {{ (pipeline.processing / p_total * 100) or 0 }}%"></div>
-                        <div class="h-full bg-rose-500" style="width: {{ (pipeline.failed / p_total * 100) or 0 }}%"></div>
-                        <div class="h-full bg-gray-300" style="width: {{ (pipeline.not_started / p_total * 100) or 0 }}%"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3D Pipeline Health (full width) — auto-refreshes on pipeline status changes -->
-    <div id="pipeline-health"
-         hx-get="/admin/rt/pipeline"
-         hx-trigger="ws:message[type=pipeline_update]"
-         hx-swap="innerHTML"
-         hx-target="this"
-         class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
-        <div class="flex items-center justify-between mb-5">
-            <div>
-                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">3D Pipeline Health</h3>
-                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Image-to-3D conversion status across the collection</p>
-            </div>
-            <button hx-get="/admin/section/products" hx-target="#workspace-content"
-                    class="text-sm font-medium text-blue-600 hover:text-blue-700">View all →</button>
-        </div>
-
-        <!-- Legend -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div class="flex items-center gap-2 px-3 py-2 bg-emerald-50 rounded-lg">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Generated</span>
-                <span class="ml-auto font-bold text-gray-900 dark:text-gray-100">{{ pipeline.generated }}</span>
-            </div>
-            <div class="flex items-center gap-2 px-3 py-2 bg-amber-50 rounded-lg">
-                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Processing</span>
-                <span class="ml-auto font-bold text-gray-900 dark:text-gray-100">{{ pipeline.processing }}</span>
-            </div>
-            <div class="flex items-center gap-2 px-3 py-2 bg-rose-50 rounded-lg">
-                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Failed</span>
-                <span class="ml-auto font-bold text-gray-900 dark:text-gray-100">{{ pipeline.failed }}</span>
-            </div>
-            <div class="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-[#27272A] rounded-lg">
-                <span class="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
-                <span class="text-gray-700 dark:text-gray-200 font-medium">Not started</span>
-                <span class="ml-auto font-bold text-gray-900 dark:text-gray-100">{{ pipeline.not_started }}</span>
-            </div>
-        </div>
-
-        <!-- Recent pipeline activity -->
-        <div class="mt-6 pt-5 border-t border-gray-100 dark:border-gray-800">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 dark:text-gray-500 mb-3">Recent pipeline activity</h4>
-            <div class="space-y-2.5">
-                {% for item in recent_pipeline[:5] %}
-                <div class="flex items-center gap-3 text-sm">
-                    <img src="{{ item.thumb }}" alt="" class="w-9 h-9 rounded object-cover bg-gray-100 dark:bg-[#27272A] flex-shrink-0">
-                    <div class="flex-1 min-w-0">
-                        <div class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ item.name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">{{ item.updated_at_human }}</div>
-                    </div>
-                    {% if item.status == 'generated' %}
-                        <span class="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">Generated</span>
-                    {% elif item.status == 'processing' %}
-                        <span class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                            Processing
-                        </span>
-                    {% elif item.status == 'failed' %}
-                        <span class="text-[11px] font-semibold text-rose-700 bg-rose-50 px-2.5 py-1 rounded-full">Failed</span>
-                    {% else %}
-                        <span class="text-[11px] font-semibold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-[#27272A] px-2.5 py-1 rounded-full">Queued</span>
-                    {% endif %}
-                </div>
-                {% else %}
-                <div class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500 text-center py-4">No products yet. Upload an image to start the 3D pipeline.</div>
-                {% endfor %}
             </div>
         </div>
     </div>

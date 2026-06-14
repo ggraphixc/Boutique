@@ -1,5 +1,4 @@
 # ASIKO Boutique - Webhook Routes & Brevo Email Integration
-# Plus Meshy 3D Pipeline Webhook Receiver for real-time event processing
 
 import json
 import logging
@@ -11,7 +10,7 @@ from typing import Optional
 import httpx
 from starlette.config import Config
 from starlette.requests import Request
-from starlette.responses import JSONResponse, Response, StreamingResponse
+from starlette.responses import JSONResponse
 from starlette.routing import Route
 
 from app.database import (
@@ -23,7 +22,6 @@ from app.database import (
 config = Config(".env")
 BREVO_API_KEY = config("BREVO_API_KEY", cast=str, default="")
 SENDER_EMAIL = config("SENDER_EMAIL", cast=str, default="ggraphixc@gmail.com")
-PAYSTACK_SECRET_KEY = config("PAYSTACK_SECRET_KEY", cast=str, default="")
 
 logger = logging.getLogger("asiko.webhooks")
 
@@ -309,57 +307,6 @@ async def order_status_webhook(request: Request) -> JSONResponse:
     })
 
 
-async def paystack_webhook(request: Request) -> JSONResponse:
-    """Paystack webhook: verify payment and trigger notifications."""
-    raw_body = await request.body()
-    signature = request.headers.get("x-paystack-signature")
-
-    if not signature:
-        return JSONResponse({"error": "Missing signature"}, status_code=401)
-
-    # Verify signature
-    if PAYSTACK_SECRET_KEY and not PAYSTACK_SECRET_KEY.startswith("your_"):
-        expected = hmac.new(
-            PAYSTACK_SECRET_KEY.encode("utf-8"),
-            raw_body,
-            hashlib.sha512,
-        ).hexdigest()
-        if not hmac.compare_digest(expected, signature):
-            logger.warning("Invalid Paystack signature")
-            return JSONResponse({"error": "Invalid signature"}, status_code=401)
-
-    try:
-        event = await request.json()
-    except Exception:
-        return JSONResponse({"error": "Invalid JSON"}, status_code=400)
-
-    event_type = event.get("event")
-    data = event.get("data", {})
-
-    if event_type == "charge.success":
-        reference = data.get("reference", "")
-        if not reference:
-            return JSONResponse({"error": "No reference"}, status_code=400)
-
-        # Strip the asiko_ prefix if present (we use f"asiko_{order_id}" as reference)
-        order_ref = reference.replace("asiko_", "") if reference.startswith("asiko_") else reference
-
-        order = await fetch_order_by_id(order_ref)
-        if not order:
-            logger.info("Paystack reference %s did not match any order", reference)
-            return JSONResponse({"received": True})
-
-        # Mark as paid
-        await update_order_status(str(order["id"]), "paid")
-
-        # Send customer confirmation + store owner notifications
-        await on_order_created(str(order["id"]))
-
-        logger.info("Payment verified for order %s", reference)
-
-    return JSONResponse({"received": True})
-
-
 async def send_test_email(request: Request) -> JSONResponse:
     """Debug endpoint: send a test email via Brevo to verify config."""
     body = await request.json()
@@ -385,26 +332,7 @@ async def send_test_email(request: Request) -> JSONResponse:
     return JSONResponse({"sent": ok, "to": to_email})
 
 
-# ---------------------------------------------------------------------------
-# Meshy 3D Pipeline Webhook Receiver
-# Receives real-time task completion events from Meshy API
-# ---------------------------------------------------------------------------
-
-async def meshy_webhook_receiver(request: Request) -> Response:
-    """
-    Deprecated: Meshy webhook kept for backward compatibility.
-    New OSS Gradio pipeline handles processing directly in pipeline_daemon.
-    Returns simple acknowledgment for any POST request.
-    """
-    if request.method != "POST":
-        return Response(status_code=405, content="Method Not Allowed")
-    
-    # Deprecated endpoint - return acknowledgment
-    return Response(status_code=200, content="DEPRECATED_ENDPOINT_ACKNOWLEDGED")
-
-
 webhook_routes = [
     Route("/webhooks/order-status", order_status_webhook, methods=["POST"]),
     Route("/webhooks/test-email", send_test_email, methods=["POST"]),
-    Route("/api/v1/webhooks/meshy", meshy_webhook_receiver, methods=["POST"]),
 ]

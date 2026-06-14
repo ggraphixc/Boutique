@@ -1,33 +1,53 @@
 {% for product in products %}
-<a href="/product/{{ product.id }}" class="group block overflow-hidden rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B] shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-    <div class="relative aspect-square bg-[#FBF9F6] dark:bg-[#111] overflow-hidden">
-        {% if product.base_image %}
-        <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" loading="lazy">
-        {% else %}
-        <div class="absolute inset-0 bg-gradient-to-br from-[#0D2A22]/5 to-[#D4AF37]/10"></div>
-        <div class="absolute inset-0 flex items-center justify-center text-[#0D2A22]/30 dark:text-white/10"><span class="font-display text-5xl">A</span></div>
-        {% endif %}
-        {% if product.has_3d_model %}
-        <span class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg">
-            <span class="relative flex h-1.5 w-1.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2A22] opacity-60"></span>
-                <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0D2A22]"></span>
-            </span>
-            3D
-        </span>
-        {% endif %}
-    </div>
-    <div class="p-4">
-        <h3 class="font-display text-lg text-[#0D2A22] dark:text-gray-100 mb-2 group-hover:text-[#D4AF37] transition-colors">{{ product.name }}</h3>
-        <p class="text-sm text-[#1A1A1A]/70 dark:text-gray-400 mb-3 line-clamp-2">{{ product.description }}</p>
-        <div class="flex items-center justify-between mb-4">
-            <span class="text-xl font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ product.price|naira }}</span>
-            <span class="text-xs text-[#1A1A1A]/50 dark:text-gray-500">{{ product.stock_quantity }} in stock</span>
+<div class="group relative" onclick="window.location='/product/{{ product.id }}'" style="cursor:pointer">
+    <div class="overflow-hidden rounded-2xl bg-white dark:bg-[#18181B] shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10 dark:hover:shadow-[#D4AF37]/5 hover:-translate-y-1">
+        <!-- Image container -->
+        <div class="relative aspect-[3/4] bg-gradient-to-br from-[#FBF9F6] to-[#F5F0E8] dark:from-[#111] dark:to-[#1a1a1a] overflow-hidden">
+            {% if product.base_image %}
+            <img src="{{ product.base_image }}" alt="{{ product.name }}"
+                 class="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110"
+                 loading="lazy">
+            {% else %}
+            <div class="absolute inset-0 bg-gradient-to-br from-[#0D2A22]/5 to-[#D4AF37]/10"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <span class="font-display text-6xl text-[#0D2A22]/15 dark:text-white/5">A</span>
+            </div>
+            {% endif %}
+
+            <!-- Gradient overlay -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+
+
+            <!-- Add to Cart — FORM IS OUTSIDE THE <a>, stops propagation -->
+            <div class="absolute bottom-3 left-3 right-3 z-20 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML"
+                      hx-on::after-request="if(event.detail.successful) document.getElementById('cart-drawer').classList.remove('hidden')"
+                      onclick="event.stopPropagation()" style="position:relative; z-index:30;">
+                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                    <button type="submit"
+                            onclick="event.stopPropagation(); event.preventDefault(); this.closest('form').requestSubmit();"
+                            class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] text-sm font-semibold rounded-xl hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-all duration-200 shadow-xl backdrop-blur-sm cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        Add to Cart
+                    </button>
+                </form>
+            </div>
         </div>
-        <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('cart-drawer').classList.remove('hidden')">
-            <input type="hidden" name="product_id" value="{{ product.id }}">
-            <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-colors">Add to Cart</button>
-        </form>
+
+        <!-- Card content -->
+        <div class="p-4">
+            <h3 class="font-display text-base text-[#0D2A22] dark:text-gray-100 group-hover:text-[#D4AF37] dark:group-hover:text-[#D4AF37] transition-colors duration-300 line-clamp-1 mb-1">{{ product.name }}</h3>
+            <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-500 mb-3 line-clamp-1">{{ product.description }}</p>
+            <div class="flex items-center justify-between">
+                <span class="text-lg font-bold text-[#0D2A22] dark:text-[#D4AF37] tracking-tight">{{ product.price|naira }}</span>
+                {% if product.stock_quantity is defined and product.stock_quantity > 0 %}
+                <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">In Stock</span>
+                {% else %}
+                <span class="text-[10px] font-medium text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">Sold Out</span>
+                {% endif %}
+            </div>
+        </div>
     </div>
-</a>
+</div>
 {% endfor %}

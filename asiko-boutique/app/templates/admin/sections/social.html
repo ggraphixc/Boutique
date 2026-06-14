@@ -1,0 +1,216 @@
+<!-- Social Commerce section: feed + influencers + outfit boards -->
+<section class="space-y-6" data-section="social" x-data="{ showAddInfluencer: false, showAddBoard: false }">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Social Commerce</h1>
+            <p class="text-sm text-gray-500 mt-1">Fashion feed, influencers, and outfit boards</p>
+        </div>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Total Posts</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.total_posts }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Total Likes</div>
+            <div class="text-2xl font-bold text-purple-600">{{ stats.total_likes }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Total Comments</div>
+            <div class="text-2xl font-bold text-blue-600">{{ stats.total_comments }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Featured Posts</div>
+            <div class="text-2xl font-bold text-amber-600">{{ stats.featured_posts }}</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Feed Posts (col-span-2) -->
+        <div class="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-card p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900">Fashion Feed</h3>
+                <span class="text-xs text-gray-400 font-mono">{{ posts|length }} posts</span>
+            </div>
+            {% if posts %}
+            <div class="space-y-4">
+                {% for p in posts %}
+                <div class="border border-gray-100 rounded-lg p-4 hover:border-purple-200 transition-all">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-50 text-purple-700">{{ p.post_type_label }}</span>
+                                {% if p.is_featured %}
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-50 text-amber-700">Featured</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-sm font-semibold text-gray-900">{{ p.title or "Untitled post" }}</div>
+                            <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ p.content or "" }}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-4 mt-3 text-xs text-gray-400">
+                        <span>&#10084; {{ p.likes_count }}</span>
+                        <span>&#128172; {{ p.comments_count }}</span>
+                        <span>&#8599; {{ p.shares_count }}</span>
+                        <span class="ml-auto">{{ p.created_at_human }}</span>
+                        <div class="flex items-center gap-1 ml-2">
+                            <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="inline">
+                                <input type="hidden" name="action" value="toggle_featured">
+                                <input type="hidden" name="post_id" value="{{ p.id }}">
+                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border border-amber-200 text-amber-600 hover:bg-amber-50 transition-colors" title="Toggle featured">
+                                    {% if p.is_featured %}Unfeature{% else %}Feature{% endif %}
+                                </button>
+                            </form>
+                            <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="inline">
+                                <input type="hidden" name="action" value="delete_post">
+                                <input type="hidden" name="post_id" value="{{ p.id }}">
+                                <button type="submit" onclick="event.preventDefault(); asikoConfirm('Delete Post?', 'Delete this post? This cannot be undone.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) this.closest('form').submit(); }.bind(this))" class="text-[10px] px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50 transition-colors">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-sm text-gray-500 text-center py-8">
+                No posts yet. Posts are created when customers share outfits.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right column: Influencers + Outfit Boards -->
+        <div class="space-y-6">
+
+            <!-- Influencer Profiles -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Influencers</h3>
+                    <button @click="showAddInfluencer = !showAddInfluencer"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 transition-colors">
+                        + Add
+                    </button>
+                </div>
+
+                <!-- Add Influencer Form -->
+                <div x-show="showAddInfluencer" x-collapse class="mb-4">
+                    <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="space-y-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <input type="hidden" name="action" value="add_influencer">
+                        <input type="text" name="display_name" placeholder="Display name" required
+                               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 outline-none">
+                        <input type="text" name="bio" placeholder="Bio (optional)"
+                               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 outline-none">
+                        <select name="tier" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                            <option value="nano">Nano</option>
+                            <option value="micro" selected>Micro</option>
+                            <option value="mid">Mid</option>
+                            <option value="macro">Macro</option>
+                            <option value="mega">Mega</option>
+                        </select>
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 px-3 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Save</button>
+                            <button type="button" @click="showAddInfluencer = false" class="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                {% if influencers %}
+                <div class="space-y-3">
+                    {% for inf in influencers %}
+                    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 group">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                            {{ inf.display_name[:1] | upper }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-medium text-gray-900 truncate">
+                                {{ inf.display_name }}
+                                {% if inf.is_verified %}
+                                <span class="text-blue-500">&#10003;</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-[10px] text-gray-400">{{ inf.tier | title }} &middot; {{ '{:,}'.format(inf.follower_count) }} followers</div>
+                        </div>
+                        <div class="text-right text-[10px] text-gray-500">
+                            <div>{{ inf.engagement_rate }}% eng.</div>
+                            <div>{{ inf.total_posts }} posts</div>
+                        </div>
+                        <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                            <input type="hidden" name="action" value="delete_influencer">
+                            <input type="hidden" name="influencer_id" value="{{ inf.id }}">
+                            <button type="submit" onclick="event.preventDefault(); asikoConfirm('Remove Influencer?', 'Remove this influencer? This cannot be undone.', {confirmText: 'Remove', danger: true}).then(function(r){ if(r) this.closest('form').submit(); }.bind(this))" class="text-[10px] px-1.5 py-0.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50">&#10005;</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-xs text-gray-500 text-center py-4">No influencer profiles yet.</div>
+                {% endif %}
+            </div>
+
+            <!-- Outfit Boards -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-900">Outfit Boards</h3>
+                    <button @click="showAddBoard = !showAddBoard"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 transition-colors">
+                        + Add
+                    </button>
+                </div>
+
+                <!-- Add Board Form -->
+                <div x-show="showAddBoard" x-collapse class="mb-4">
+                    <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="space-y-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <input type="hidden" name="action" value="add_board">
+                        <input type="text" name="title" placeholder="Board title" required
+                               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 outline-none">
+                        <input type="text" name="occasion" placeholder="Occasion (e.g. Wedding, Casual)"
+                               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 outline-none">
+                        <input type="text" name="description" placeholder="Description (optional)"
+                               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] focus:ring-1 focus:ring-[#D4AF37]/30 outline-none">
+                        <div class="flex gap-2">
+                            <button type="submit" class="flex-1 px-3 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Save</button>
+                            <button type="button" @click="showAddBoard = false" class="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+
+                {% if outfit_boards %}
+                <div class="space-y-3">
+                    {% for b in outfit_boards %}
+                    <div class="border border-gray-100 rounded-lg p-3 hover:border-blue-200 transition-all group">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-sm font-semibold text-gray-900">{{ b.title }}</div>
+                                {% if b.occasion %}
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 mt-1 inline-block">{{ b.occasion }}</span>
+                                {% endif %}
+                                {% if b.description %}
+                                <div class="text-xs text-gray-500 mt-1 line-clamp-2">{{ b.description }}</div>
+                                {% endif %}
+                            </div>
+                            <form hx-post="/admin/section/social" hx-target="[data-section='social']" hx-swap="outerHTML" class="opacity-0 group-hover:opacity-100 transition-opacity">
+                                <input type="hidden" name="action" value="delete_board">
+                                <input type="hidden" name="board_id" value="{{ b.id }}">
+                                <button type="submit" onclick="event.preventDefault(); asikoConfirm('Delete Board?', 'Delete this board? This cannot be undone.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) this.closest('form').submit(); }.bind(this))" class="text-[10px] px-1.5 py-0.5 rounded text-red-400 hover:text-red-600 hover:bg-red-50">&#10005;</button>
+                            </form>
+                        </div>
+                        <div class="flex items-center gap-3 mt-2 text-[10px] text-gray-400">
+                            <span>&#10084; {{ b.likes_count }}</span>
+                            <span class="{{ 'text-blue-500' if b.is_public else 'text-gray-400' }}">{{ "Public" if b.is_public else "Private" }}</span>
+                            <span class="ml-auto">{{ b.created_at_human }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-xs text-gray-500 text-center py-4">No outfit boards yet.</div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+</section>

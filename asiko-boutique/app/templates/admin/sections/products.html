@@ -29,7 +29,7 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">My Products</h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">All the items you sell in your shop. Upload a photo and we'll turn it into a 3D model for your online store.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">All the items you sell in your shop.</p>
         </div>
         <button @click="showNewProduct = true"
                 class="bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-sm font-medium px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors shadow-sm">
@@ -50,11 +50,6 @@
             {% set in_stock = products|selectattr('stock_quantity', 'gt', 0)|list|length %}
             <div class="text-2xl font-bold text-emerald-600">{{ in_stock }}</div>
             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">In Stock</div>
-        </div>
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
-            {% set with_3d = products|selectattr('pipeline_status', 'equalto', 'generated')|list|length %}
-            <div class="text-2xl font-bold text-[#D4AF37]">{{ with_3d }}</div>
-            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Has 3D Photo</div>
         </div>
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
             {% set sold_out = products|selectattr('stock_quantity', 'equalto', 0)|list|length %}
@@ -88,34 +83,6 @@
                     <span class="text-xs">No photo yet</span>
                 </div>
                 {% endif %}
-
-                <!-- 3D status badge — plain language -->
-                <div class="absolute top-3 left-3">
-                    {% if p.pipeline_status == 'generated' %}
-                        <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            3D Ready
-                        </span>
-                    {% elif p.pipeline_status == 'processing' %}
-                        <span class="inline-flex items-center gap-1.5 bg-amber-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                            <span class="w-2 h-2 bg-white rounded-full animate-pulse"></span>
-                            Making 3D...
-                        </span>
-                    {% elif p.pipeline_status == 'failed' %}
-                        <span class="inline-flex items-center gap-1.5 bg-rose-500 text-white text-[11px] font-semibold px-2.5 py-1 rounded-full shadow-sm">
-                            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
-                            </svg>
-                            3D Failed
-                        </span>
-                    {% else %}
-                        <span class="inline-flex items-center gap-1.5 bg-white/90 dark:bg-[#111114]/90 backdrop-blur text-gray-600 dark:text-gray-300 text-[11px] font-medium px-2.5 py-1 rounded-full shadow-sm border border-gray-200 dark:border-gray-800">
-                            No 3D yet
-                        </span>
-                    {% endif %}
-                </div>
 
                 <!-- Stock badge -->
                 {% if p.stock_quantity == 0 %}
@@ -167,10 +134,10 @@
                         Edit
                     </button>
                     <button hx-delete="/admin/products/{{ p.id }}"
-                            hx-confirm="Delete {{ p.name }}? This cannot be undone."
                             hx-target="#product-card-{{ p.id }}"
                             hx-swap="outerHTML swap:0.5s"
                             hx-indicator="#delete-indicator-{{ p.id }}"
+                            onclick="event.preventDefault(); var delTarget='#product-card-{{ p.id }}'; var delUrl='/admin/products/{{ p.id }}'; asikoConfirm('Delete product?', 'Delete {{ p.name }}? This cannot be undone.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r){ htmx.ajax('DELETE', delUrl, {target: delTarget, swap: 'outerHTML'}); } })"
                             class="relative flex-1 text-xs font-medium text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 border border-rose-200 dark:border-rose-500/30 rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-1">
                         <svg id="delete-indicator-{{ p.id }}" class="htmx-indicator w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -183,9 +150,9 @@
                     </button>
                 </div>
 
-                <!-- Secondary row: View in Shop / Turn Photo to 3D -->
-                <div id="pipeline-action-{{ p.id }}" class="mt-2">
-                    {% if p.pipeline_status == 'generated' %}
+                <!-- Secondary row: View in Shop -->
+                {% if p.base_image %}
+                <div class="mt-2">
                     <a href="/" target="_blank" class="w-full text-xs font-medium text-white bg-[#0D2A22] hover:bg-[#0a1f1a] rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-1">
                         <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
@@ -193,24 +160,8 @@
                         </svg>
                         View in Shop
                     </a>
-                    {% elif p.pipeline_status == 'processing' %}
-                    <div class="w-full text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 rounded-lg px-3 py-2.5 text-center flex items-center justify-center gap-2">
-                        <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                        Being made...
-                    </div>
-                    {% else %}
-                    <form hx-post="/admin/dashboard/pipeline/link-2d"
-                          hx-target="#pipeline-action-{{ p.id }}"
-                          hx-swap="innerHTML">
-                        <input type="hidden" name="product_id" value="{{ p.id }}">
-                        <input type="hidden" name="source_2d_image_url" value="{{ p.base_image or '' }}">
-                        <button type="submit" class="w-full text-xs font-medium text-white bg-[#D4AF37] hover:bg-[#b8961f] rounded-lg px-3 py-2.5 transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                            Turn Photo to 3D
-                        </button>
-                    </form>
-                    {% endif %}
                 </div>
+                {% endif %}
             </div>
 
         </article>
@@ -225,7 +176,7 @@
             </svg>
         </div>
         <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">No products yet</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Add your first product below. Upload a photo and we'll automatically turn it into a 3D model for your online customers.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 max-w-md mx-auto">Add your first product below.</p>
         <button @click="showNewProduct = true"
                 class="mt-5 bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-sm font-medium px-5 py-2.5 rounded-lg inline-flex items-center gap-2">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -258,7 +209,7 @@
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
                 <div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Add New Product</h3>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Upload a photo of your item. We'll turn it into a 3D model.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Add the details for your new product.</p>
                 </div>
                 <button @click="showNewProduct = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,7 +288,6 @@
                             </button>
                         </div>
                     </div>
-                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1.5">Upload now and we'll start making the 3D model right away.</p>
                 </div>
 
                 <!-- Actions -->

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} | ASIKO Blog{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-white dark:bg-[#0a0a0c]">
+    <!-- Hero header -->
+    <div class="relative h-48 sm:h-64 bg-gradient-to-br from-[#0D2A22] via-[#1a3d2e] to-[#0D2A22] overflow-hidden">
+        {% if post.featured_image %}
+        <img src="{{ post.featured_image }}" alt="{{ post.title }}" class="absolute inset-0 w-full h-full object-cover opacity-30">
+        {% endif %}
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        <div class="relative z-10 h-full flex items-end pb-8 px-4 sm:px-8 max-w-6xl mx-auto">
+            <div>
+                <a href="/blog" class="text-[#D4AF37]/70 hover:text-[#D4AF37] text-xs font-medium tracking-wider uppercase transition-colors">&larr; Blog</a>
+                <div class="flex items-center gap-2 text-xs text-white/50 mt-2">
+                    <span class="text-[#D4AF37]/70">{{ post.page_title }}</span>
+                    {% if post.published_at %}
+                    <span>&middot;</span>
+                    <span>{{ post.published_at.strftime('%d %b %Y') }}</span>
+                    {% endif %}
+                    {% if post.author_name %}
+                    <span>&middot;</span>
+                    <span>by {{ post.author_name }}</span>
+                    {% endif %}
+                </div>
+                <h1 class="font-display text-2xl sm:text-3xl lg:text-4xl text-white mt-3">{{ post.title }}</h1>
+            </div>
+        </div>
+    </div>
+
+    <!-- Article content -->
+    <article class="max-w-3xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
+        {% if post.excerpt %}
+        <p class="text-lg text-gray-500 dark:text-gray-400 italic mb-8 pb-8 border-b border-gray-100 dark:border-gray-800">
+            {{ post.excerpt }}
+        </p>
+        {% endif %}
+
+        {% if post.content_html %}
+        <div class="prose prose-lg dark:prose-invert max-w-none
+                    prose-headings:font-display prose-headings:text-gray-900 dark:prose-headings:text-gray-100
+                    prose-p:text-gray-600 dark:prose-p:text-gray-400
+                    prose-a:text-[#D4AF37] hover:prose-a:text-[#E6C875]
+                    prose-img:rounded-xl prose-img:shadow-lg
+                    prose-strong:text-gray-900 dark:prose-strong:text-gray-100">
+            {{ post.content_html | safe }}
+        </div>
+        {% else %}
+        <p class="text-gray-400 dark:text-gray-500 text-center py-12">This post has no content yet.</p>
+        {% endif %}
+
+        <!-- Back to blog -->
+        <div class="mt-12 pt-8 border-t border-gray-100 dark:border-gray-800">
+            <a href="/blog" class="text-sm text-[#D4AF37] hover:text-[#E6C875] font-medium transition-colors">
+                &larr; Back to Blog
+            </a>
+        </div>
+    </article>
+</main>
+{% endblock %}

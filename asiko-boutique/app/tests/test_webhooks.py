@@ -17,7 +17,6 @@ def test_meshy_webhook_method_not_allowed():
     ]
     test_app = Starlette(routes=routes)
     test_app.state.db_pool = mock_pool
-    test_app.state.pipeline_daemon = MagicMock()
 
     with TestClient(test_app) as client:
         response = client.get("/api/v1/webhooks/meshy")
@@ -34,7 +33,6 @@ def test_meshy_webhook_post_acknowledged():
     ]
     test_app = Starlette(routes=routes)
     test_app.state.db_pool = mock_pool
-    test_app.state.pipeline_daemon = MagicMock()
 
     with TestClient(test_app) as client:
         mock_payload = {"id": "msy_task", "status": "succeeded"}
@@ -53,7 +51,6 @@ def test_meshy_webhook_invalid_json_returns_ok():
     ]
     test_app = Starlette(routes=routes)
     test_app.state.db_pool = mock_pool
-    test_app.state.pipeline_daemon = MagicMock()
 
     with TestClient(test_app) as client:
         response = client.post("/api/v1/webhooks/meshy", content=b"not valid json{{{")
@@ -70,7 +67,6 @@ def test_meshy_webhook_internal_error_returns_ok():
     ]
     test_app = Starlette(routes=routes)
     test_app.state.db_pool = mock_pool
-    test_app.state.pipeline_daemon = MagicMock()
 
     with TestClient(test_app) as client:
         mock_payload = {"id": "msy_error_task", "status": "succeeded"}

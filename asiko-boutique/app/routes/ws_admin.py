@@ -13,7 +13,6 @@ from starlette.routing import Route, WebSocketRoute
 
 from app.realtime import (
     manager,
-    CH_PIPELINE_UPDATE,
     CH_NEW_REVIEW,
     CH_NEW_ORDER,
 )
@@ -82,39 +81,6 @@ def _render_activity_item(payload: dict) -> str:
     )
 
 
-def _render_pipeline_status_fragment(payload: dict) -> str:
-    """Render a pipeline status badge fragment for a specific product."""
-    from jinja2 import Template
-
-    status = payload.get("status", "unknown")
-    product_id = payload.get("product_id", "")
-    model_url = payload.get("model_url", "")
-
-    if status == "completed":
-        tmpl = Template("""
-<div id="pipeline-status-{{ pid }}" class="text-xs font-mono text-[#10B981] flex items-center space-x-1.5">
-    <span>&#9989; Ready</span>
-    <span class="text-[10px] text-white/40">({{ url }})</span>
-</div>
-        """)
-        return tmpl.render(pid=product_id, url=model_url)
-    elif status == "failed":
-        tmpl = Template("""
-<div id="pipeline-status-{{ pid }}" class="text-xs font-mono text-[#EF4444]">
-    <span>&#10060; Engine Error</span>
-</div>
-        """)
-        return tmpl.render(pid=product_id)
-    else:
-        tmpl = Template("""
-<div id="pipeline-status-{{ pid }}" class="flex items-center space-x-2">
-    <span class="w-2 h-2 rounded-full bg-blue-400 animate-spin"></span>
-    <span class="text-xs font-mono uppercase text-blue-300">{{ status }}</span>
-</div>
-        """)
-        return tmpl.render(pid=product_id, status=status.replace("_", " "))
-
-
 def _render_review_summary_fragment(payload: dict) -> str:
     """Render the review stats summary fragment (average, count, needs response)."""
     from jinja2 import Template
@@ -160,7 +126,7 @@ async def ws_admin_dashboard(ws: WebSocket) -> None:
     Subscribes to: new_order, new_review, pipeline_update.
     Pushes pre-rendered HTML fragments for HTMX to swap.
     """
-    channels = [CH_NEW_ORDER, CH_NEW_REVIEW, CH_PIPELINE_UPDATE]
+    channels = [CH_NEW_ORDER, CH_NEW_REVIEW]
 
     await manager.connect(ws, channels)
     try:
@@ -178,33 +144,6 @@ async def ws_admin_dashboard(ws: WebSocket) -> None:
         pass
     except Exception as exc:
         logger.debug("Admin dashboard WS closed: %s", exc)
-    finally:
-        await manager.disconnect(ws, channels)
-
-
-async def ws_admin_pipeline(ws: WebSocket) -> None:
-    """
-    WebSocket endpoint for a single product's pipeline status.
-    URL: /ws/admin/pipeline/{product_id}
-    Subscribes to: pipeline_update (filtered by product_id in broadcast).
-    """
-    product_id = ws.path_params.get("product_id", "")
-    channels = [CH_PIPELINE_UPDATE]
-
-    await manager.connect(ws, channels)
-    try:
-        while True:
-            data = await ws.receive_text()
-            try:
-                msg = json.loads(data)
-                if msg.get("action") == "ping":
-                    await ws.send_text(json.dumps({"type": "pong"}))
-            except (json.JSONDecodeError, TypeError):
-                pass
-    except WebSocketDisconnect:
-        pass
-    except Exception as exc:
-        logger.debug("Admin pipeline WS closed: %s", exc)
     finally:
         await manager.disconnect(ws, channels)
 
@@ -241,6 +180,5 @@ async def ws_admin_reviews(ws: WebSocket) -> None:
 
 ws_admin_routes = [
     WebSocketRoute("/ws/admin/dashboard", endpoint=ws_admin_dashboard),
-    WebSocketRoute("/ws/admin/pipeline/{product_id}", endpoint=ws_admin_pipeline),
     WebSocketRoute("/ws/admin/reviews", endpoint=ws_admin_reviews),
 ]

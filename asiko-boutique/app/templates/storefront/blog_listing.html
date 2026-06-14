@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Blog | ASIKO Boutique{% endblock %}
+
+{% block content %}
+<main class="min-h-screen bg-white dark:bg-[#0a0a0c]">
+    <!-- Hero header -->
+    <div class="relative h-48 sm:h-64 bg-gradient-to-br from-[#0D2A22] via-[#1a3d2e] to-[#0D2A22] overflow-hidden">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+        <div class="relative z-10 h-full flex items-end pb-8 px-4 sm:px-8 max-w-6xl mx-auto">
+            <div>
+                <a href="/" class="text-[#D4AF37]/70 hover:text-[#D4AF37] text-xs font-medium tracking-wider uppercase transition-colors">&larr; Home</a>
+                <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl text-white mt-2">Blog</h1>
+                <p class="text-white/70 text-sm sm:text-base mt-2">Fashion tips, styling guides, and ASIKO stories.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Posts grid -->
+    <div class="max-w-6xl mx-auto px-4 sm:px-8 py-10 sm:py-16">
+        {% if posts %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for post in posts %}
+            <a href="/blog/{{ post.slug }}"
+               class="group bg-white dark:bg-[#111114] rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden hover:shadow-lg hover:shadow-[#D4AF37]/5 transition-all duration-300 hover:-translate-y-1">
+                {% if post.featured_image %}
+                <div class="aspect-video overflow-hidden">
+                    <img src="{{ post.featured_image }}" alt="{{ post.title }}"
+                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                </div>
+                {% else %}
+                <div class="aspect-video bg-gradient-to-br from-[#0D2A22] to-[#1a3d2e] flex items-center justify-center">
+                    <svg class="w-12 h-12 text-[#D4AF37]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+                    </svg>
+                </div>
+                {% endif %}
+                <div class="p-5">
+                    <div class="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500 mb-2">
+                        <span class="text-[#D4AF37]/70">{{ post.page_title }}</span>
+                        {% if post.published_at %}
+                        <span>&middot;</span>
+                        <span>{{ post.published_at.strftime('%d %b %Y') }}</span>
+                        {% endif %}
+                    </div>
+                    <h2 class="font-display text-lg text-gray-900 dark:text-gray-100 group-hover:text-[#D4AF37] transition-colors line-clamp-2">
+                        {{ post.title }}
+                    </h2>
+                    {% if post.excerpt %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 line-clamp-2">{{ post.excerpt }}</p>
+                    {% endif %}
+                    <div class="mt-4 text-xs font-medium text-[#D4AF37] group-hover:text-[#E6C875] transition-colors">
+                        Read more &rarr;
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-20">
+            <svg class="w-16 h-16 text-gray-200 dark:text-gray-700 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/>
+            </svg>
+            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100 mb-2">No posts yet</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Check back soon for fashion tips and ASIKO stories.</p>
+        </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}

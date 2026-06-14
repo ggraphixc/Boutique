@@ -1,15 +1,18 @@
 # ASIKO Boutique — Customer Auth + Dashboard Routes
-# Register, login, logout, order history, profile.
+# Register, login, logout, forgot/reset password, order history, profile.
 
 import hashlib
 import hmac
 import os
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from starlette.requests import Request
 from starlette.responses import HTMLResponse, RedirectResponse
 from starlette.routing import Route
 
 from app.core import templates
+from app.settings_service import get_settings
 
 
 def _hash_password(password: str) -> str:
@@ -64,7 +67,16 @@ async def register_submit(request: Request) -> RedirectResponse:
     request.session["customer_id"] = str(customer_id)
     request.session["customer_email"] = email
     request.session["customer_name"] = full_name or email.split("@")[0]
-    return RedirectResponse("/account", status_code=302)
+
+    # Send welcome greeting email (non-blocking)
+    try:
+        from app.services.brevo import send_welcome_email
+        import asyncio
+        asyncio.create_task(send_welcome_email(email, full_name or email.split("@")[0]))
+    except Exception:
+        pass
+
+    return RedirectResponse("/account?success=Account+created+successfully", status_code=302)
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +112,7 @@ async def login_submit(request: Request) -> RedirectResponse:
     request.session["customer_id"] = str(customer["id"])
     request.session["customer_email"] = email
     request.session["customer_name"] = customer["full_name"]
-    return RedirectResponse("/account", status_code=302)
+    return RedirectResponse("/account?success=Welcome+back!", status_code=302)
 
 
 # ---------------------------------------------------------------------------
@@ -111,7 +123,7 @@ async def logout(request: Request) -> RedirectResponse:
     request.session.pop("customer_id", None)
     request.session.pop("customer_email", None)
     request.session.pop("customer_name", None)
-    return RedirectResponse("/", status_code=302)
+    return RedirectResponse("/?success=You+have+been+signed+out", status_code=302)
 
 
 async def customer_dashboard(request: Request) -> HTMLResponse:
@@ -191,6 +203,7 @@ async def customer_dashboard(request: Request) -> HTMLResponse:
         "customer_email": customer_email,
         "orders": formatted_orders,
         "order_count": len(formatted_orders),
+        "settings": await get_settings(pool),
     }
     return templates.TemplateResponse(request, "customer/dashboard.html", context)
 
@@ -270,7 +283,124 @@ async def customer_order_detail(request: Request) -> HTMLResponse:
             for i in items
         ],
     }
+    settings = await get_settings(pool)
+    context["settings"] = settings
     return templates.TemplateResponse(request, "customer/order_detail.html", context)
+
+
+# ---------------------------------------------------------------------------
+# Forgot Password
+# ---------------------------------------------------------------------------
+
+async def forgot_password_page(request: Request) -> HTMLResponse:
+    error = request.query_params.get("error", "")
+    success = request.query_params.get("success", "")
+    return templates.TemplateResponse(request, "customer/forgot_password.html", {
+        "request": request, "error": error, "success": success,
+    })
+
+
+async def forgot_password_submit(request: Request) -> RedirectResponse:
+    form = await request.form()
+    email = (form.get("email") or "").strip().lower()
+    if not email:
+        return RedirectResponse("/forgot-password?error=Please+enter+your+email", status_code=302)
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        customer = await conn.fetchrow(
+            "SELECT id, full_name FROM customers WHERE email = $1", email
+        )
+
+    # Always show success to prevent email enumeration
+    if customer:
+        token = secrets.token_hex(32)
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "INSERT INTO password_reset_tokens (customer_id, token, expires_at) VALUES ($1, $2, $3)",
+                str(customer["id"]), token, expires_at,
+            )
+        reset_url = f"{request.base_url}reset-password?token={token}"
+        try:
+            from app.services.brevo import send_forgot_password_email
+            import asyncio
+            asyncio.create_task(send_forgot_password_email(email, customer["full_name"] or "Customer", reset_url))
+        except Exception:
+            pass
+
+    return RedirectResponse("/forgot-password?success=If+an+account+exists+with+that+email,+a+reset+link+has+been+sent", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Reset Password
+# ---------------------------------------------------------------------------
+
+async def reset_password_page(request: Request) -> HTMLResponse:
+    token = request.query_params.get("token", "")
+    error = request.query_params.get("error", "")
+    if not token:
+        return RedirectResponse("/login", status_code=302)
+    return templates.TemplateResponse(request, "customer/reset_password.html", {
+        "request": request, "token": token, "error": error,
+    })
+
+
+async def reset_password_submit(request: Request) -> RedirectResponse:
+    form = await request.form()
+    token = form.get("token") or ""
+    password = form.get("password") or ""
+    confirm = form.get("confirm_password") or ""
+
+    if not token:
+        return RedirectResponse("/login", status_code=302)
+    if len(password) < 6:
+        return RedirectResponse(f"/reset-password?token={token}&error=Password+must+be+at+least+6+characters", status_code=302)
+    if password != confirm:
+        return RedirectResponse(f"/reset-password?token={token}&error=Passwords+do+not+match", status_code=302)
+
+    pool = request.app.state.db_pool
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT id, customer_id, expires_at, used FROM password_reset_tokens WHERE token = $1", token
+        )
+        if not row or row["used"]:
+            return RedirectResponse("/login?error=Invalid+or+expired+reset+link", status_code=302)
+        if row["expires_at"].replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+            return RedirectResponse("/login?error=Reset+link+has+expired", status_code=302)
+
+        # Update password
+        await conn.execute(
+            "UPDATE customers SET password_hash = $1 WHERE id = $2",
+            _hash_password(password), row["customer_id"],
+        )
+        # Mark token used
+        await conn.execute(
+            "UPDATE password_reset_tokens SET used = TRUE WHERE id = $1", row["id"]
+        )
+
+    return RedirectResponse("/login?success=Password+reset+successfully.+Please+sign+in", status_code=302)
+
+
+# ---------------------------------------------------------------------------
+# Newsletter Subscribe
+# ---------------------------------------------------------------------------
+
+async def newsletter_subscribe(request: Request) -> RedirectResponse:
+    form = await request.form()
+    email = (form.get("email") or "").strip().lower()
+    if not email:
+        return RedirectResponse("/?error=Please+enter+your+email", status_code=302)
+
+    try:
+        from app.services.brevo import sync_to_brevo_waitlist_audience, send_newsletter_confirmation
+        import asyncio
+        asyncio.create_task(sync_to_brevo_waitlist_audience(email, list_id=2))
+        asyncio.create_task(send_newsletter_confirmation(email))
+    except Exception:
+        pass
+
+    return RedirectResponse("/?success=You+are+subscribed+to+the+ASIKO+newsletter", status_code=302)
 
 
 routes = [
@@ -279,6 +409,11 @@ routes = [
     Route("/login", endpoint=login_page, methods=["GET"]),
     Route("/login", endpoint=login_submit, methods=["POST"]),
     Route("/logout", endpoint=logout, methods=["GET"]),
+    Route("/forgot-password", endpoint=forgot_password_page, methods=["GET"]),
+    Route("/forgot-password", endpoint=forgot_password_submit, methods=["POST"]),
+    Route("/reset-password", endpoint=reset_password_page, methods=["GET"]),
+    Route("/reset-password", endpoint=reset_password_submit, methods=["POST"]),
+    Route("/newsletter/subscribe", endpoint=newsletter_subscribe, methods=["POST"]),
     Route("/account", endpoint=customer_dashboard, methods=["GET"]),
     Route("/account/order/{order_id}", endpoint=customer_order_detail, methods=["GET"]),
 ]

@@ -1,0 +1,307 @@
+<!-- Loyalty section: points + referrals + VIP tiers + rewards catalog -->
+<section class="space-y-6" data-section="loyalty" x-data="{ showAddReward: false, showAdjustPoints: false, adjustCustomerId: '' }">
+
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Loyalty & Rewards</h1>
+        <p class="text-sm text-gray-500 mt-1">Points, referrals, VIP tiers, and rewards catalog</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Enrolled Customers</div>
+            <div class="text-2xl font-bold text-gray-900">{{ stats.total_customers }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Points Issued</div>
+            <div class="text-2xl font-bold text-purple-600">{{ '{:,}'.format(stats.total_points_issued) }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Total Referrals</div>
+            <div class="text-2xl font-bold text-blue-600">{{ stats.total_referrals }}</div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-5">
+            <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Active Rewards</div>
+            <div class="text-2xl font-bold text-emerald-600">{{ stats.active_rewards }}</div>
+        </div>
+    </div>
+
+    <!-- VIP Tiers -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+        <div class="flex items-center justify-between mb-5">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">VIP Tiers</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Customer loyalty levels</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {% set tier_colors = {"bronze": "from-amber-600 to-amber-800", "silver": "from-gray-400 to-gray-600", "gold": "from-yellow-400 to-yellow-600", "platinum": "from-blue-300 to-blue-500", "diamond": "from-purple-400 to-indigo-600"} %}
+            {% for t in tiers %}
+            <div class="border border-gray-100 rounded-lg p-4 text-center hover:border-amber-200 transition-all"
+                 x-data="{ editing: false }">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br {{ tier_colors.get(t.tier_name, 'from-gray-400 to-gray-600') }} mx-auto mb-3 flex items-center justify-center shadow-sm">
+                    <span class="text-white text-xs font-bold uppercase">{{ t.tier_name[:2] }}</span>
+                </div>
+                <div class="text-sm font-bold text-gray-900 capitalize">{{ t.tier_name }}</div>
+                <div class="text-[10px] text-gray-400 mt-1">&#8358;{{ '{:,.0f}'.format(t.min_spend) }}+ spend</div>
+                <div class="mt-2 space-y-1 text-[10px] text-gray-500">
+                    {% if t.discount_percent > 0 %}<div>{{ t.discount_percent }}% discount</div>{% endif %}
+                    {% if t.free_shipping %}<div class="text-emerald-600">Free shipping</div>{% endif %}
+                    {% if t.early_access %}<div class="text-blue-600">Early access</div>{% endif %}
+                    <div>{{ t.points_multiplier }}x points</div>
+                </div>
+
+                <!-- Edit Tier (inline) -->
+                <button @click="editing = !editing" class="mt-3 text-[10px] text-[#D4AF37] hover:text-[#0D2A22] transition-colors">Edit</button>
+                <div x-show="editing" x-collapse class="mt-3">
+                    <form hx-post="/admin/section/loyalty" hx-target="[data-section='loyalty']" hx-swap="outerHTML" class="space-y-2 text-left">
+                        <input type="hidden" name="action" value="update_tier">
+                        <input type="hidden" name="tier_id" value="{{ t.id }}">
+                        <label class="block text-[10px] text-gray-500">Min Spend (&#8358;)</label>
+                        <input type="number" name="min_spend" value="{{ t.min_spend|int }}" class="w-full px-2 py-1.5 text-xs rounded border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        <label class="block text-[10px] text-gray-500">Discount %</label>
+                        <input type="number" name="discount_percent" value="{{ t.discount_percent|int }}" step="0.5" class="w-full px-2 py-1.5 text-xs rounded border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        <label class="block text-[10px] text-gray-500">Points Multiplier</label>
+                        <input type="number" name="points_multiplier" value="{{ t.points_multiplier }}" step="0.1" class="w-full px-2 py-1.5 text-xs rounded border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        <div class="flex items-center gap-3 text-[10px] text-gray-500">
+                            <label class="flex items-center gap-1"><input type="checkbox" name="free_shipping" {% if t.free_shipping %}checked{% endif %}> Free Shipping</label>
+                            <label class="flex items-center gap-1"><input type="checkbox" name="early_access" {% if t.early_access %}checked{% endif %}> Early Access</label>
+                        </div>
+                        <button type="submit" class="w-full px-3 py-1.5 text-xs rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Save Tier</button>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-span-5 text-sm text-gray-500 text-center py-6">No VIP tiers configured.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Customer Loyalty Accounts -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900">Loyalty Accounts</h3>
+                <span class="text-xs text-gray-400 font-mono">{{ accounts|length }} customers</span>
+            </div>
+            {% if accounts %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-wider text-gray-400 font-mono border-b border-gray-100">
+                            <th class="pb-3 font-medium">Tier</th>
+                            <th class="pb-3 font-medium">Balance</th>
+                            <th class="pb-3 font-medium">Spend</th>
+                            <th class="pb-3 font-medium">Orders</th>
+                            <th class="pb-3 font-medium">Referrals</th>
+                            <th class="pb-3 font-medium"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for a in accounts %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-3">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full capitalize
+                                    {% if a.vip_tier == 'diamond' %}bg-purple-50 text-purple-700
+                                    {% elif a.vip_tier == 'platinum' %}bg-blue-50 text-blue-700
+                                    {% elif a.vip_tier == 'gold' %}bg-yellow-50 text-yellow-700
+                                    {% elif a.vip_tier == 'silver' %}bg-gray-100 text-gray-700
+                                    {% else %}bg-amber-50 text-amber-700{% endif %}">
+                                    {{ a.vip_tier }}
+                                </span>
+                            </td>
+                            <td class="py-3 font-semibold text-gray-900">{{ '{:,}'.format(a.current_balance) }}</td>
+                            <td class="py-3 text-gray-700">&#8358;{{ '{:,.0f}'.format(a.lifetime_spend) }}</td>
+                            <td class="py-3 text-gray-700">{{ a.lifetime_orders }}</td>
+                            <td class="py-3 text-gray-700">{{ a.total_referrals }}</td>
+                            <td class="py-3">
+                                <button @click="showAdjustPoints = !showAdjustPoints; adjustCustomerId = '{{ a.customer_id }}'"
+                                        class="text-[10px] text-[#D4AF37] hover:text-[#0D2A22] transition-colors">Adjust</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Adjust Points Form -->
+            <div x-show="showAdjustPoints" x-collapse class="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                <form hx-post="/admin/section/loyalty" hx-target="[data-section='loyalty']" hx-swap="outerHTML" class="space-y-3">
+                    <input type="hidden" name="action" value="adjust_points">
+                    <input type="hidden" name="customer_id" :value="adjustCustomerId">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Points (+ to add, - to remove)</label>
+                            <input type="number" name="points_adjust" required placeholder="e.g. 500 or -200"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Reason</label>
+                            <input type="text" name="description" placeholder="Admin adjustment"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="px-4 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Apply</button>
+                        <button type="button" @click="showAdjustPoints = false" class="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            {% else %}
+            <div class="text-sm text-gray-500 text-center py-8">
+                No loyalty accounts yet. Customers earn points on their first purchase.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Rewards Catalog -->
+        <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900">Rewards Catalog</h3>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400 font-mono">{{ rewards|length }} rewards</span>
+                    <button @click="showAddReward = !showAddReward"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 transition-colors">
+                        + Add Reward
+                    </button>
+                </div>
+            </div>
+
+            <!-- Add Reward Form -->
+            <div x-show="showAddReward" x-collapse class="mb-4">
+                <form hx-post="/admin/section/loyalty" hx-target="[data-section='loyalty']" hx-swap="outerHTML" class="space-y-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                    <input type="hidden" name="action" value="add_reward">
+                    <input type="text" name="name" placeholder="Reward name" required
+                           class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                    <input type="text" name="description" placeholder="Description"
+                           class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                    <div class="grid grid-cols-3 gap-3">
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Points Cost</label>
+                            <input type="number" name="points_cost" required placeholder="500"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Type</label>
+                            <select name="reward_type" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                                <option value="discount">Discount</option>
+                                <option value="free_shipping">Free Shipping</option>
+                                <option value="free_item">Free Item</option>
+                                <option value="exclusive_access">Exclusive Access</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Value (&#8358;)</label>
+                            <input type="number" name="reward_value" placeholder="0" step="50"
+                                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-[#D4AF37] outline-none">
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="flex-1 px-3 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Save Reward</button>
+                        <button type="button" @click="showAddReward = false" class="px-3 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            {% if rewards %}
+            <div class="space-y-3">
+                {% for r in rewards %}
+                <div class="border border-gray-100 rounded-lg p-4 hover:border-emerald-200 transition-all group">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="text-sm font-semibold text-gray-900">{{ r.name }}</div>
+                            <div class="text-xs text-gray-500 mt-0.5">{{ r.description }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-emerald-600">{{ '{:,}'.format(r.points_cost) }} pts</div>
+                            {% if r.reward_value > 0 %}
+                            <div class="text-[10px] text-gray-400">&#8358;{{ '{:,.0f}'.format(r.reward_value) }} value</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 mt-2 text-[10px]">
+                        <span class="font-mono px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">{{ r.reward_type | replace("_", " ") | title }}</span>
+                        {% if r.is_active %}
+                        <span class="text-emerald-600">Active</span>
+                        {% else %}
+                        <span class="text-gray-400">Inactive</span>
+                        {% endif %}
+                        {% if r.stock >= 0 %}
+                        <span class="text-gray-400">Stock: {{ r.stock }}</span>
+                        {% else %}
+                        <span class="text-gray-400">Unlimited</span>
+                        {% endif %}
+                        <div class="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <form hx-post="/admin/section/loyalty" hx-target="[data-section='loyalty']" hx-swap="outerHTML" class="inline">
+                                <input type="hidden" name="action" value="toggle_reward">
+                                <input type="hidden" name="reward_id" value="{{ r.id }}">
+                                <button type="submit" class="text-[10px] px-2 py-0.5 rounded border border-gray-200 text-gray-600 hover:bg-gray-100">
+                                    {% if r.is_active %}Deactivate{% else %}Activate{% endif %}
+                                </button>
+                            </form>
+                            <form hx-post="/admin/section/loyalty" hx-target="[data-section='loyalty']" hx-swap="outerHTML" class="inline">
+                                <input type="hidden" name="action" value="delete_reward">
+                                <input type="hidden" name="reward_id" value="{{ r.id }}">
+                                <button type="submit" onclick="event.preventDefault(); asikoConfirm('Delete Reward?', 'Delete this reward? This cannot be undone.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) this.closest('form').submit(); }.bind(this))" class="text-[10px] px-2 py-0.5 rounded border border-red-200 text-red-500 hover:bg-red-50">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-sm text-gray-500 text-center py-8">
+                No rewards in the catalog yet.
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+    <!-- Recent Referrals -->
+    <div class="bg-white rounded-xl border border-gray-200 shadow-card p-6">
+        <div class="flex items-center justify-between mb-5">
+            <h3 class="text-lg font-bold text-gray-900">Recent Referrals</h3>
+            <span class="text-xs text-gray-400 font-mono">{{ referrals|length }} referrals</span>
+        </div>
+        {% if referrals %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left text-[10px] uppercase tracking-wider text-gray-400 font-mono border-b border-gray-100">
+                        <th class="pb-3 font-medium">Code</th>
+                        <th class="pb-3 font-medium">Status</th>
+                        <th class="pb-3 font-medium">Reward Points</th>
+                        <th class="pb-3 font-medium">First Purchase</th>
+                        <th class="pb-3 font-medium">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for ref in referrals %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-3 font-mono text-xs text-gray-900">{{ ref.referral_code }}</td>
+                        <td class="py-3">
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded border
+                                {% if ref.status == 'rewarded' %}bg-emerald-50 text-emerald-700 border-emerald-200
+                                {% elif ref.status == 'first_purchase' %}bg-blue-50 text-blue-700 border-blue-200
+                                {% elif ref.status == 'registered' %}bg-purple-50 text-purple-700 border-purple-200
+                                {% else %}bg-amber-50 text-amber-700 border-amber-200{% endif %}">
+                                {{ ref.status_label }}
+                            </span>
+                        </td>
+                        <td class="py-3 font-semibold text-gray-900">{{ '{:,}'.format(ref.reward_points) }}</td>
+                        <td class="py-3 text-gray-700">{% if ref.first_purchase_amount > 0 %}&#8358;{{ '{:,.0f}'.format(ref.first_purchase_amount) }}{% else %}&mdash;{% endif %}</td>
+                        <td class="py-3 text-xs text-gray-500">{{ ref.created_at_human }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-sm text-gray-500 text-center py-8">
+            No referrals yet. Customers can refer friends using their unique referral code.
+        </div>
+        {% endif %}
+    </div>
+
+</section>

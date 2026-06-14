@@ -1,0 +1,194 @@
+<!-- AI Stylist Training section -->
+<section class="space-y-6" data-section="ai-training">
+
+    <div class="flex items-end justify-between">
+        <div>
+            <h2 class="font-display text-xl text-gray-900 dark:text-gray-100">AI Stylist Training</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Teach your AI about ASIKO brand, products, and style. The AI uses this data in every chat.</p>
+        </div>
+        <button @click="showAddForm = !showAddForm"
+                class="bg-[#0D2A22] dark:bg-[#D4AF37] hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] text-white dark:text-[#0D2A22] text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                x-text="showAddForm ? 'Cancel' : '+ Add Training Data'">
+        </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {% set categories = {} %}
+        {% for item in items %}
+            {% set cat = item.category %}
+            {% if cat not in categories %}
+                {% set _ = categories.update({cat: {'total': 0, 'active': 0}}) %}
+            {% endif %}
+            {% set _ = categories[cat].update({'total': categories[cat].total + 1}) %}
+            {% if item.is_active %}
+                {% set _ = categories[cat].update({'active': categories[cat].active + 1}) %}
+            {% endif %}
+        {% endfor %}
+        {% for cat in ['faq', 'brand', 'product', 'style', 'voice', 'custom'] %}
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4">
+            <div class="text-[10px] font-mono uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-1">{{ cat }}</div>
+            <div class="text-2xl font-semibold text-gray-900 dark:text-gray-100">{{ categories.get(cat, {}).get('total', 0) }}</div>
+            <div class="text-[10px] text-green-600 dark:text-green-400 mt-0.5">{{ categories.get(cat, {}).get('active', 0) }} active</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add form -->
+    <div x-show="showAddForm" x-transition x-cloak
+         class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-4">Add Training Data</h3>
+        <form method="POST" hx-post="/admin/section/ai-training" hx-target="#workspace-content" hx-swap="outerHTML" class="space-y-4">
+            <input type="hidden" name="action" value="add">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Category</label>
+                    <select name="category" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                        <option value="faq">FAQ — Common questions</option>
+                        <option value="brand">Brand — Story, values, mission</option>
+                        <option value="product">Product — Specific product knowledge</option>
+                        <option value="style">Style — Fashion rules, Nigerian expertise</option>
+                        <option value="voice">Voice — Brand tone, personality</option>
+                        <option value="custom">Custom — Other knowledge</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Sort order</label>
+                    <input type="number" name="sort_order" value="0" min="0"
+                           class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Question / Trigger phrase</label>
+                <input type="text" name="question" required placeholder="e.g. What is ASIKO's return policy?"
+                       class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Answer / Knowledge</label>
+                <textarea name="answer" rows="3" required placeholder="e.g. ASIKO offers free returns within 14 days of delivery for unworn items with tags attached..."
+                          class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></textarea>
+            </div>
+            <button type="submit" class="px-5 py-2 bg-[#D4AF37] text-[#0D2A22] rounded-lg text-sm font-medium hover:bg-[#E6C875] transition-colors">Save</button>
+        </form>
+    </div>
+
+    <!-- Training data list -->
+    <div class="space-y-3">
+        {% for item in items %}
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 {% if not item.is_active %}opacity-50{% endif %}"
+             x-data="{ editing: false }">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2 py-0.5 text-[9px] font-mono uppercase tracking-wider rounded
+                            {% if item.category == 'faq' %}bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400
+                            {% elif item.category == 'brand' %}bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400
+                            {% elif item.category == 'product' %}bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400
+                            {% elif item.category == 'style' %}bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400
+                            {% elif item.category == 'voice' %}bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400
+                            {% else %}bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400{% endif %}">
+                            {{ item.category }}
+                        </span>
+                        {% if not item.is_active %}
+                        <span class="px-2 py-0.5 text-[9px] font-mono bg-red-50 text-red-500 dark:bg-red-900/20 dark:text-red-400 rounded">inactive</span>
+                        {% endif %}
+                    </div>
+                    <!-- Read view -->
+                    <div x-show="!editing">
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ item.question }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 whitespace-pre-line">{{ item.answer }}</p>
+                    </div>
+                    <!-- Edit form -->
+                    <div x-show="editing" x-cloak class="space-y-3 mt-2">
+                        <form method="POST" hx-post="/admin/section/ai-training" hx-target="#workspace-content" hx-swap="outerHTML" class="space-y-3">
+                            <input type="hidden" name="action" value="update">
+                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                            <select name="category" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                                <option value="faq" {% if item.category == 'faq' %}selected{% endif %}>FAQ</option>
+                                <option value="brand" {% if item.category == 'brand' %}selected{% endif %}>Brand</option>
+                                <option value="product" {% if item.category == 'product' %}selected{% endif %}>Product</option>
+                                <option value="style" {% if item.category == 'style' %}selected{% endif %}>Style</option>
+                                <option value="voice" {% if item.category == 'voice' %}selected{% endif %}>Voice</option>
+                                <option value="custom" {% if item.category == 'custom' %}selected{% endif %}>Custom</option>
+                            </select>
+                            <input type="text" name="question" value="{{ item.question }}" required
+                                   class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                            <textarea name="answer" rows="3" required
+                                      class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">{{ item.answer }}</textarea>
+                            <input type="number" name="sort_order" value="{{ item.sort_order }}" min="0"
+                                   class="w-24 text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                            <div class="flex gap-2">
+                                <button type="submit" class="px-4 py-1.5 bg-[#D4AF37] text-[#0D2A22] rounded-lg text-xs font-medium hover:bg-[#E6C875] transition-colors">Save</button>
+                                <button type="button" @click="editing = false" class="px-4 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">Cancel</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1 flex-shrink-0" x-show="!editing">
+                    <button @click="editing = true" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Edit">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                    </button>
+                    <form method="POST" hx-post="/admin/section/ai-training" hx-target="#workspace-content" hx-swap="outerHTML" class="inline">
+                        <input type="hidden" name="action" value="toggle">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <button type="submit" class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors" title="Toggle active">
+                            {% if item.is_active %}
+                            <svg class="w-3.5 h-3.5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            {% else %}
+                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                            {% endif %}
+                        </button>
+                    </form>
+                    <form method="POST" hx-post="/admin/section/ai-training" hx-target="#workspace-content" hx-swap="outerHTML" class="inline">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <button type="submit" onclick="return asikoConfirm('Delete training data?', 'This cannot be undone.', {danger: true, confirmText: 'Delete'})"
+                                class="w-8 h-8 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center justify-center text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors" title="Delete">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% if not items %}
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <div class="text-4xl mb-3">&#x1F9E0;</div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">No training data yet</p>
+            <p class="text-xs text-gray-400 dark:text-gray-500">Add FAQ answers, brand facts, and style rules to teach your AI about ASIKO.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick start guide -->
+    <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+        <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3">Quick Start Guide</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500 dark:text-gray-400">
+            <div>
+                <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">FAQ examples:</p>
+                <ul class="space-y-1 list-disc list-inside">
+                    <li>"What sizes do you have?" → "We carry sizes XS through 3XL..."</li>
+                    <li>"Do you deliver nationwide?" → "Yes! We deliver to all 36 states..."</li>
+                    <li>"How do I track my order?" → "You'll receive a WhatsApp/SMS link..."</li>
+                </ul>
+            </div>
+            <div>
+                <p class="font-medium text-gray-700 dark:text-gray-300 mb-1">Brand facts:</p>
+                <ul class="space-y-1 list-disc list-inside">
+                    <li>"What is ASIKO?" → "ASIKO is a Nigerian fashion boutique..."</li>
+                    <li>"What makes ASIKO different?" → "We offer transparent pricing..."</li>
+                    <li>"What is the return policy?" → "14-day free returns on unworn items..."</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('aiTrainingSection', () => ({
+                showAddForm: false,
+            }));
+        });
+    </script>
+    <div x-data="aiTrainingSection()"></div>
+</section>

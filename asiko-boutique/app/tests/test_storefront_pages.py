@@ -48,7 +48,7 @@ def _make_app(pool_fn=None):
     return app
 
 
-def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image="/static/uploads/test.jpg", model_3d=None, category_name="Tailoring"):
+def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image="/static/uploads/test.jpg", category_name="Tailoring"):
     """Create a mock product row."""
     return {
         "id": pid,
@@ -57,7 +57,6 @@ def _make_product(pid="test-1", name="Green Agbada", price=45000, stock=8, image
         "price": price,
         "stock_quantity": stock,
         "base_image": image,
-        "model_3d_url": model_3d,
         "category_name": category_name,
     }
 
@@ -105,14 +104,6 @@ class TestHomepage:
         client = TestClient(app, raise_server_exceptions=False)
         response = client.get("/")
         assert "/static/uploads/green.jpg" in response.text
-
-    def test_homepage_shows_3d_badge(self):
-        """Product cards show 3D badge when model exists."""
-        pool = _make_pool(products=[_make_product(model_3d="/models/test.glb")])
-        app = _make_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/")
-        assert "3D" in response.text
 
     def test_homepage_empty_products(self):
         """Homepage renders gracefully with no products."""
@@ -214,7 +205,6 @@ class TestProductDetail:
                         "description": "Hand-stitched traditional agbada",
                         "price": 45000,
                         "base_image": "/static/uploads/green.jpg",
-                        "model_3d_url": None,
                     }
                 if "FROM asiko_capsule_assignments" in sql:
                     return None
@@ -313,20 +303,6 @@ class TestProductDetail:
         response = client.get("/product/1")
         assert "dark:" in response.text
 
-    def test_pdp_with_3d_model_shows_badge(self):
-        """PDP shows 3D badge when model exists."""
-        pool = self._make_pool_for_pdp(product_data={
-            "id": 1,
-            "name": "3D Jacket",
-            "description": "A jacket with 3D model",
-            "price": 30000,
-            "base_image": "/static/uploads/jacket.jpg",
-            "model_3d_url": "/models/jacket.glb",
-        })
-        app = _make_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/product/1")
-        assert "Try On in 3D" in response.text
 
 
 class TestDPPVerification:
@@ -389,150 +365,3 @@ class TestProductGridFragment:
         response = client.get("/htmx/products")
         assert "/static/uploads/test.jpg" in response.text
 
-
-# ============================================================
-# Virtual Atelier Tests
-# ============================================================
-
-from app.routes.virtual import routes as virtual_routes
-
-
-def _make_virtual_app(pool_fn=None):
-    """Create a Starlette app with virtual atelier routes."""
-    app = Starlette(
-        routes=virtual_routes,
-        middleware=[Middleware(SessionMiddleware, secret_key="test-key", session_cookie="asiko_test")],
-    )
-    app.state.db_pool = (pool_fn or _make_pool)()
-    return app
-
-
-def _make_showroom_product(pid="showroom-1", name="Silk Blazer", price=120000,
-                           model_3d="/static/uploads/models/blazer.glb",
-                           variant=None):
-    """Create a mock showroom product record with optional variant data."""
-    base = {
-        "id": pid,
-        "name": name,
-        "model_3d_url": model_3d,
-        "price": price,
-    }
-    if variant:
-        base.update({
-            "variant_id": variant.get("variant_id", "v-1"),
-            "size": variant.get("size", "M"),
-            "color": variant.get("color", "Black"),
-            "mesh_node_identifier": variant.get("mesh", "blazer_form"),
-            "custom_shader_color": variant.get("color_hex", "#0D2A22"),
-        })
-    else:
-        base.update({
-            "variant_id": None,
-            "size": None,
-            "color": None,
-            "mesh_node_identifier": None,
-            "custom_shader_color": None,
-        })
-    return base
-
-
-class TestVirtualExperience:
-    """Test the /virtual-experience page."""
-
-    def test_virtual_experience_returns_200(self):
-        """GET /virtual-experience returns 200."""
-        app = _make_virtual_app()
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/virtual-experience")
-        assert response.status_code == 200
-
-    def test_virtual_experience_has_canvas(self):
-        """Page includes the Three.js canvas element."""
-        app = _make_virtual_app()
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/virtual-experience")
-        assert "model-viewer" in response.text
-
-    def test_virtual_experience_has_ar_support(self):
-        """Page includes model-viewer with AR support."""
-        app = _make_virtual_app()
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/virtual-experience")
-        assert "ar-button" in response.text
-        assert "camera-controls" in response.text
-
-
-class TestShowroomItems:
-    """Test the /api/virtual/showroom-items HTMX fragment."""
-
-    def test_showroom_returns_200(self):
-        """GET /api/virtual/showroom-items returns 200."""
-        app = _make_virtual_app()
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert response.status_code == 200
-
-    def test_showroom_empty_state(self):
-        """Empty database shows 'No 3D assets' message."""
-        app = _make_virtual_app()
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert "No 3D assets" in response.text
-
-    def test_showroom_displays_product_name(self):
-        """Showroom displays product names when 3D models exist."""
-        product = _make_showroom_product(
-            name="Emerind Agbada",
-            variant={"size": "L", "color": "Emerald", "mesh": "agbada_form", "color_hex": "#2d6a4f"},
-        )
-        pool = _make_pool(products=[product])
-        app = _make_virtual_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert "Emerind Agbada" in response.text
-
-    def test_showroom_displays_model_url_in_dispatch(self):
-        """Showroom cards dispatch load-showroom-model with modelUrl."""
-        model_url = "/static/uploads/models/test_dress.glb"
-        product = _make_showroom_product(model_3d=model_url)
-        pool = _make_pool(products=[product])
-        app = _make_virtual_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert model_url in response.text
-        assert "load-showroom-model" in response.text
-
-    def test_showroom_product_without_variant(self):
-        """Products without variants still appear (LEFT JOIN fix)."""
-        product = _make_showroom_product(
-            pid="no-variant-prod",
-            name="Solo Gown",
-            variant=None,
-        )
-        pool = _make_pool(products=[product])
-        app = _make_virtual_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert "Solo Gown" in response.text
-        assert "load-showroom-model" in response.text
-
-    def test_showroom_shows_variant_details(self):
-        """Showroom displays variant color and size info."""
-        product = _make_showroom_product(
-            variant={"size": "S", "color": "Ivory", "mesh": "dress_form", "color_hex": "#FFFFF0"},
-        )
-        pool = _make_pool(products=[product])
-        app = _make_virtual_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert "Ivory" in response.text
-        assert "Size S" in response.text
-
-    def test_showroom_aria_labels(self):
-        """Showroom cards have accessible aria-label."""
-        product = _make_showroom_product(name="Structured Top")
-        pool = _make_pool(products=[product])
-        app = _make_virtual_app(pool_fn=lambda: pool)
-        client = TestClient(app, raise_server_exceptions=False)
-        response = client.get("/api/virtual/showroom-items")
-        assert 'aria-label="View Structured Top"' in response.text

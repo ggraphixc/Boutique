@@ -52,14 +52,6 @@ class TestProductLifecycleOperations:
             )
             assert response.status_code in [200, 400, 404]
 
-    def test_product_3d_model_url_update(self):
-        """Validates 3D model URL update endpoint returns proper response."""
-        with TestClient(app, raise_server_exceptions=False) as client:
-            response = client.post(
-                "/admin/dashboard/update-model-url",
-                data={"product_id": "1", "model_url": "/static/models/architectural-blazer.glb"}
-            )
-            assert response.status_code in [200, 400, 404]
 
 
 class TestAuditLogStructure:
@@ -76,7 +68,6 @@ class TestAuditLogStructure:
             "PRODUCT_DEPROVISION",
             "SETTINGS_MUTATION",
             "STOCK_UPDATE",
-            "MODEL_URL_UPDATE",
             "WAITLIST_NOTIFY",
         }
         assert "PRODUCT_DEPROVISION" in valid_vectors

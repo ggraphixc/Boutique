@@ -5,13 +5,32 @@
 <main class="min-h-screen bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100">
     <!-- Hero -->
     <section class="relative overflow-hidden bg-[#0D2A22] py-20 lg:py-28">
+        <style>
+            @keyframes lbFloat1 { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-16px) rotate(2deg); } }
+            @keyframes lbFloat2 { 0%, 100% { transform: translateY(0) rotate(1deg); } 50% { transform: translateY(-12px) rotate(-2deg); } }
+            @keyframes lbFloat3 { 0%, 100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-14px) rotate(-1deg); } }
+        </style>
         <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
             <div class="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-[#D4AF37]/10 via-transparent to-fuchsia-300/5 blur-[120px]"></div>
         </div>
+
+        <!-- Floating 3D fashion images -->
+        <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div class="absolute top-[15%] left-[5%] w-36 opacity-40" style="animation: lbFloat1 8s ease-in-out infinite;">
+                <img src="/static/images/icon-image/sweatshirt.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+            <div class="absolute bottom-[10%] right-[8%] w-32 opacity-35" style="animation: lbFloat2 9s ease-in-out infinite 1s;">
+                <img src="/static/images/icon-image/denim skirt.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+            <div class="absolute top-[50%] right-[3%] w-28 opacity-30" style="animation: lbFloat3 7s ease-in-out infinite 0.5s;">
+                <img src="/static/images/icon-image/neck chain.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+        </div>
+
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
             <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-[#D4AF37]">ASIKO Atelier</span>
-            <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide mt-4 mb-4">The Lookbook</h1>
-            <p class="text-white/50 text-base lg:text-lg max-w-lg mx-auto font-light">Curated ensembles from the current collection. Each piece designed to stand alone or compose into a complete look.</p>
+            <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide mt-4 mb-4">{{ settings.lookbook_title or 'The Lookbook' }}</h1>
+            <p class="text-white/50 text-base lg:text-lg max-w-lg mx-auto font-light">{{ settings.lookbook_subtitle or 'Curated ensembles and styling inspiration from ASIKO\'s collection.' }}</p>
         </div>
     </section>
 
@@ -32,16 +51,7 @@
                     </div>
                     {% endif %}
 
-                    <!-- 3D badge -->
-                    {% if product.has_3d_model %}
-                    <span class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg">
-                        <span class="relative flex h-1.5 w-1.5">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2A22] opacity-60"></span>
-                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0D2A22]"></span>
-                        </span>
-                        3D
-                    </span>
-                    {% endif %}
+
 
                     <!-- Hover overlay -->
                     <div class="absolute inset-0 bg-[#0D2A22]/0 group-hover:bg-[#0D2A22]/20 transition-all duration-500 flex items-end justify-center pb-8 opacity-0 group-hover:opacity-100">

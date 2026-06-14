@@ -81,9 +81,6 @@
                                         <h3 class="font-serif text-lg text-[#0D2A22] font-medium truncate">{{ item.name }}</h3>
                                         <p class="text-xs text-[#0D2A22]/60 font-mono mt-0.5">
                                             Size {{ item.size }} &bull; {{ item.color }} &bull; {{ item.stock_qty }} Units Available
-                                            {% if is_first_variant and item.model_3d_url %}
-                                            <span class="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#D4AF37]/10 text-[#D4AF37] text-[8px] font-mono font-bold uppercase tracking-wider rounded">3D</span>
-                                            {% endif %}
                                         </p>
                                     </div>
                                 </div>
@@ -104,21 +101,7 @@
                                         </button>
                                     </form>
 
-                                    <!-- Clean Text Asset Path Assignment (first variant only) -->
-                                    {% if is_first_variant %}
-                                    <form hx-post="/admin/dashboard/update-model-url" hx-trigger="submit"
-                                          class="flex items-center border border-[#0D2A22]/20 rounded-sm bg-[#FBF9F6]">
-                                        <input type="hidden" name="product_id" value="{{ item.product_id }}">
-                                        <span class="px-3 py-1.5 text-[11px] font-mono text-[#0D2A22]/60 border-r border-[#0D2A22]/20 uppercase tracking-wider">3D Path</span>
-                                        <input type="text" name="model_3d_url" value="{{ item.model_3d_url or '' }}"
-                                               placeholder="tailored-column-trouser.glb"
-                                               class="w-56 bg-transparent px-3 font-mono text-xs text-[#0D2A22] focus:outline-none py-1">
-                                        <button type="submit"
-                                                class="bg-[#D4AF37] hover:bg-[#0D2A22] text-[#0D2A22] hover:text-white transition-colors duration-300 px-4 py-1.5 text-[10px] font-mono uppercase tracking-wider">
-                                            Save Path
-                                        </button>
-                                    </form>
-                                    {% endif %}
+
 
                                     <!-- Status indicator -->
                                     <div class="flex items-center gap-1.5 text-[10px] font-mono text-neutral-500 px-2">
@@ -131,11 +114,7 @@
                             <!-- HTMX response target containers (preserved from old layout) -->
                             <div id="status-variant-{{ item.variant_id }}" class="text-[9px] mt-3 font-mono"></div>
                             {% if is_first_variant %}
-                            <div id="model-status-{{ item.product_id }}" class="text-[9px] mt-1 font-mono">
-                                {% if item.model_3d_url %}
-                                <span class="text-[10px] font-mono text-neutral-500">Current asset: {{ item.model_3d_url.rsplit('/', 1)[-1] }}</span>
-                                {% endif %}
-                            </div>
+
                             {% endif %}
                         </div>
                         {% endfor %}
@@ -161,9 +140,12 @@
                                     {{ wait.demand_count }} Unnotified Buyers
                                 </div>
                             </div>
-                            <button hx-post="/admin/dashboard/notify-waitlist" hx-vals='{"variant_id": "{{ wait.variant_id }}" }' hx-swap="outerHTML" class="bg-[#0D2A22] hover:bg-[#D4AF37] text-white transition-colors text-[9px] font-mono uppercase tracking-wider px-2 py-1.5 mt-1">
-                                Dispatch Drop
-                            </button>
+                            <form hx-post="/admin/dashboard/notify-waitlist" hx-swap="outerHTML" class="inline">
+                                <input type="hidden" name="variant_id" value="{{ wait.variant_id }}">
+                                <button type="submit" class="bg-[#0D2A22] hover:bg-[#D4AF37] text-white transition-colors text-[9px] font-mono uppercase tracking-wider px-2 py-1.5 mt-1">
+                                    Dispatch Drop
+                                </button>
+                            </form>
                         </div>
                         {% else %}
                         <p class="text-xs text-neutral-400 font-mono text-center py-4">No waiting buyers backlogged.</p>

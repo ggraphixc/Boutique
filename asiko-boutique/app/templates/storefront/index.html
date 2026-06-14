@@ -2,179 +2,100 @@
 {% block title %}ASIKO Boutique — Contemporary Nigerian Fashion{% endblock %}
 {% block content %}
 <style>
-    @keyframes rotate-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @keyframes floatGentle {
-        0%, 100% { transform: translateY(0px); }
-        50% { transform: translateY(-8px); }
-    }
-    @keyframes pulseSoft {
-        0%, 100% { opacity: 0.4; transform: scale(1); }
-        50% { opacity: 0.8; transform: scale(1.05); }
-    }
-    .animate-rotate-slow { animation: rotate-slow 20s linear infinite; }
-    .animate-float-gentle { animation: floatGentle 6s ease-in-out infinite; }
-    .animate-pulse-soft { animation: pulseSoft 4s ease-in-out infinite; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes heroFloat1 { 0%, 100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-18px) rotate(2deg); } }
+    @keyframes heroFloat2 { 0%, 100% { transform: translateY(0) rotate(1deg); } 50% { transform: translateY(-14px) rotate(-2deg); } }
+    @keyframes heroFloat3 { 0%, 100% { transform: translateY(0) rotate(2deg); } 50% { transform: translateY(-16px) rotate(-1deg); } }
+    .animate-fade-in-up { animation: fadeInUp 0.8s ease-out both; }
+    .animate-delay-1 { animation-delay: 0.15s; }
+    .animate-delay-2 { animation-delay: 0.3s; }
+    .animate-delay-3 { animation-delay: 0.45s; }
 </style>
 
 <!-- ============================================================ -->
-<!-- HERO: 3D VIRTUAL ATELIER PREVIEW SECTION                      -->
+<!-- HERO: FASHION-FIRST — what ASIKO delivers                      -->
 <!-- ============================================================ -->
-<section class="relative overflow-hidden bg-[#0D2A22] min-h-[520px] lg:min-h-[600px] flex items-center"
-         x-data="{ hover: false }">
-
-    <!-- Iridescent ambient backlighting (matches virtual experience page) -->
+<section class="relative overflow-hidden bg-[#0D2A22] min-h-[520px] lg:min-h-[640px] flex items-center">
+    <!-- Warm ambient glow -->
     <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div class="absolute top-[-20%] right-[-10%] w-[70%] h-[70%] rounded-full bg-gradient-to-bl from-fuchsia-300/20 via-rose-200/10 to-cyan-200/15 blur-[150px]"></div>
-        <div class="absolute bottom-[-15%] left-[-8%] w-[50%] h-[50%] rounded-full bg-gradient-to-tr from-amber-200/15 via-[#D4AF37]/10 to-emerald-200/20 blur-[120px]"></div>
+        <div class="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-gradient-to-bl from-[#D4AF37]/15 via-[#E6C875]/10 to-transparent blur-[150px]"></div>
+        <div class="absolute bottom-[-15%] left-[-8%] w-[45%] h-[45%] rounded-full bg-gradient-to-tr from-[#D4AF37]/10 via-transparent to-emerald-200/5 blur-[120px]"></div>
     </div>
 
-    <!-- Animated floating decorative elements (pure CSS 3D shapes) -->
-    <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <!-- Rotating rings -->
-        <div class="absolute top-[15%] right-[12%] w-32 h-32 border border-[#D4AF37]/20 rounded-full animate-rotate-slow"></div>
-        <div class="absolute top-[18%] right-[15%] w-24 h-24 border border-[#D4AF37]/10 rounded-full"
-             style="animation: rotate-slow 25s linear infinite reverse;"></div>
-
-        <!-- Floating geometric shapes -->
-        <div class="absolute top-[25%] left-[8%] w-3 h-3 bg-[#E6C875]/30 rounded-sm animate-float-gentle"
-             style="animation: floatGentle 6s ease-in-out infinite;"></div>
-        <div class="absolute bottom-[30%] right-[20%] w-2 h-2 bg-cyan-200/30 rotate-45 animate-float-gentle"
-             style="animation: floatGentle 8s ease-in-out infinite -2s;"></div>
-        <div class="absolute top-[60%] left-[15%] w-4 h-4 border border-[#D4AF37]/20 rotate-12 animate-float-gentle"
-             style="animation: floatGentle 7s ease-in-out infinite -4s;"></div>
-
-        <!-- Pulsing glow orbs -->
-        <div class="absolute top-[40%] right-[25%] w-16 h-16 rounded-full bg-[#D4AF37]/5 blur-2xl animate-pulse-soft"
-             style="animation: pulseSoft 4s ease-in-out infinite;"></div>
-        <div class="absolute bottom-[20%] left-[20%] w-20 h-20 rounded-full bg-fuchsia-300/5 blur-2xl animate-pulse-soft"
-             style="animation: pulseSoft 5s ease-in-out infinite -2s;"></div>
-
-        <!-- Grid pattern overlay -->
-        <div class="absolute inset-0 opacity-[0.03]"
-             style="background-image: linear-gradient(rgba(212, 175, 55, 1) 1px, transparent 1px), linear-gradient(90deg, rgba(212, 175, 55, 1) 1px, transparent 1px); background-size: 60px 60px;"></div>
-    </div>
+    <!-- Grid overlay -->
+    <div class="absolute inset-0 pointer-events-none opacity-[0.025]" aria-hidden="true"
+         style="background-image: linear-gradient(rgba(212,175,55,1) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,1) 1px, transparent 1px); background-size: 60px 60px;"></div>
 
     <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-0">
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
 
-            <!-- Left: Text content -->
-            <div class="text-center lg:text-left">
-                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 mb-6">
-                    <span class="relative flex h-1.5 w-1.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#D4AF37]"></span>
-                    </span>
-                    <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D4AF37]">Now in Virtual Reality</span>
-                </div>
+        <!-- Floating 3D product images — overlay behind text -->
+        <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <!-- Floating 3D dress — top right area -->
+            <div class="absolute top-[5%] right-[2%] w-32 sm:w-44 lg:w-64 opacity-70 sm:opacity-80"
+                 style="animation: heroFloat1 7s ease-in-out infinite;">
+                <img src="/static/images/icon-image/dress.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+            <!-- Floating 3D shoe — bottom left area -->
+            <div class="absolute bottom-[8%] left-[0%] w-28 sm:w-40 lg:w-52 opacity-60 sm:opacity-70"
+                 style="animation: heroFloat2 9s ease-in-out infinite 1s;">
+                <img src="/static/images/icon-image/leather shoe.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+            <!-- Floating 3D shirt — mid right, below dress -->
+            <div class="absolute top-[45%] right-[-2%] w-24 sm:w-36 lg:w-48 opacity-60 sm:opacity-70"
+                 style="animation: heroFloat3 8s ease-in-out infinite 2s;">
+                <img src="/static/images/icon-image/shirt.png" alt="" class="w-full h-auto drop-shadow-2xl" loading="lazy">
+            </div>
+        </div>
 
-                <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide leading-tight">
-                    Step Into the
-                    <br>
-                    <span class="text-[#D4AF37]">Virtual Atelier</span>
-                </h1>
-
-                <p class="text-white/60 text-base lg:text-lg mt-5 max-w-md mx-auto lg:mx-0 leading-relaxed font-light">
-                    Explore ÀSÌKÒ's collection in an immersive 3D environment. Walk the showroom, try pieces in the virtual dressing room, and experience fashion beyond the screen.
-                </p>
-
-                <div class="flex flex-col sm:flex-row items-center gap-4 mt-8 justify-center lg:justify-start">
-                    <a href="/virtual-experience"
-                       @mouseenter="hover = true" @mouseleave="hover = false"
-                       class="group relative inline-flex items-center gap-3 px-8 py-4 bg-[#D4AF37] text-[#0D2A22] font-mono text-xs uppercase tracking-[0.25em] font-semibold rounded-xl overflow-hidden transition-all duration-500 hover:bg-white hover:shadow-2xl hover:shadow-[#D4AF37]/25">
-                        <span class="relative z-10 flex items-center gap-2">
-                            <svg class="w-4 h-4 transition-transform duration-500 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/>
-                            </svg>
-                            Enter 3D Showroom
-                        </span>
-                        <span class="absolute inset-0 bg-white opacity-0 group-hover:opacity-100 transition-opacity duration-500"></span>
-                    </a>
-
-                    <a href="#storefront"
-                       class="text-white/50 hover:text-white text-[11px] font-mono uppercase tracking-[0.2em] transition-colors duration-300">
-                        Browse Collection
-                    </a>
-                </div>
-
-                <!-- Feature badges -->
-                <div class="flex flex-wrap gap-4 mt-10 justify-center lg:justify-start">
-                    <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
-                        <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Interactive 3D Models
-                    </div>
-                    <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
-                        <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Virtual Dressing Room
-                    </div>
-                    <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
-                        <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        Real-time Garment Swaps
-                    </div>
-                </div>
+        <!-- Text content -->
+        <div class="relative z-20 text-center lg:text-left">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/30 bg-[#D4AF37]/5 mb-6 animate-fade-in-up">
+                <span class="relative flex h-1.5 w-1.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#D4AF37]"></span>
+                </span>
+                <span class="text-[10px] font-mono uppercase tracking-[0.2em] text-[#D4AF37]">{{ settings.hero_badge_text or 'New Collection Available' }}</span>
             </div>
 
-            <!-- Right: Animated 3D preview card -->
-            <div class="hidden lg:block relative">
-                <div class="relative w-full aspect-square max-w-[420px] mx-auto">
-                    <!-- Outer glow ring -->
-                    <div class="absolute inset-0 rounded-full bg-gradient-to-br from-[#D4AF37]/20 via-transparent to-fuchsia-300/10 blur-3xl animate-pulse-soft"
-                         style="animation: pulseSoft 5s ease-in-out infinite;"></div>
+            <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide leading-tight animate-fade-in-up animate-delay-1">
+                {{ settings.hero_title or 'Authentic' }}
+                <br>
+                <span class="text-[#D4AF37]">{{ settings.hero_title_accent or 'Nigerian Fashion' }}</span>
+            </h1>
 
-                    <!-- Glass preview card -->
-                    <div class="relative w-full h-full rounded-2xl backdrop-blur-xl bg-white/5 border border-white/10 overflow-hidden shadow-2xl">
-                        <!-- Inner iridescent highlights -->
-                        <div class="absolute top-[-30%] left-[-30%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-fuchsia-300/10 to-cyan-200/10 blur-[80px]"></div>
-                        <div class="absolute bottom-[-30%] right-[-30%] w-[80%] h-[80%] rounded-full bg-gradient-to-bl from-amber-200/10 to-emerald-200/10 blur-[80px]"></div>
+            <p class="text-white/60 text-base lg:text-lg mt-5 max-w-md mx-auto lg:mx-0 leading-relaxed font-light animate-fade-in-up animate-delay-2">
+                {{ settings.hero_subtitle or 'Shop curated styles with transparent pricing. Every piece crafted with verified provenance and fair-trade standards.' }}
+            </p>
 
-                        <!-- 3D scene preview using CSS (represents the Three.js showroom) -->
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <!-- Pedestal representation -->
-                            <div class="relative w-40 h-40">
-                                <!-- Pedestal base glow -->
-                                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-28 h-4 rounded-full bg-[#D4AF37]/20 blur-md"></div>
+            <div class="flex flex-col sm:flex-row items-center gap-4 mt-8 justify-center lg:justify-start animate-fade-in-up animate-delay-3">
+                <a href="{{ settings.hero_cta_link or '#storefront' }}"
+                   class="group relative inline-flex items-center gap-3 px-8 py-4 bg-[#D4AF37] text-[#0D2A22] font-mono text-xs uppercase tracking-[0.25em] font-semibold rounded-xl overflow-hidden transition-all duration-500 hover:bg-white hover:shadow-2xl hover:shadow-[#D4AF37]/25">
+                    <span class="relative z-10 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                        {{ settings.hero_cta_text or 'Shop Collection' }}
+                    </span>
+                </a>
 
-                                <!-- Pedestal -->
-                                <div class="absolute bottom-2 left-1/2 -translate-x-1/2 w-20 h-3 rounded-full bg-white/20 backdrop-blur-sm border border-white/10"></div>
+                <a href="/lookbook"
+                   class="text-white/50 hover:text-white text-[11px] font-mono uppercase tracking-[0.2em] transition-colors duration-300">
+                    View Lookbook
+                </a>
+            </div>
 
-                                <!-- Floating mannequin silhouette (CSS) -->
-                                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-full h-36"
-                                     style="animation: floatGentle 4s ease-in-out infinite;">
-                                    <!-- Head -->
-                                    <div class="mx-auto w-6 h-6 rounded-full bg-white/15 border border-white/10"></div>
-                                    <!-- Torso -->
-                                    <div class="mx-auto w-10 h-14 mt-1 rounded-[30%] bg-white/10 border border-white/10"></div>
-                                    <!-- Hips base -->
-                                    <div class="mx-auto w-12 h-3 mt-0.5 rounded-full bg-white/10 border border-white/10"></div>
-                                    <!-- Gold accent waist ring -->
-                                    <div class="mx-auto w-12 h-0.5 -mt-0.5 rounded-full bg-[#D4AF37]/40"></div>
-                                </div>
-
-                                <!-- Rotating ring orbit -->
-                                <div class="absolute top-[15%] left-1/2 -translate-x-1/2 w-32 h-32"
-                                     style="animation: rotate-slow 12s linear infinite;">
-                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-[#D4AF37]/60 blur-[1px]"></div>
-                                </div>
-                                <div class="absolute top-[15%] left-1/2 -translate-x-1/2 w-28 h-28"
-                                     style="animation: rotate-slow 15s linear infinite reverse;">
-                                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-200/40 blur-[1px]"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Bottom label -->
-                        <div class="absolute bottom-0 left-0 right-0 p-4 backdrop-blur-md bg-[#0D2A22]/60">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="text-white/80 text-xs font-medium">Virtual Atelier Preview</p>
-                                    <p class="text-white/30 text-[10px] font-mono mt-0.5">Interactive 3D Exhibition</p>
-                                </div>
-                                <span class="relative flex h-2 w-2">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Trust badges -->
+            <div class="flex flex-wrap gap-4 mt-10 justify-center lg:justify-start">
+                <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
+                    <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    No "DM for Price"
+                </div>
+                <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
+                    <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Fair Trade Certified
+                </div>
+                <div class="flex items-center gap-2 text-white/40 text-[10px] font-mono uppercase tracking-wider">
+                    <svg class="w-3 h-3 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    Living Wage Employer
                 </div>
             </div>
         </div>
@@ -182,7 +103,7 @@
 
     <!-- Scroll indicator -->
     <div class="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2"
-         style="animation: floatGentle 3s ease-in-out infinite;">
+         style="animation: fadeInUp 1s ease-out 1s both;">
         <span class="text-white/20 text-[8px] font-mono uppercase tracking-[0.3em]">Scroll</span>
         <svg class="w-4 h-4 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
@@ -191,22 +112,11 @@
 </section>
 
 <!-- ============================================================ -->
-<!-- BRAND PILLARS SECTION (existing hero replacement)              -->
-<!-- ============================================================ -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6 relative z-20">
-    <div class="flex flex-wrap justify-center gap-3">
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">No "DM for Price"</span>
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">Fair Trade Certified</span>
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-xs font-medium border border-[#D4AF37]/30 bg-white/80 dark:bg-[#18181B]/80 backdrop-blur-sm text-[#0D2A22] dark:text-gray-200 shadow-sm">Living Wage Employer</span>
-    </div>
-</section>
-
-<!-- ============================================================ -->
 <!-- PRODUCT GRID SECTION                                          -->
 <!-- ============================================================ -->
 <section id="storefront" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-12 text-center">
     <span class="text-xs tracking-[0.25em] uppercase text-[#D4AF37] font-mono">The Collection</span>
-    <h2 class="font-display text-3xl lg:text-4xl font-light text-[#0D2A22] dark:text-white tracking-wide mt-2 mb-4">contemporary nigerian fashion</h2>
+    <h2 class="font-display text-3xl lg:text-4xl font-light text-[#0D2A22] dark:text-white tracking-wide mt-2 mb-4">Contemporary Nigerian Fashion</h2>
     <p class="text-[#1A1A1A]/60 dark:text-gray-400 text-base max-w-2xl mx-auto font-light">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
 </section>
 
@@ -237,43 +147,49 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for product in products %}
         {% set cat = (product.category_name | default('', true)) | lower %}
-        <a href="/product/{{ product.id }}"
-           x-show="category === 'all' || '{{ cat }}' === category"
-           x-transition
-           class="group block overflow-hidden rounded-xl border border-[#D4AF37]/20 dark:border-gray-700 bg-white dark:bg-[#18181B] shadow-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-            <div class="relative aspect-square bg-[#FBF9F6] dark:bg-[#111] overflow-hidden">
-                {% if product.base_image %}
-                <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" loading="lazy">
-                {% else %}
-                <div class="absolute inset-0 bg-gradient-to-br from-[#0D2A22]/5 to-[#D4AF37]/10"></div>
-                <div class="absolute inset-0 flex items-center justify-center text-[#0D2A22]/30 dark:text-white/10"><span class="font-display text-5xl">A</span></div>
-                {% endif %}
-                {% if product.has_3d_model %}
-                <span class="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#D4AF37]/90 text-[#0D2A22] text-[9px] font-mono font-bold uppercase tracking-wider shadow-lg">
-                    <span class="relative flex h-1.5 w-1.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#0D2222] opacity-60"></span>
-                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#0D2A22]"></span>
-                    </span>
-                    3D
-                </span>
-                {% endif %}
-            </div>
-            <div class="p-4">
-                <h3 class="font-display text-lg text-[#0D2A22] dark:text-gray-100 mb-2 group-hover:text-[#D4AF37] transition-colors">{{ product.name }}</h3>
-                <p class="text-sm text-[#1A1A1A]/70 dark:text-gray-400 mb-3 line-clamp-2">{{ product.description }}</p>
-                <div class="flex items-center justify-between mb-4">
-                    <span class="text-xl font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ product.price|naira }}</span>
-                    <span class="text-xs text-[#1A1A1A]/50 dark:text-gray-500">{{ product.stock_quantity }} in stock</span>
+        <div x-show="category === 'all' || '{{ cat }}' === category" x-transition class="group relative" onclick="window.location='/product/{{ product.id }}'" style="cursor:pointer">
+            <div class="overflow-hidden rounded-2xl bg-white dark:bg-[#18181B] shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10 dark:hover:shadow-[#D4AF37]/5 hover:-translate-y-1">
+                <!-- Image -->
+                <div class="relative aspect-[3/4] bg-gradient-to-br from-[#FBF9F6] to-[#F5F0E8] dark:from-[#111] dark:to-[#1a1a1a] overflow-hidden">
+                    {% if product.base_image %}
+                    <img src="{{ product.base_image }}" alt="{{ product.name }}" class="w-full h-full object-cover object-center transition-transform duration-700 ease-out group-hover:scale-110" loading="lazy">
+                    {% else %}
+                    <div class="absolute inset-0 bg-gradient-to-br from-[#0D2A22]/5 to-[#D4AF37]/10"></div>
+                    <div class="absolute inset-0 flex items-center justify-center"><span class="font-display text-6xl text-[#0D2A22]/15 dark:text-white/5">A</span></div>
+                    {% endif %}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+
+                    <!-- Add to Cart — form outside <a>, stops propagation -->
+                    <div class="absolute bottom-3 left-3 right-3 z-20 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                        <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML"
+                              hx-on::after-request="if(event.detail.successful) document.getElementById('cart-drawer').classList.remove('hidden')"
+                              onclick="event.stopPropagation()" style="position:relative; z-index:30;">
+                            <input type="hidden" name="product_id" value="{{ product.id }}">
+                            <button type="submit"
+                                    onclick="event.stopPropagation(); event.preventDefault(); this.closest('form').requestSubmit();"
+                                    class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] text-sm font-semibold rounded-xl hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-all duration-200 shadow-xl backdrop-blur-sm cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                Add to Cart
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML" onclick="event.preventDefault(); event.stopPropagation(); document.getElementById('cart-drawer').classList.remove('hidden')">
-                    <input type="hidden" name="product_id" value="{{ product.id }}">
-                    <button type="submit" class="w-full inline-flex items-center justify-center gap-1 px-3 py-2 text-sm font-medium text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] rounded-md hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-colors">
-                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                        Add to Cart
-                    </button>
-                </form>
+                <div class="p-4">
+                    <div class="flex items-start justify-between gap-2 mb-1">
+                        <h3 class="font-display text-base text-[#0D2A22] dark:text-gray-100 group-hover:text-[#D4AF37] transition-colors duration-300 line-clamp-1">{{ product.name }}</h3>
+                    </div>
+                    <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-500 mb-3 line-clamp-1">{{ product.description }}</p>
+                    <div class="flex items-center justify-between">
+                        <span class="text-lg font-bold text-[#0D2A22] dark:text-[#D4AF37] tracking-tight">{{ product.price|naira }}</span>
+                        {% if product.stock_quantity is defined and product.stock_quantity > 0 %}
+                        <span class="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-full">In Stock</span>
+                        {% else %}
+                        <span class="text-[10px] font-medium text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">Sold Out</span>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
-        </a>
+        </div>
         {% endfor %}
     </div>
 </section>

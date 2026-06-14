@@ -18,7 +18,7 @@
             {% endif %}
             <p class="text-sm font-semibold text-[#0D2A22] mt-1">{{ item.price|naira }}</p>
             <div class="flex items-center gap-2 mt-2">
-                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML">
+                <form hx-post="/cart/update" hx-target="#cart-drawer-content" hx-swap="innerHTML">
                     <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
                     <input type="hidden" name="action" value="decrement">
                     <button type="submit" class="h-7 w-7 inline-flex items-center justify-center border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10">
@@ -26,14 +26,14 @@
                     </button>
                 </form>
                 <span class="text-sm font-medium w-6 text-center">{{ item.quantity }}</span>
-                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML">
+                <form hx-post="/cart/update" hx-target="#cart-drawer-content" hx-swap="innerHTML">
                     <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
                     <input type="hidden" name="action" value="increment">
                     <button type="submit" class="h-7 w-7 inline-flex items-center justify-center border border-[#D4AF37]/40 rounded-md hover:bg-[#D4AF37]/10">
                         <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                     </button>
                 </form>
-                <form hx-post="/cart/update" hx-target="#cart-content" hx-swap="innerHTML" class="ml-auto">
+                <form hx-post="/cart/update" hx-target="#cart-drawer-content" hx-swap="innerHTML" class="ml-auto">
                     <input type="hidden" name="variant_id" value="{{ item.variant_id }}">
                     <input type="hidden" name="action" value="remove">
                     <button type="submit" class="h-7 w-7 inline-flex items-center justify-center text-[#EF4444] hover:bg-[#EF4444]/10 rounded-md">

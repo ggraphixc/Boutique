@@ -18,7 +18,7 @@ async def get_admin_products_fragment(request: Request) -> HTMLResponse:
         records = await conn.fetch(
             """
             SELECT p.id, p.name, p.slug, p.price, p.stock_quantity,
-                   p.model_3d_url, p.base_image, p.created_at,
+                   p.base_image, p.created_at,
                    COUNT(v.id) AS variant_count,
                    COALESCE(SUM(v.stock_qty), 0) AS total_variant_stock
             FROM products p
@@ -40,10 +40,6 @@ async def get_admin_products_fragment(request: Request) -> HTMLResponse:
         price_val = float(r["price"]) if r["price"] else 0
         stock_val = r["total_variant_stock"] or 0
         stock_class = "text-[#10B981]" if stock_val > 0 else "text-[#EF4444]"
-        model_badge = (
-            "<span class='text-[9px] font-mono uppercase tracking-wider text-[#D4AF37]'>3D</span>"
-            if r["model_3d_url"] else ""
-        )
         created = r["created_at"].strftime("%Y-%m-%d") if r["created_at"] else "\u2014"
         row_id = f"product-row-{r['id']}"
         short_id = str(r["id"])[:8]
@@ -56,7 +52,7 @@ async def get_admin_products_fragment(request: Request) -> HTMLResponse:
             f"<tr class='border-b border-neutral-100 hover:bg-[#0D2A22]/[0.02] transition-colors' id='{row_id}'>"
             f"<td class='p-3 text-[11px] font-mono text-neutral-500 max-w-[80px] truncate'>{short_id}</td>"
             f"<td class='p-3'>"
-            f"<span class='text-sm font-medium text-[#0D2A22]'>{product_name}</span> {model_badge}"
+            f"<span class='text-sm font-medium text-[#0D2A22]'>{product_name}</span>"
             f"<br><span class='text-[10px] font-mono text-neutral-400'>{slug_val}</span>"
             f"</td>"
             f"<td class='p-3 text-right font-mono text-sm text-[#0D2A22]'>&curren;{price_val:,.0f}</td>"
@@ -164,10 +160,6 @@ async def get_product_detail_fragment(request: Request) -> HTMLResponse:
     price_val = float(product["price"]) if product["price"] else 0
     product_name = product["name"]
     slug_val = product["slug"] or "\u2014"
-    model_url = product["model_3d_url"]
-
-    model_status_class = "text-[#10B981]" if model_url else "text-neutral-400"
-    model_status_text = "Linked" if model_url else "None"
 
     variants_html = ""
     for v in variants:
@@ -192,8 +184,6 @@ async def get_product_detail_fragment(request: Request) -> HTMLResponse:
         f"<div class='grid grid-cols-2 gap-4 mb-4'>"
         f"<div><span class='block text-[9px] uppercase tracking-wider text-neutral-400 font-mono'>Price</span>"
         f"<span class='text-sm font-mono text-[#0D2A22]'>&curren;{price_val:,.0f}</span></div>"
-        f"<div><span class='block text-[9px] uppercase tracking-wider text-neutral-400 font-mono'>3D Model</span>"
-        f"<span class='text-[11px] font-mono {model_status_class}'>{model_status_text}</span></div>"
         f"</div>"
         f"<div class='border-t border-[#0D2A22]/5 pt-3'>"
         f"<span class='block text-[9px] uppercase tracking-wider text-neutral-400 font-mono mb-2'>Variants</span>"
@@ -236,7 +226,7 @@ async def get_general_settings_fragment(request: Request) -> HTMLResponse:
         "<div class='flex items-center justify-between py-2'>"
         "<div><span class='block text-sm text-[#0D2A22]'>Payment Gateway</span>"
         "<span class='block text-[10px] font-mono text-neutral-400'>Settlement processor</span></div>"
-        "<span class='text-sm font-mono text-[#D4AF37]'>Paystack (Test Mode)</span>"
+        "<span class='text-sm font-mono text-[#D4AF37]'>OPay (Bank Transfer + Card)</span>"
         "</div>"
         "</div></div>"
     )
@@ -329,8 +319,8 @@ async def create_product(request: Request):
 
         await conn.execute(
             """
-            INSERT INTO products (store_id, name, slug, price, stock_quantity, base_image, description, category_id, pipeline_status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'idle')
+            INSERT INTO products (store_id, name, slug, price, stock_quantity, base_image, description, category_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             """,
             store_id, name, slug, price, stock_quantity, image_path, description or None, category_id,
         )
@@ -338,7 +328,7 @@ async def create_product(request: Request):
     # Return a success message with HX-Redirect to reload the products section
     return HTMLResponse(
         "<div class='text-xs text-emerald-600 font-medium'>Product created successfully.</div>",
-        headers={"HX-Redirect": "/admin/section/products"},
+        headers={"HX-Redirect": "/admin/section/products?success=Product+created"},
     )
 
 
@@ -457,7 +447,7 @@ async def edit_product(request: Request):
 
     return HTMLResponse(
         "<div class='text-xs text-emerald-600 font-medium'>Product updated successfully.</div>",
-        headers={"HX-Redirect": "/admin/section/products"},
+        headers={"HX-Redirect": "/admin/section/products?success=Product+updated"},
     )
 
 

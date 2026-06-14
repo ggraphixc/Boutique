@@ -2,281 +2,271 @@
 {% block title %}{{ product.name }} — ASIKO Boutique{% endblock %}
 
 {% block content %}
-<main class="min-h-screen bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100 font-sans antialiased">
-    <div class="max-w-7xl mx-auto px-4 py-8 lg:px-8 lg:py-12">
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
 
-        <!-- Breadcrumb -->
-        <nav class="mb-6 lg:mb-10">
-            <a href="/" class="inline-flex items-center gap-2 text-sm text-[#1A1A1A]/50 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Back to Store
-            </a>
-        </nav>
+    <!-- Breadcrumb -->
+    <nav class="mb-6 lg:mb-8">
+        <a href="/" class="inline-flex items-center gap-2 text-sm text-[#1A1A1A]/50 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-[#D4AF37] transition-colors">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Back to Store
+        </a>
+    </nav>
 
-        <!-- Editorial PDP Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
+    <!-- Editorial PDP Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14">
 
-            <!-- Left: Image Gallery -->
-            <div class="lg:col-span-7 space-y-4">
-                <div class="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-neutral-100 dark:bg-[#18181B] border border-neutral-200 dark:border-gray-800">
-                    {% if product.base_image %}
-                    <img src="{{ product.base_image }}" alt="{{ product.name }}"
-                         class="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
-                         id="pdp-main-image">
-                    {% else %}
-                    <div class="w-full h-full flex items-center justify-center">
-                        <span class="font-display text-[120px] text-[#0D2A22]/10 dark:text-white/5 select-none">A</span>
-                    </div>
-                    {% endif %}
-
-                    <!-- 3D badge -->
-                    {% if product.model_3d_url %}
-                    <a href="/try/{{ product.id }}"
-                       class="absolute top-4 left-4 z-10 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D4AF37]/90 text-[#0D2A22] text-[10px] font-mono font-bold uppercase tracking-wider shadow-lg hover:bg-[#D4AF37] transition-all duration-300">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/></svg>
-                        Try On in 3D
-                    </a>
-                    {% endif %}
-                </div>
-
-                <!-- Gallery thumbnails -->
-                {% if product.gallery_images %}
-                <div class="grid grid-cols-2 gap-3">
-                    {% for image in product.gallery_images %}
-                    <div class="aspect-[3/4] overflow-hidden rounded-lg bg-neutral-100 dark:bg-[#18181B] border border-neutral-200 dark:border-gray-800 cursor-pointer hover:border-[#D4AF37] transition-colors">
-                        <img src="{{ image.url if image.url is defined else image }}" alt="Detail {{ loop.index }}"
-                             class="w-full h-full object-cover object-center">
-                    </div>
-                    {% endfor %}
+        <!-- Left: Image Gallery -->
+        <div class="lg:col-span-7 space-y-4">
+            <div class="relative aspect-[3/4] w-full overflow-hidden rounded-2xl bg-[#FBF9F6] dark:bg-[#18181B] border border-[#D4AF37]/10 dark:border-gray-800">
+                {% if product.base_image %}
+                <img src="{{ product.base_image }}" alt="{{ product.name }}"
+                     class="w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+                     id="pdp-main-image">
+                {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#FBF9F6] to-[#F5F0E8] dark:from-[#111] dark:to-[#1a1a1a]">
+                    <span class="font-display text-[120px] text-[#0D2A22]/10 dark:text-white/5 select-none">A</span>
                 </div>
                 {% endif %}
+
+
             </div>
 
-            <!-- Right: Product Info -->
-            <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-8 lg:h-fit">
+            <!-- Gallery thumbnails -->
+            {% if product.gallery_images %}
+            <div class="grid grid-cols-2 gap-3">
+                {% for image in product.gallery_images %}
+                <div class="aspect-[3/4] overflow-hidden rounded-xl bg-[#FBF9F6] dark:bg-[#18181B] border border-[#D4AF37]/10 dark:border-gray-800 cursor-pointer hover:border-[#D4AF37] transition-colors">
+                    <img src="{{ image.url if image.url is defined else image }}" alt="Detail {{ loop.index }}"
+                         class="w-full h-full object-cover object-center">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
 
-                <!-- Header -->
-                <div class="border-b border-neutral-200 dark:border-gray-800 pb-6"
-                     hx-ws="connect:/ws/store/product/{{ product.id }}"
-                     hx-swap="none">
-                    {% if product.collection_name %}
-                    <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] mb-2">{{ product.collection_name }}</p>
-                    {% endif %}
-                    <h1 class="font-display text-3xl lg:text-4xl text-[#0D2A22] dark:text-white tracking-wide leading-tight mb-3">{{ product.name }}</h1>
-                    <div class="flex items-center gap-3">
-                        <p class="font-mono text-xl text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">&#8358;{{ "{:,}".format(product.base_price if product.base_price is defined else product.price | int) }}</p>
-                        <!-- Live stock badge -->
-                        <div id="pdp-stock-badge"
-                             hx-trigger="ws:message[type=stock_update]"
-                             hx-get="/ws/store/product/{{ product.id }}/stock-badge"
-                             hx-swap="innerHTML">
-                            {% if product.stock_quantity is defined %}
-                                {% if product.stock_quantity == 0 %}
-                                    <span class="text-[11px] font-mono uppercase tracking-wider text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded">Sold out</span>
-                                {% elif product.stock_quantity <= 5 %}
-                                    <span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded">Only {{ product.stock_quantity }} left</span>
-                                {% else %}
-                                    <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded">In stock</span>
-                                {% endif %}
+        <!-- Right: Product Info -->
+        <div class="lg:col-span-5 space-y-6 lg:sticky lg:top-8 lg:h-fit">
+
+            <!-- Header -->
+            <div class="border-b border-[#D4AF37]/10 dark:border-gray-800 pb-6"
+                 hx-ws="connect:/ws/store/product/{{ product.id }}"
+                 hx-swap="none">
+                {% if product.collection_name %}
+                <p class="font-mono text-[10px] tracking-[0.3em] uppercase text-[#D4AF37] mb-2">{{ product.collection_name }}</p>
+                {% endif %}
+                <h1 class="font-display text-3xl lg:text-4xl text-[#0D2A22] dark:text-white tracking-wide leading-tight mb-3">{{ product.name }}</h1>
+                <div class="flex items-center gap-3">
+                    <p class="font-mono text-xl text-[#0D2A22] dark:text-[#D4AF37] tracking-wider font-semibold">&#8358;{{ "{:,}".format(product.base_price if product.base_price is defined else product.price | int) }}</p>
+                    <!-- Live stock badge -->
+                    <div id="pdp-stock-badge"
+                         hx-trigger="ws:message[type=stock_update]"
+                         hx-get="/ws/store/product/{{ product.id }}/stock-badge"
+                         hx-swap="innerHTML">
+                        {% if product.stock_quantity is defined %}
+                            {% if product.stock_quantity == 0 %}
+                                <span class="text-[11px] font-mono uppercase tracking-wider text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-full">Sold out</span>
+                            {% elif product.stock_quantity <= 5 %}
+                                <span class="text-[11px] font-mono uppercase tracking-wider text-amber-700 bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 px-2 py-0.5 rounded-full">Only {{ product.stock_quantity }} left</span>
+                            {% else %}
+                                <span class="text-[11px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">In stock</span>
                             {% endif %}
-                        </div>
+                        {% endif %}
                     </div>
                 </div>
+            </div>
 
-                <!-- Allocation zone (HTMX lazy load) -->
-                <div class="w-full min-h-[64px]"
-                     hx-get="/catalog/allocation/{{ product.slug }}"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
-                    <div class="flex items-center justify-between p-4 border border-neutral-200 dark:border-gray-800 animate-pulse bg-neutral-50 dark:bg-[#18181B] rounded-lg">
-                        <div class="flex items-center space-x-3">
-                            <div class="h-2 w-2 rounded-full bg-neutral-300 dark:bg-gray-700"></div>
-                            <div class="space-y-2">
-                                <div class="h-3 w-32 bg-neutral-200 dark:bg-gray-700 rounded"></div>
-                                <div class="h-2 w-48 bg-neutral-200 dark:bg-gray-700 rounded"></div>
-                            </div>
+            <!-- Allocation zone (HTMX lazy load) -->
+            <div class="w-full min-h-[64px]"
+                 hx-get="/catalog/allocation/{{ product.slug }}"
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <div class="flex items-center justify-between p-4 border border-[#D4AF37]/10 dark:border-gray-800 animate-pulse bg-[#FBF9F6] dark:bg-[#18181B] rounded-xl">
+                    <div class="flex items-center space-x-3">
+                        <div class="h-2 w-2 rounded-full bg-[#D4AF37]/30"></div>
+                        <div class="space-y-2">
+                            <div class="h-3 w-32 bg-[#D4AF37]/10 rounded"></div>
+                            <div class="h-2 w-48 bg-[#D4AF37]/10 rounded"></div>
                         </div>
-                        <div class="h-6 w-16 bg-neutral-200 dark:bg-gray-700 rounded"></div>
                     </div>
+                    <div class="h-6 w-16 bg-[#D4AF37]/10 rounded"></div>
                 </div>
+            </div>
 
-                <!-- 3D Try-On -->
-                {% if product.model_3d_url %}
-                <a href="/try/{{ product.id }}"
-                   class="group w-full inline-flex items-center justify-center gap-3 px-6 py-3.5 border border-[#D4AF37] bg-[#FBF9F6] dark:bg-transparent hover:bg-[#0D2A22] text-[#0D2A22] hover:text-[#FBF9F6] dark:hover:bg-[#D4AF37] dark:hover:text-[#0D2A22] font-mono text-xs uppercase tracking-[0.2em] transition-all duration-300 rounded-lg">
-                    <svg class="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 7.5l-2.25-1.313M21 7.5v2.25m0-2.25l-2.25 1.313M3 7.5l2.25-1.313M3 7.5l2.25 1.313M3 7.5v2.25m9 3l2.25-1.313M12 12.75l-2.25-1.313M12 12.75V15m0 6.75l2.25-1.313M12 21.75V19.5m0 2.25l-2.25-1.313m0-16.875L12 2.25l2.25 1.313M21 14.25v2.25l-2.25 1.313m-13.5 0L3 16.5v-2.25"/>
-                    </svg>
-                    <span>Try This On</span>
-                    <span class="relative flex h-1.5 w-1.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#D4AF37] opacity-60"></span>
-                        <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#D4AF37]"></span>
-                    </span>
-                </a>
-                {% endif %}
+            <!-- Add to Cart -->
+            <form hx-post="/cart/add" hx-target="#cart-badge" hx-swap="outerHTML"
+                  hx-on::after-request="if(event.detail.successful) document.getElementById('cart-drawer').classList.remove('hidden')"
+                  class="space-y-3">
+                <input type="hidden" name="product_id" value="{{ product.id }}">
+                <button type="submit"
+                        class="w-full flex items-center justify-center gap-3 px-6 py-3.5 bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] text-sm font-semibold rounded-xl hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-all duration-200 shadow-lg">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                    Add to Cart
+                </button>
+            </form>
 
-                <!-- Description -->
-                {% if product.description %}
-                <div class="prose prose-neutral dark:prose-invert max-w-none">
-                    <p class="text-sm text-neutral-600 dark:text-gray-400 leading-relaxed">{{ product.description }}</p>
-                </div>
-                {% endif %}
 
-                <!-- Measurement Blueprints (Alpine accordion) -->
-                <div x-data="{ open: false, unit: 'cm' }" class="border border-neutral-200 dark:border-gray-800 bg-white dark:bg-[#18181B] rounded-lg overflow-hidden">
-                    <button @click="open = !open" type="button" class="w-full flex justify-between items-center px-5 py-4 text-left transition-colors hover:bg-neutral-50 dark:hover:bg-gray-800/50">
-                        <span class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] dark:text-gray-200 font-semibold">Size & Measurements</span>
-                        <span class="text-neutral-400 font-light text-lg" x-text="open ? '−' : '+'"></span>
-                    </button>
 
-                    <div x-show="open" x-collapse x-cloak class="px-5 pb-6 pt-2 border-t border-neutral-100 dark:border-gray-800 space-y-4">
-                        <div class="flex justify-end space-x-2">
-                            <button @click="unit = 'cm'" type="button" :class="unit === 'cm' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-neutral-100 dark:bg-gray-800 text-neutral-600 dark:text-gray-400'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all rounded">cm</button>
-                            <button @click="unit = 'in'" type="button" :class="unit === 'in' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-neutral-100 dark:bg-gray-800 text-neutral-600 dark:text-gray-400'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all rounded">in</button>
-                        </div>
+            <!-- Description -->
+            {% if product.description %}
+            <div class="prose prose-neutral dark:prose-invert max-w-none">
+                <p class="text-sm text-[#1A1A1A]/70 dark:text-gray-400 leading-relaxed">{{ product.description }}</p>
+            </div>
+            {% endif %}
 
-                        <form hx-post="/catalog/atelier/bind" hx-swap="outerHTML" class="space-y-4">
-                            <input type="hidden" name="display_unit" :value="unit">
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 dark:text-gray-500 mb-1">Chest</label>
-                                    <input type="number" step="0.1" name="chest" required :placeholder="unit === 'cm' ? '96' : '38'" class="w-full border border-neutral-200 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded">
-                                </div>
-                                <div>
-                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 dark:text-gray-500 mb-1">Waist</label>
-                                    <input type="number" step="0.1" name="waist" required :placeholder="unit === 'cm' ? '82' : '32'" class="w-full border border-neutral-200 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded">
-                                </div>
-                                <div>
-                                    <label class="block font-mono text-[10px] uppercase tracking-wider text-neutral-500 dark:text-gray-500 mb-1">Hips</label>
-                                    <input type="number" step="0.1" name="hips" required :placeholder="unit === 'cm' ? '102' : '40'" class="w-full border border-neutral-200 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded">
-                                </div>
-                            </div>
-                            <button type="submit" class="w-full bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] text-white py-2.5 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-all rounded-lg">
-                                Save My Measurements
-                            </button>
-                        </form>
-                    </div>
-                </div>
+            <!-- Measurement Blueprints (Alpine accordion) -->
+            <div x-data="{ open: false, unit: 'cm' }" class="border border-[#D4AF37]/10 dark:border-gray-800 bg-white dark:bg-[#18181B] rounded-xl overflow-hidden">
+                <button @click="open = !open" type="button" class="w-full flex justify-between items-center px-5 py-4 text-left transition-colors hover:bg-[#FBF9F6] dark:hover:bg-gray-800/50">
+                    <span class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] dark:text-gray-200 font-semibold">Size & Measurements</span>
+                    <span class="text-[#1A1A1A]/40 font-light text-lg" x-text="open ? '−' : '+'"></span>
+                </button>
 
-                <!-- Capsule Matrix (Complete the Ensemble) -->
-                {% if product.capsule_look and product.capsule_look['items'] %}
-                <div class="border border-neutral-200 dark:border-gray-800 bg-white dark:bg-[#18181B] rounded-lg p-5 space-y-4">
-                    <div class="border-b border-neutral-100 dark:border-gray-800 pb-3">
-                        <h3 class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] dark:text-gray-200 font-semibold">Complete the Look</h3>
-                        <p class="text-[11px] text-neutral-400 dark:text-gray-500 font-light mt-0.5">Pieces that pair well with this item.</p>
+                <div x-show="open" x-collapse x-cloak class="px-5 pb-6 pt-2 border-t border-[#D4AF37]/10 dark:border-gray-800 space-y-4">
+                    <div class="flex justify-end space-x-2">
+                        <button @click="unit = 'cm'" type="button" :class="unit === 'cm' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-[#FBF9F6] dark:bg-gray-800 text-[#1A1A1A]/60 dark:text-gray-400'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all rounded">cm</button>
+                        <button @click="unit = 'in'" type="button" :class="unit === 'in' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-[#FBF9F6] dark:bg-gray-800 text-[#1A1A1A]/60 dark:text-gray-400'" class="px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider transition-all rounded">in</button>
                     </div>
 
-                    <form hx-post="/catalog/cart/capsule" hx-target="#capsule-status-msg" class="space-y-3">
-                        {% for item in product.capsule_look['items'] %}
-                        <div class="relative flex items-center justify-between p-3 border border-neutral-100 dark:border-gray-800 hover:border-[#D4AF37] transition-all bg-[#FBF9F6] dark:bg-[#111] rounded-lg">
-                            <div class="flex items-center space-x-3">
-                                {% if item.image_url is defined %}
-                                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-12 h-16 object-cover bg-neutral-100 dark:bg-gray-800 rounded">
-                                {% else %}
-                                <div class="w-12 h-16 bg-neutral-100 dark:bg-gray-800 flex items-center justify-center rounded">
-                                    <span class="font-serif text-lg text-[#0D2A22]/20 dark:text-white/10">A</span>
-                                </div>
-                                {% endif %}
-                                <div>
-                                    <p class="text-xs font-medium text-neutral-800 dark:text-gray-200">{{ item.name }}</p>
-                                    <p class="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mt-0.5">{{ item.type if item.type is defined else '' }}</p>
-                                </div>
+                    <form hx-post="/catalog/atelier/bind" hx-swap="outerHTML" class="space-y-4">
+                        <input type="hidden" name="display_unit" :value="unit">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block font-mono text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 dark:text-gray-500 mb-1">Chest</label>
+                                <input type="number" step="0.1" name="chest" required :placeholder="unit === 'cm' ? '96' : '38'" class="w-full border border-[#D4AF37]/20 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded-lg">
                             </div>
-                            <div class="flex items-center space-x-3">
-                                <span class="font-mono text-xs text-neutral-600 dark:text-gray-400">&#8358;{{ "{:,}".format(item.price | int) }}</span>
-                                <input type="checkbox" name="variant_ids" value="{{ item.default_variant_id }}" checked
-                                       class="h-4 w-4 rounded accent-[#0D2A22] cursor-pointer border-neutral-300 focus:ring-0">
+                            <div>
+                                <label class="block font-mono text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 dark:text-gray-500 mb-1">Waist</label>
+                                <input type="number" step="0.1" name="waist" required :placeholder="unit === 'cm' ? '82' : '32'" class="w-full border border-[#D4AF37]/20 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block font-mono text-[10px] uppercase tracking-wider text-[#1A1A1A]/50 dark:text-gray-500 mb-1">Hips</label>
+                                <input type="number" step="0.1" name="hips" required :placeholder="unit === 'cm' ? '102' : '40'" class="w-full border border-[#D4AF37]/20 dark:border-gray-700 px-3 py-2 text-sm font-mono focus:outline-none focus:border-[#D4AF37] bg-[#FBF9F6] dark:bg-[#111] dark:text-white rounded-lg">
                             </div>
                         </div>
-                        {% endfor %}
-
-                        <div id="capsule-status-msg" class="w-full"></div>
-
-                        <button type="submit" class="w-full border border-[#0D2A22] dark:border-[#D4AF37] text-[#0D2A22] dark:text-[#D4AF37] py-3 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22] hover:text-white dark:hover:bg-[#D4AF37] dark:hover:text-[#0D2A22] transition-all duration-300 rounded-lg">
-                            Add All to Cart
+                        <button type="submit" class="w-full bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] text-white py-2.5 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22]/90 dark:hover:bg-[#E6C875] transition-all rounded-xl">
+                            Save My Measurements
                         </button>
                     </form>
                 </div>
-                {% endif %}
+            </div>
 
-                <!-- WhatsApp Concierge -->
-                {% if concierge_token %}
-                <div class="pt-4 border-t border-neutral-200 dark:border-gray-800">
-                    <a href="/catalog/concierge/redirect?token={{ concierge_token }}"
-                       class="w-full inline-flex justify-center items-center px-6 py-3.5 border border-[#D4AF37] text-[#0D2A22] dark:text-[#D4AF37] font-mono text-xs uppercase tracking-widest hover:bg-[#D4AF37] hover:text-[#0D2A22] transition-all text-center rounded-lg group">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                        Chat with Us on WhatsApp
-                    </a>
-                    <p class="text-center text-[10px] font-mono text-neutral-400 dark:text-gray-600 mt-2 uppercase tracking-wider">Fast response from our team</p>
+            <!-- Capsule Matrix (Complete the Ensemble) -->
+            {% if product.capsule_look and product.capsule_look['items'] %}
+            <div class="border border-[#D4AF37]/10 dark:border-gray-800 bg-white dark:bg-[#18181B] rounded-xl p-5 space-y-4">
+                <div class="border-b border-[#D4AF37]/10 dark:border-gray-800 pb-3">
+                    <h3 class="font-mono text-xs uppercase tracking-widest text-[#0D2A22] dark:text-gray-200 font-semibold">Complete the Look</h3>
+                    <p class="text-[11px] text-[#1A1A1A]/40 dark:text-gray-500 font-light mt-0.5">Pieces that pair well with this item.</p>
                 </div>
-                {% endif %}
 
-            </div>
-        </div>
+                <form hx-post="/catalog/cart/capsule" hx-target="#capsule-status-msg" class="space-y-3">
+                    {% for item in product.capsule_look['items'] %}
+                    <div class="relative flex items-center justify-between p-3 border border-[#D4AF37]/10 dark:border-gray-800 hover:border-[#D4AF37]/40 transition-all bg-[#FBF9F6] dark:bg-[#111] rounded-xl">
+                        <div class="flex items-center space-x-3">
+                            {% if item.image_url is defined %}
+                            <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-12 h-16 object-cover bg-[#FBF9F6] dark:bg-gray-800 rounded-lg">
+                            {% else %}
+                            <div class="w-12 h-16 bg-[#FBF9F6] dark:bg-gray-800 flex items-center justify-center rounded-lg">
+                                <span class="font-serif text-lg text-[#0D2A22]/20 dark:text-white/10">A</span>
+                            </div>
+                            {% endif %}
+                            <div>
+                                <p class="text-xs font-medium text-[#0D2A22] dark:text-gray-200">{{ item.name }}</p>
+                                <p class="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mt-0.5">{{ item.type if item.type is defined else '' }}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-mono text-xs text-[#1A1A1A]/60 dark:text-gray-400">&#8358;{{ "{:,}".format(item.price | int) }}</span>
+                            <input type="checkbox" name="variant_ids" value="{{ item.default_variant_id }}" checked
+                                   class="h-4 w-4 rounded accent-[#0D2A22] cursor-pointer border-[#D4AF37]/30 focus:ring-0">
+                        </div>
+                    </div>
+                    {% endfor %}
 
-        <!-- Reviews Section -->
-        <div class="mt-16 max-w-3xl mx-auto">
-            <h2 class="font-mono text-xs uppercase tracking-widest text-[#0D2A22]/40 dark:text-gray-500 mb-6">Customer Reviews</h2>
+                    <div id="capsule-status-msg" class="w-full"></div>
 
-            <!-- Reviews List (HTMX) -->
-            <div id="reviews-list"
-                 hx-get="/product/{{ product.id }}/reviews"
-                 hx-trigger="load"
-                 hx-swap="innerHTML"
-                 class="mb-8">
-                <div class="text-center py-8 text-sm text-[#0D2A22]/40">Loading reviews...</div>
-            </div>
-
-            <!-- Review Form -->
-            <div class="bg-white dark:bg-[#18181B] border border-[#0D2A22]/10 dark:border-gray-800 rounded-xl p-6">
-                <h3 class="font-display text-lg text-[#0D2A22] dark:text-white mb-4">Write a Review</h3>
-                <div id="review-form-status"></div>
-                <form hx-post="/product/{{ product.id }}/review"
-                      hx-target="#review-form-status"
-                      hx-swap="innerHTML"
-                      class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-medium text-[#0D2A22]/60 dark:text-gray-400 mb-1">Rating</label>
-                        <select name="rating" class="w-full border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white">
-                            <option value="5">★★★★★ Excellent</option>
-                            <option value="4">★★★★☆ Very Good</option>
-                            <option value="3">★★★☆☆ Good</option>
-                            <option value="2">★★☆☆☆ Fair</option>
-                            <option value="1">★☆☆☆☆ Poor</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-[#0D2A22]/60 dark:text-gray-400 mb-1">Your Name</label>
-                        <input type="text" name="name" required
-                               class="w-full border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
-                               placeholder="Your name">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-[#0D2A22]/60 dark:text-gray-400 mb-1">Email (optional, for verification)</label>
-                        <input type="email" name="email"
-                               class="w-full border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
-                               placeholder="you@example.com">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-[#0D2A22]/60 dark:text-gray-400 mb-1">Review Title</label>
-                        <input type="text" name="title" maxlength="120"
-                               class="w-full border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
-                               placeholder="Sum it up in a few words">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-[#0D2A22]/60 dark:text-gray-400 mb-1">Your Review</label>
-                        <textarea name="body" rows="4" maxlength="1000"
-                                  class="w-full border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg px-3 py-2 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white resize-none"
-                                  placeholder="Tell others what you think about this piece..."></textarea>
-                    </div>
-                    <button type="submit"
-                            class="bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">
-                        Submit Review
+                    <button type="submit" class="w-full border border-[#0D2A22] dark:border-[#D4AF37] text-[#0D2A22] dark:text-[#D4AF37] py-3 font-mono text-xs uppercase tracking-widest hover:bg-[#0D2A22] hover:text-white dark:hover:bg-[#D4AF37] dark:hover:text-[#0D2A22] transition-all duration-300 rounded-xl">
+                        Add All to Cart
                     </button>
                 </form>
             </div>
+            {% endif %}
+
+            <!-- WhatsApp Concierge -->
+            {% if concierge_token %}
+            <div class="pt-4 border-t border-[#D4AF37]/10 dark:border-gray-800">
+                <a href="/catalog/concierge/redirect?token={{ concierge_token }}"
+                   class="w-full inline-flex justify-center items-center px-6 py-3.5 border border-[#D4AF37] text-[#0D2A22] dark:text-[#D4AF37] font-mono text-xs uppercase tracking-widest hover:bg-[#D4AF37] hover:text-[#0D2A22] transition-all text-center rounded-xl group">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                    Chat with Us on WhatsApp
+                </a>
+                <p class="text-center text-[10px] font-mono text-[#1A1A1A]/40 dark:text-gray-600 mt-2 uppercase tracking-wider">Fast response from our team</p>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <div class="mt-16 max-w-3xl mx-auto">
+        <h2 class="font-mono text-xs uppercase tracking-widest text-[#D4AF37] mb-6">Customer Reviews</h2>
+
+        <!-- Reviews List (HTMX) -->
+        <div id="reviews-list"
+             hx-get="/product/{{ product.id }}/reviews"
+             hx-trigger="load"
+             hx-swap="innerHTML"
+             class="mb-8">
+            <div class="text-center py-8 text-sm text-[#1A1A1A]/40 dark:text-gray-500">Loading reviews...</div>
         </div>
 
+        <!-- Review Form -->
+        <div class="bg-white dark:bg-[#18181B] border border-[#D4AF37]/10 dark:border-gray-800 rounded-xl p-6">
+            <h3 class="font-display text-lg text-[#0D2A22] dark:text-white mb-4">Write a Review</h3>
+            <div id="review-form-status"></div>
+            <form hx-post="/product/{{ product.id }}/review"
+                  hx-target="#review-form-status"
+                  hx-swap="innerHTML"
+                  class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Rating</label>
+                    <select name="rating" class="w-full border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white">
+                        <option value="5">&#9733;&#9733;&#9733;&#9733;&#9733; Excellent</option>
+                        <option value="4">&#9733;&#9733;&#9733;&#9733;&#9734; Very Good</option>
+                        <option value="3">&#9733;&#9733;&#9733;&#9734;&#9734; Good</option>
+                        <option value="2">&#9733;&#9733;&#9734;&#9734;&#9734; Fair</option>
+                        <option value="1">&#9733;&#9734;&#9734;&#9734;&#9734; Poor</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Your Name</label>
+                    <input type="text" name="name" required
+                           class="w-full border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
+                           placeholder="Your name">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Email (optional, for verification)</label>
+                    <input type="email" name="email"
+                           class="w-full border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
+                           placeholder="you@email.com">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Review Title</label>
+                    <input type="text" name="title" maxlength="120"
+                           class="w-full border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white"
+                           placeholder="Sum it up in a few words">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-[#1A1A1A]/60 dark:text-gray-400 mb-1">Your Review</label>
+                    <textarea name="body" rows="4" maxlength="1000"
+                              class="w-full border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl px-3 py-2.5 text-sm bg-[#FBF9F6] dark:bg-[#111] dark:text-white resize-none"
+                              placeholder="Tell others what you think about this piece..."></textarea>
+                </div>
+                <button type="submit"
+                        class="bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] text-white px-6 py-2.5 rounded-xl text-sm font-medium hover:opacity-90 transition-opacity">
+                    Submit Review
+                </button>
+            </form>
+        </div>
     </div>
+
 </main>
 {% endblock %}

@@ -1,5 +1,5 @@
 # ASIKO Boutique - Settlement Engine & Background Workers
-# Paystack HMAC verification | 36-state shipping matrix | Reservation expiry | Brevo dispatch
+# OPay HMAC verification | 36-state shipping matrix | Reservation expiry | Brevo dispatch
 
 import os
 import hmac
@@ -11,6 +11,11 @@ import httpx
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
+
+from app.services.opay_service import (
+    verify_opay_webhook_signature,
+    initialize_opay_payment,
+)
 
 logger = logging.getLogger("asiko.settlement")
 
@@ -37,12 +42,10 @@ SHIPPING_MATRIX = {
     "EBONYI": 3000,
     # South-West — ₦2,000–₦2,500
     "OGUN": 2000,
-    "OGUN": 2000,
     "ONDO": 2500,
     "OSUN": 2500,
     "EKITI": 2500,
     "OYO": 2500,
-    "OSUN": 2500,
     # North-Central — ₦3,000
     "KOGI": 3000,
     "KWARA": 3000,
@@ -156,40 +159,30 @@ async def dispatch_luxury_alert_email(
 
 
 # ---------------------------------------------------------------------------
-# Paystack Webhook Handler (HMAC-SHA512)
+# OPay Webhook Handler (HMAC-SHA512)
 # ---------------------------------------------------------------------------
 
-async def paystack_webhook_handler(request: Request) -> Response:
+async def opay_webhook_handler(request: Request) -> Response:
     """
-    Processes incoming secure webhooks from Paystack.
-    HMAC-SHA512 verification → reservation state transitions → async email dispatch.
+    Processes incoming secure webhooks from OPay.
+    HMAC-SHA512 verification → order status update → email dispatch.
     """
-    paystack_secret = os.getenv("PAYSTACK_SECRET_KEY", "")
-    signature = request.headers.get("x-paystack-signature")
+    raw_body = await request.body()
+    signature = request.headers.get("x-opay-signature", "")
 
     if not signature:
         return JSONResponse(
-            {"status": "error", "message": "Missing Security Header"},
+            {"status": "error", "message": "Missing signature header"},
             status_code=401,
         )
 
-    raw_body = await request.body()
-
-    # Compute cryptographic trace to protect against packet tampering
-    computed_hmac = hmac.new(
-        paystack_secret.encode("utf-8"),
-        raw_body,
-        hashlib.sha512,
-    ).hexdigest()
-
-    if not hmac.compare_digest(computed_hmac, signature):
-        logger.warning("[PAYMENTS] HMAC verification failed")
+    if not verify_opay_webhook_signature(raw_body, signature):
+        logger.warning("[OPAY] HMAC verification failed")
         return JSONResponse(
-            {"status": "error", "message": "Signature Verification Failed"},
+            {"status": "error", "message": "Invalid signature"},
             status_code=401,
         )
 
-    # Ingest verification payload parameters safely
     try:
         payload = await request.json()
     except Exception:
@@ -198,107 +191,99 @@ async def paystack_webhook_handler(request: Request) -> Response:
             status_code=400,
         )
 
-    event = payload.get("event")
+    status = payload.get("status", "").upper()
+    reference = payload.get("reference", "")
 
-    if event == "charge.success":
-        data = payload.get("data", {})
-        metadata = data.get("metadata", {})
-        session_key = metadata.get("session_key", "ANONYMOUS_SESSION")
-        delivery_state = metadata.get("state", "LAGOS").upper().strip()
-        customer_email = data.get("customer", {}).get("email", "")
+    if not reference:
+        return JSONResponse(
+            {"status": "error", "message": "Missing reference"},
+            status_code=400,
+        )
 
-        # Calculate transaction shipping rate based on regional matrix
-        shipping_cost = calculate_shipping(delivery_state)
-        logger.info("[PAYMENTS] Shipping to %s: N%d", delivery_state, shipping_cost)
+    # Extract order_id from reference (format: asiko_{order_id})
+    order_id = reference.replace("asiko_", "", 1)
 
-        # Update persistent reservation ledger via active db_pool
-        pool = request.app.state.db_pool
+    pool = request.app.state.db_pool
+
+    if status == "SUCCESS":
         async with pool.acquire() as conn:
-            async with conn.transaction():
-                await conn.execute(
-                    """
-                    UPDATE product_reservations
-                    SET status = 'paid'
-                    WHERE session_identifier = $1 AND status = 'staged';
-                    """,
-                    session_key,
-                )
-
-        # Fire email dispatch as non-blocking async task
-        if customer_email:
-            email_content = (
-                f"Your luxury order has been confirmed. "
-                f"Shipping to {delivery_state} is now processing."
+            # Update order status to 'paid'
+            await conn.execute(
+                "UPDATE orders SET status = 'paid' WHERE id::text = $1 AND status = 'pending'",
+                order_id,
             )
+            # Update product reservations
+            await conn.execute(
+                """
+                UPDATE product_reservations
+                SET status = 'paid'
+                WHERE order_id::text = $1 AND status = 'staged'
+                """,
+                order_id,
+            )
+
+        logger.info("[OPAY] Payment confirmed: order=%s ref=%s", order_id, reference)
+
+        # Send confirmation email
+        order_row = None
+        async with pool.acquire() as conn:
+            order_row = await conn.fetchrow(
+                "SELECT customer_email, total_amount FROM orders WHERE id::text = $1",
+                order_id,
+            )
+
+        if order_row and order_row["customer_email"]:
             asyncio.create_task(
                 dispatch_luxury_alert_email(
-                    customer_email,
-                    "ASIKO Boutique — Order Confirmed",
-                    email_content,
+                    order_row["customer_email"],
+                    "ASIKO Boutique — Payment Confirmed",
+                    f"Your order #{order_id[:8]} has been confirmed. "
+                    f"Amount: ₦{order_row['total_amount']:,.0f}. "
+                    f"We'll notify you when it ships.",
                 )
             )
 
-        logger.info("[PAYMENTS] Processed charge.success for session %s", session_key)
+    elif status in ("FAIL", "CLOSED"):
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE orders SET status = 'cancelled' WHERE id::text = $1 AND status = 'pending'",
+                order_id,
+            )
+        logger.info("[OPAY] Payment failed: order=%s ref=%s", order_id, reference)
 
-    return JSONResponse({"status": "success", "message": "Webhook Verified & Processed"})
+    return JSONResponse({"status": "success", "message": "Webhook processed"})
 
 
 # ---------------------------------------------------------------------------
-# Paystack Transaction Initialization
+# OPay Transaction Initialization (wrapper for checkout.py)
 # ---------------------------------------------------------------------------
 
-async def initialize_paystack_transaction(
+async def initialize_payment(
     email: str,
     amount_kobo: int,
     order_id: str,
+    customer_name: str = "",
     metadata: dict = None,
 ) -> dict:
     """
-    Initialize a Paystack transaction and return the authorization URL.
+    Initialize OPay payment. Called by checkout.py.
     Returns {"authorization_url": "...", "reference": "..."} on success.
     Returns {"error": "..."} on failure.
     """
-    paystack_secret = os.getenv("PAYSTACK_SECRET_KEY", "")
-    if not paystack_secret or paystack_secret.startswith("your_"):
-        return {"error": "Paystack secret key not configured"}
+    result = await initialize_opay_payment(
+        order_id=order_id,
+        amount_kobo=amount_kobo,
+        email=email,
+        customer_name=customer_name,
+    )
 
-    payload = {
-        "email": email,
-        "amount": amount_kobo,  # Paystack expects amount in kobo (₦1 = 100 kobo)
-        "reference": f"asiko_{order_id}",
-        "callback_url": os.getenv("PAYSTACK_CALLBACK_URL", "https://asikoboutique.com/checkout/confirmation"),
-        "metadata": metadata or {},
+    if "error" in result:
+        return {"error": result["error"]}
+
+    return {
+        "authorization_url": result.get("payment_url", ""),
+        "reference": result.get("reference", ""),
     }
-
-    headers = {
-        "Authorization": f"Bearer {paystack_secret}",
-        "Content-Type": "application/json",
-    }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.paystack.co/transaction/initialize",
-                json=payload,
-                headers=headers,
-                timeout=15.0,
-            )
-
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status"):
-                    return {
-                        "authorization_url": data["data"]["authorization_url"],
-                        "reference": data["data"]["reference"],
-                    }
-                return {"error": data.get("message", "Unknown Paystack error")}
-            else:
-                logger.error("[PAYSTACK] Initialization failed: %s %s", response.status_code, response.text[:200])
-                return {"error": f"Paystack API error: {response.status_code}"}
-
-    except Exception as e:
-        logger.error("[PAYSTACK] Initialization exception: %s", e)
-        return {"error": f"Payment initialization failed: {str(e)}"}
 
 
 # ---------------------------------------------------------------------------
@@ -306,5 +291,5 @@ async def initialize_paystack_transaction(
 # ---------------------------------------------------------------------------
 
 routes = [
-    Route("/payments/webhook", endpoint=paystack_webhook_handler, methods=["POST"]),
+    Route("/webhooks/opay", endpoint=opay_webhook_handler, methods=["POST"]),
 ]

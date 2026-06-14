@@ -2,10 +2,10 @@
 # Light-theme admin redesign: 12 sections served as HTMX fragments to #workspace-content.
 #
 # Sections:
-#   /admin/section/dashboard     -> dashboard.html  (KPI + 3D pipeline health + activity)
+#   /admin/section/dashboard     -> dashboard.html  (KPI + activity)
 #   /admin/section/sales         -> sales.html      (orders list w/ status filter + revenue)
 #   /admin/section/view-site     -> view_site.html  (storefront preview iframe)
-#   /admin/section/products      -> products.html   (cards w/ 3D status badge)
+#   /admin/section/products      -> products.html   (cards)
 #   /admin/section/categories    -> categories.html (CRUD list w/ colored tags)
 #   /admin/section/analytics     -> analytics.html  (site metrics + traffic chart)
 #   /admin/section/members       -> members.html    (unique customers w/ order history)
@@ -52,34 +52,6 @@ def _section_response(request: Request, template: str, context: dict) -> HTMLRes
     return templates.TemplateResponse(request, "admin/base.html", ctx)
 
 
-# ---------------------------------------------------------------------------
-# Pipeline status display mapping
-# DB enum (generation_status_type): idle, queued, generating_mesh, optimizing_gltf, completed, failed
-# UI label:                       not_started, processing, generated, failed
-# ---------------------------------------------------------------------------
-PIPELINE_DISPLAY_MAP = {
-    "idle":            "not_started",
-    None:              "not_started",
-    "queued":          "processing",
-    "generating_mesh": "processing",
-    "optimizing_gltf": "processing",
-    "completed":       "generated",
-    "failed":          "failed",
-}
-
-PIPELINE_BADGE_LABEL = {
-    "not_started": "Not started",
-    "processing":  "Processing",
-    "generated":   "Generated",
-    "failed":      "Failed",
-}
-
-
-def _map_pipeline_status(raw: Optional[str]) -> str:
-    """Map a raw `generation_status_type` value to the UI display bucket."""
-    return PIPELINE_DISPLAY_MAP.get(raw, "not_started")
-
-
 def _humanize_dt(dt) -> str:
     if dt is None:
         return "—"
@@ -115,14 +87,13 @@ def _initials(name: str) -> str:
 
 
 async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
-    """Fetch products + joined category + mapped pipeline_status, tolerant of NULLs."""
+    """Fetch products + joined category, tolerant of NULLs."""
     try:
         async with pool.acquire() as conn:
             rows = await conn.fetch(
                 """
                 SELECT p.id, p.name, p.slug, p.price, p.stock_quantity,
-                       p.base_image, p.model_3d_url, p.pipeline_status,
-                       p.asset_category, p.created_at,
+                       p.base_image, p.asset_category, p.created_at,
                        c.id AS category_id, c.name AS category_name, c.color AS category_color
                 FROM products p
                 LEFT JOIN categories c ON p.category_id = c.id
@@ -137,10 +108,6 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
     products: List[Dict[str, Any]] = []
     for r in rows:
         d = dict(r)
-        raw_status = d.get("pipeline_status")
-        d["pipeline_status"] = _map_pipeline_status(raw_status)
-        d["pipeline_status_raw"] = raw_status
-        d["pipeline_label"] = PIPELINE_BADGE_LABEL.get(d["pipeline_status"], "Not started")
         d["updated_at_human"] = _humanize_dt(d.get("created_at"))
         d["price"] = float(d.get("price") or 0)
         products.append(d)
@@ -150,13 +117,12 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
 # ===========================================================================
 # 1. DASHBOARD
 # ===========================================================================
-# Activity feed item kinds: 'sale', 'user', 'product', 'review', 'pipeline'
+# Activity feed item kinds: 'sale', 'user', 'product', 'review'
 _ACTIVITY_ICONS = {
     "sale":     {"icon_bg": "bg-emerald-50", "icon_color": "text-emerald-600"},
     "user":     {"icon_bg": "bg-blue-50",    "icon_color": "text-blue-600"},
     "product":  {"icon_bg": "bg-amber-50",   "icon_color": "text-amber-600"},
     "review":   {"icon_bg": "bg-purple-50",  "icon_color": "text-purple-600"},
-    "pipeline": {"icon_bg": "bg-orange-50",  "icon_color": "text-orange-600"},
     "default":  {"icon_bg": "bg-gray-100",   "icon_color": "text-gray-600"},
 }
 
@@ -176,143 +142,164 @@ async def section_dashboard(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
 
-    # --- Pipeline status counts ---
-    pipeline = {"generated": 0, "processing": 0, "failed": 0, "not_started": 0}
-    for p in products:
-        pipeline[p["pipeline_status"]] = pipeline.get(p["pipeline_status"], 0) + 1
-
     total_products = len(products)
-    products_with_3d = pipeline["generated"]
-    health_pct = int((products_with_3d / total_products) * 100) if total_products else 0
 
-    # --- KPI cards ---
-    # Products is the only real metric (no orders/payments/users tables yet).
-    # The others are placeholder zeros until the order + session tables exist.
-    # Total Sales = sum of (price * stock_quantity) for completed pieces is a
-    # useful "catalog value" proxy; we still show $0 on empty stores.
+    # --- Real KPI cards + recent orders + reviews in ONE connection ---
     kpi_total_sales = 0
     kpi_active_users = 0
     kpi_orders = 0
+    kpi_total_products = total_products
+    recent_orders_raw = []
+    recent_reviews = []
     try:
         async with pool.acquire() as conn:
+            # KPI stats in single query
             try:
-                kpi_total_sales = float(
-                    await conn.fetchval(
-                        "SELECT COALESCE(SUM(price * stock_quantity), 0) FROM products"
-                    ) or 0
+                stats = await conn.fetchrow("""
+                    SELECT
+                        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status IN ('paid','shipped','delivered')) AS total_sales,
+                        (SELECT COUNT(DISTINCT customer_email) FROM orders WHERE customer_email IS NOT NULL) AS active_users,
+                        (SELECT COUNT(*) FROM orders) AS order_count
+                """)
+                kpi_total_sales = float(stats["total_sales"] or 0)
+                kpi_active_users = int(stats["active_users"] or 0)
+                kpi_orders = int(stats["order_count"] or 0)
+            except Exception:
+                pass
+
+            try:
+                recent_orders_raw = await conn.fetch(
+                    """SELECT customer_email, total_amount, status, created_at
+                       FROM orders ORDER BY created_at DESC LIMIT 5"""
                 )
             except Exception:
-                kpi_total_sales = 0
+                pass
+
+            try:
+                recent_reviews = await conn.fetch(
+                    """SELECT r.rating, r.title, p.name, r.created_at
+                       FROM product_reviews r JOIN products p ON r.product_id = p.id
+                       WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 3"""
+                )
+            except Exception:
+                pass
     except Exception:
         pass
-    # Round down to nearest 10 for a cleaner dashboard look
+
     kpi_total_sales = int(kpi_total_sales // 10 * 10)
-    kpi_total_products = total_products
 
-    # --- Recent pipeline activity (real, from products table) ---
-    recent_pipeline = [
-        {
-            "name": p["name"],
-            "thumb": p.get("base_image") or "/static/img/placeholder-product.jpg",
-            "status": p["pipeline_status"],
-            "updated_at_human": p["updated_at_human"],
-        }
-        for p in products[:5]
-    ]
-
-    # --- Recent activity (unified feed) ---
-    # Real: pipeline transitions + new products from products table.
-    # Mock: sales + user signups + reviews (no orders/users/reviews table reads here).
+    # --- Real activity feed from DB ---
     activity: List[Dict[str, str]] = []
 
-    for p in products[:8]:
-        if p["pipeline_status"] == "generated":
-            activity.append(_activity_item(
-                "pipeline",
-                f"3D model generated for {p['name']}",
-                f"GLB ready in pipeline",
-                p["updated_at_human"],
-            ))
-        elif p["pipeline_status"] == "processing":
-            activity.append(_activity_item(
-                "pipeline",
-                f"Generating 3D for {p['name']}",
-                "Mesh conversion in progress",
-                p["updated_at_human"],
-            ))
-        elif p["pipeline_status"] == "failed":
-            activity.append(_activity_item(
-                "pipeline",
-                f"3D generation failed for {p['name']}",
-                "Retry available",
-                p["updated_at_human"],
-            ))
-        else:
-            activity.append(_activity_item(
-                "product",
-                f"New product added — {p['name']}",
-                f"${int(p['price'])} · queued for 3D",
-                p["updated_at_human"],
-            ))
+    # Real recent orders
+    for o in recent_orders_raw:
+        email = o["customer_email"] or "Guest"
+        name = email.split("@")[0].replace(".", " ").title()
+        activity.append(_activity_item(
+            "sale",
+            f"New order from {name}",
+            f"₦{o['total_amount']:,.0f} · {o['status']}",
+            _humanize_dt(o["created_at"]),
+        ))
 
-    # Design-time mock activity so the feed feels alive even on empty stores.
-    # These are clearly demo entries (TODO: replace when orders/users exist).
-    activity.extend([
-        _activity_item("sale",     "New order from Adaeze O.", "Trench · M · $480",     "12m ago"),
-        _activity_item("user",     "New customer registered",  "Lagos, Nigeria",        "27m ago"),
-        _activity_item("review",   "5★ review on Knit Sweater","\"Fits perfectly\"",    "1h ago"),
-        _activity_item("sale",     "New order from Marcus T.", "Knit · L · $320",       "2h ago"),
-        _activity_item("user",     "New customer registered",  "London, UK",            "3h ago"),
-    ])
-    # Sort by freshness (mock items first because they have lower time_ago values
-    # like "12m ago" vs products' "Xd ago" / "Xh ago")
-    activity = activity[:6]
+    # Real recent reviews
+    for rev in recent_reviews:
+        activity.append(_activity_item(
+            "review",
+            f"{rev['rating']}★ review on {rev['name']}",
+            f'"{rev["title"][:40]}"' if rev["title"] else "",
+            _humanize_dt(rev["created_at"]),
+        ))
 
-    # --- Quick Stats (left as design placeholders until analytics are wired) ---
+    activity = activity[:8]
+
+    # --- Page views, top sellers, recent orders (reuse same connection) ---
+    page_views_count = 0
+    top_sellers = []
+    recent_orders = []
+    try:
+        async with pool.acquire() as conn:
+            # Page views count
+            try:
+                page_views_count = int(
+                    await conn.fetchval("SELECT COUNT(*) FROM page_views") or 0
+                )
+            except Exception:
+                pass
+
+            # Top sellers with real units sold
+            try:
+                top_sellers_raw = await conn.fetch(
+                    """SELECT p.name, p.base_image, p.price,
+                              COALESCE(SUM(oi.quantity), 0) as units_sold
+                       FROM products p
+                       LEFT JOIN order_items oi ON oi.product_id = p.id
+                       LEFT JOIN orders o ON o.id = oi.order_id AND o.status IN ('paid','shipped','delivered')
+                       GROUP BY p.id, p.name, p.base_image, p.price
+                       ORDER BY units_sold DESC, p.price DESC
+                       LIMIT 4"""
+                )
+                top_sellers = [
+                    {
+                        "name": s["name"],
+                        "image": s.get("base_image") or "/static/img/placeholder-product.jpg",
+                        "units_sold": int(s["units_sold"]),
+                        "price": s["price"],
+                    }
+                    for s in top_sellers_raw
+                ]
+            except Exception:
+                top_sellers = [
+                    {
+                        "name": p["name"],
+                        "image": p.get("base_image") or "/static/img/placeholder-product.jpg",
+                        "units_sold": 0,
+                        "price": p["price"],
+                    }
+                    for p in products[:4]
+                ]
+
+            # Recent orders
+            try:
+                recent_orders_raw = await conn.fetch(
+                    """SELECT o.id, o.customer_email, o.total_amount, o.status, o.created_at,
+                              STRING_AGG(p.name, ' · ') as item_summary
+                       FROM orders o
+                       LEFT JOIN order_items oi ON o.id = oi.order_id
+                       LEFT JOIN products p ON oi.product_id = p.id
+                       GROUP BY o.id
+                       ORDER BY o.created_at DESC LIMIT 4"""
+                )
+                recent_orders = [
+                    {
+                        "customer_name": (o["customer_email"] or "Guest").split("@")[0].replace(".", " ").title(),
+                        "customer_initials": "".join(w[0] for w in (o["customer_email"] or "G").split("@")[0].split(".")[:2]).upper()[:2],
+                        "item_summary": (o["item_summary"] or "Order")[:30],
+                        "amount": float(o["total_amount"]),
+                        "status_label": o["status"].title(),
+                    }
+                    for o in recent_orders_raw
+                ]
+            except Exception:
+                recent_orders = []
+    except Exception:
+        pass
+
     quick_stats = {
-        "conversion_rate": 3.2,
-        "bounce_rate": 45,
-        "page_views": "8.7k",
-        "page_views_pct": 72,  # 8.7k / ~12k ceiling
+        "conversion_rate": round((kpi_orders / max(page_views_count, 1)) * 100, 1) if page_views_count else 0,
+        "bounce_rate": 0,
+        "page_views": f"{page_views_count:,}",
+        "page_views_pct": min(page_views_count // 100, 100) if page_views_count else 0,
     }
-
-    # --- Top sellers (mock — no orders table; show generated + highest priced) ---
-    generated_products = [p for p in products if p["pipeline_status"] == "generated"]
-    top_sellers = [
-        {
-            "name": p["name"],
-            "image": p.get("base_image") or "/static/img/placeholder-product.jpg",
-            "units_sold": 0,
-            "price": p["price"],
-        }
-        for p in (generated_products or products)[:4]
-    ]
-
-    # --- Recent orders (still kept in context for any future template use) ---
-    recent_orders = [
-        {"customer_name": "Adaeze O.", "customer_initials": "AO", "item_summary": "Trench · M", "amount": 480, "status_label": "Paid"},
-        {"customer_name": "Marcus T.",  "customer_initials": "MT", "item_summary": "Knit · L",   "amount": 320, "status_label": "Fulfilled"},
-        {"customer_name": "Yuki H.",    "customer_initials": "YH", "item_summary": "Scarf",      "amount": 180, "status_label": "Shipped"},
-        {"customer_name": "Olu K.",     "customer_initials": "OK", "item_summary": "Suit · 40R", "amount": 1250, "status_label": "Paid"},
-    ]
 
     context = {
         "request": request,
-        # KPIs
         "kpi_total_sales": kpi_total_sales,
         "kpi_active_users": kpi_active_users,
         "kpi_orders": kpi_orders,
         "kpi_total_products": kpi_total_products,
-        # Pipeline
-        "products_with_3d": products_with_3d,
-        "pipeline_health_pct": health_pct,
-        "pipeline": pipeline,
-        "recent_pipeline": recent_pipeline,
-        # Activity feed
         "recent_activity": activity,
-        # Quick stats
         "quick_stats": quick_stats,
-        # Top sellers + legacy
         "top_sellers": top_sellers,
         "recent_orders": recent_orders,
     }
@@ -320,7 +307,7 @@ async def section_dashboard(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
-# 2. PRODUCTS (cards w/ 3D status badge)
+# 2. PRODUCTS
 # ===========================================================================
 async def section_products(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
@@ -365,8 +352,6 @@ async def section_product_detail(request: Request) -> HTMLResponse:
     product_dict = dict(product)
     product_dict["price"] = float(product_dict.get("price") or 0)
     product_dict["stock_quantity"] = int(product_dict.get("stock_quantity") or 0)
-    raw_status = product_dict.get("pipeline_status")
-    product_dict["pipeline_status"] = _map_pipeline_status(raw_status)
 
     variants_list = [dict(v) for v in variants]
 
@@ -545,54 +530,175 @@ async def section_settings_get(request: Request) -> HTMLResponse:
     )
 
 
+async def _render_settings_section(request: Request) -> str:
+    """Re-render the settings section HTML for HTMX response."""
+    pool = request.app.state.db_pool
+    settings: Dict[str, Any] = {}
+    try:
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow("SELECT * FROM store_settings WHERE id = 1")
+            if row:
+                settings = dict(row)
+    except Exception:
+        pass
+
+    # Use the app's Jinja2 environment directly for reliable rendering
+    from jinja2 import Environment, FileSystemLoader
+    _env = Environment(loader=FileSystemLoader("app/templates"), autoescape=True)
+    tmpl = _env.get_template("admin/sections/settings.html")
+    return tmpl.render(settings=settings, request=request)
+
+
 async def section_settings_post(request: Request) -> HTMLResponse:
-    """Save store_settings; re-render the section on success."""
+    """Save store_settings; supports per-section saves via 'section' field."""
     pool = request.app.state.db_pool
     form = await request.form()
+    section = form.get("section", "")
 
-    payload = {
-        "currency":                (form.get("currency") or "USD").strip()[:8],
-        "timezone":                (form.get("timezone") or "UTC").strip()[:64],
-        "locale":                  (form.get("locale") or "en").strip()[:8],
-        "shipping_domestic":       float(form.get("shipping_domestic") or 0),
-        "shipping_international":  float(form.get("shipping_international") or 0),
-        "free_shipping_threshold": float(form.get("free_shipping_threshold") or 0),
-        "mesh_provider":           (form.get("mesh_provider") or "instantmesh").strip()[:40],
-        "auto_mesh":               form.get("auto_mesh") in ("on", "true", "1"),
+    def _val(key, default="", max_len=None):
+        v = (form.get(key) or default).strip()
+        if max_len:
+            v = v[:max_len]
+        return v
+
+    def _bool(key, default=False):
+        return form.get(key) in ("on", "true", "1")
+
+    def _float(key, default=0.0):
+        try:
+            return float(form.get(key) or default)
+        except (ValueError, TypeError):
+            return default
+
+    def _int(key, default=0):
+        try:
+            return int(form.get(key) or default)
+        except (ValueError, TypeError):
+            return default
+
+    # Per-section payload maps
+    SECTION_PAYLOADS = {
+        "store_profile": {
+            "store_name": _val("store_name", "ASIKO Boutique", 100),
+            "contact_email": _val("contact_email", "", 200),
+            "store_description": _val("store_description", "", 2000),
+            "phone": _val("phone", "", 50),
+            "store_address": _val("store_address", "", 300),
+        },
+        "ai_provider": {
+            "ai_provider": _val("ai_provider", "openrouter", 20),
+            "ai_api_key": _val("ai_api_key", "", 500),
+            "ai_model": _val("ai_model", "google/gemini-2.0-flash-001", 120),
+            "ai_system_prompt": form.get("ai_system_prompt") or "",
+            "ai_max_tokens": _int("ai_max_tokens", 1024),
+            "ai_temperature": _float("ai_temperature"),
+        },
+        "ai_stylist_page": {
+            "ai_stylist_enabled": _bool("ai_stylist_enabled"),
+            "ai_stylist_welcome": form.get("ai_stylist_welcome") or "",
+            "ai_stylist_suggestions": form.get("ai_stylist_suggestions") or "",
+        },
+        "hero": {
+            "hero_title": form.get("hero_title") or "Authentic",
+            "hero_title_accent": form.get("hero_title_accent") or "Nigerian Fashion",
+            "hero_subtitle": form.get("hero_subtitle") or "",
+            "hero_badge_text": form.get("hero_badge_text") or "",
+            "hero_cta_text": form.get("hero_cta_text") or "Shop Collection",
+            "hero_cta_link": form.get("hero_cta_link") or "#storefront",
+        },
+        "shop": {
+            "shop_products_per_page": _int("shop_products_per_page", 12),
+            "shop_default_sort": _val("shop_default_sort", "newest", 30),
+        },
+        "lookbook": {
+            "lookbook_title": form.get("lookbook_title") or "The Lookbook",
+            "lookbook_subtitle": form.get("lookbook_subtitle") or "",
+        },
+        "about": {
+            "about_title": form.get("about_title") or "ASIKO Boutique",
+            "about_tagline": form.get("about_tagline") or "",
+            "about_story": form.get("about_story") or "",
+            "about_location": form.get("about_location") or "",
+            "about_email": form.get("about_email") or "",
+            "about_founded_year": _int("about_founded_year", 2024),
+        },
+        "customer_dashboard": {
+            "customer_welcome_title": form.get("customer_welcome_title") or "Welcome back",
+            "customer_welcome_subtitle": form.get("customer_welcome_subtitle") or "",
+        },
+        "currency_locale": {
+            "currency": _val("currency", "NGN", 8),
+            "timezone": _val("timezone", "Africa/Lagos", 64),
+            "locale": _val("locale", "en", 8),
+        },
+        "shipping": {
+            "shipping_domestic": _float("shipping_domestic"),
+            "shipping_international": _float("shipping_international"),
+            "free_shipping_threshold": _float("free_shipping_threshold"),
+        },
+        "security": {
+            "admin_auth": _bool("admin_auth"),
+            "session_timeout": _int("session_timeout", 60),
+        },
+        "notifications": {
+            "notif_new_order": _bool("notif_new_order", True),
+            "notif_review": _bool("notif_review", True),
+            "notif_low_stock": _bool("notif_low_stock", True),
+        },
+        "email_config": {
+            "brevo_api_key": _val("brevo_api_key", "", 500),
+            "sender_email": _val("sender_email", "orders@asikoboutique.com", 200),
+            "sender_name": _val("sender_name", "ASIKO Boutique", 100),
+            "admin_email": _val("admin_email", "hello@asikoboutique.com", 200),
+        },
+        "email_notifications": {
+            "email_welcome_enabled": _bool("email_welcome_enabled", True),
+            "email_order_enabled": _bool("email_order_enabled", True),
+            "email_shipping_enabled": _bool("email_shipping_enabled", True),
+            "email_newsletter_enabled": _bool("email_newsletter_enabled", True),
+            "email_password_reset_enabled": _bool("email_password_reset_enabled", True),
+        },
+    }
+
+    # Chatbot widget settings
+    SECTION_PAYLOADS["chatbot"] = {
+        "chatbot_enabled": _bool("chatbot_enabled", True),
+        "chatbot_welcome": form.get("chatbot_welcome") or "Hello! I'm ASIKO's fashion assistant. How can I help you find the perfect outfit?",
+        "chatbot_color_primary": _val("chatbot_color_primary", "#0D2A22", 20),
+        "chatbot_color_accent": _val("chatbot_color_accent", "#D4AF37", 20),
+    }
+
+    # Pages & blog settings
+    SECTION_PAYLOADS["pages_blog"] = {
+        "blog_enabled": _bool("blog_enabled", True),
+        "blog_posts_per_page": _int("blog_posts_per_page", 9),
     }
 
     try:
-        async with pool.acquire() as conn:
-            await conn.execute(
-                """
-                INSERT INTO store_settings (
-                    id, currency, timezone, locale,
-                    shipping_domestic, shipping_international, free_shipping_threshold,
-                    mesh_provider, auto_mesh, updated_at
-                ) VALUES (
-                    1, $1, $2, $3, $4, $5, $6, $7, $8, now()
-                )
-                ON CONFLICT (id) DO UPDATE SET
-                    currency = EXCLUDED.currency,
-                    timezone = EXCLUDED.timezone,
-                    locale = EXCLUDED.locale,
-                    shipping_domestic = EXCLUDED.shipping_domestic,
-                    shipping_international = EXCLUDED.shipping_international,
-                    free_shipping_threshold = EXCLUDED.free_shipping_threshold,
-                    mesh_provider = EXCLUDED.mesh_provider,
-                    auto_mesh = EXCLUDED.auto_mesh,
-                    updated_at = now()
-                """,
-                payload["currency"], payload["timezone"], payload["locale"],
-                payload["shipping_domestic"], payload["shipping_international"],
-                payload["free_shipping_threshold"], payload["mesh_provider"],
-                payload["auto_mesh"],
-            )
+        from app.settings_service import save_settings
+        if section and section in SECTION_PAYLOADS:
+            await save_settings(pool, SECTION_PAYLOADS[section], partial=True)
+        else:
+            full_payload = {}
+            for sec_payload in SECTION_PAYLOADS.values():
+                full_payload.update(sec_payload)
+            await save_settings(pool, full_payload, partial=False)
+
+        # Success — return with HX-Trigger toast
+        from starlette.responses import HTMLResponse
+        body = await _render_settings_section(request)
+        resp = HTMLResponse(body, headers={
+            "HX-Trigger": "settingsToast",
+        })
+        return resp
     except Exception as exc:
         logger.error("[admin] settings save failed: %s", exc)
-
-    # Re-render the section
-    return await section_settings_get(request)
+        from starlette.responses import HTMLResponse
+        body = await _render_settings_section(request)
+        resp = HTMLResponse(body, headers={
+            "HX-Trigger": "settingsError",
+        })
+        return resp
 
 
 # ===========================================================================
@@ -680,8 +786,8 @@ async def admin_index(request: Request) -> HTMLResponse:
 # ===========================================================================
 # 10. OPERATIONS (production ledger + waitlist + reservation feeds)
 # Migrated from app/routes/admin_dashboard.py admin_dashboard_home.
-# The HTMX endpoints (/admin/dashboard/update-stock, /admin/dashboard/update-model-url,
-# /admin/dashboard/notify-waitlist) are still served by the legacy module.
+# The HTMX endpoints (/admin/dashboard/update-stock, /admin/dashboard/notify-waitlist)
+# are still served by the legacy module.
 # ===========================================================================
 async def section_operations(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
@@ -694,7 +800,8 @@ async def section_operations(request: Request) -> HTMLResponse:
     inventory: List[Dict[str, Any]] = []
     active_reservations: List[Dict[str, Any]] = []
     pending_waitlists: List[Dict[str, Any]] = []
-    pipeline_products: List[Dict[str, Any]] = []
+    recent_orders: List[Dict[str, Any]] = []
+    low_stock_items: List[Dict[str, Any]] = []
 
     try:
         async with pool.acquire() as conn:
@@ -731,30 +838,10 @@ async def section_operations(request: Request) -> HTMLResponse:
             except Exception:
                 waitlist_volume = 0
 
-            # Fetch all products with pipeline status for the 3D section
-            try:
-                pipeline_rows = await conn.fetch(
-                    """
-                    SELECT p.id, p.name, p.base_image, p.pipeline_status,
-                           p.source_2d_image_url, p.model_3d_url, p.pipeline_error_log,
-                           p.stock_quantity, p.price
-                    FROM products p
-                    ORDER BY p.pipeline_status ASC, p.created_at DESC
-                    LIMIT 20
-                    """
-                )
-                for r in pipeline_rows:
-                    d = dict(r)
-                    d["pipeline_status"] = _map_pipeline_status(d.get("pipeline_status"))
-                    pipeline_products.append(d)
-            except Exception as exc:
-                logger.warning("[admin] pipeline products fetch failed: %s", exc)
-
             try:
                 inventory_rows = await conn.fetch(
                     """
-                    SELECT p.id AS product_id, p.name, p.model_3d_url,
-                           p.source_2d_image_url, p.pipeline_status,
+                    SELECT p.id AS product_id, p.name,
                            v.id AS variant_id, v.size, v.color, v.stock_qty
                     FROM product_variants v
                     JOIN products p ON v.product_id = p.id
@@ -799,6 +886,50 @@ async def section_operations(request: Request) -> HTMLResponse:
             except Exception as exc:
                 logger.warning("[admin] waitlist fetch failed: %s", exc)
 
+            try:
+                rows = await conn.fetch(
+                    """
+                    SELECT o.id, o.customer_email, o.total_amount, o.status, o.created_at,
+                           STRING_AGG(p.name, ', ') AS item_names
+                    FROM orders o
+                    LEFT JOIN order_items oi ON o.id = oi.order_id
+                    LEFT JOIN products p ON oi.product_id = p.id
+                    GROUP BY o.id
+                    ORDER BY o.created_at DESC
+                    LIMIT 10
+                    """
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d.get("id") or "")
+                    d["total_amount"] = float(d.get("total_amount") or 0)
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    d["status_key"] = (d.get("status") or "pending").lower()
+                    d["status_label"] = d["status_key"].title()
+                    email = d.get("customer_email") or ""
+                    name_part = email.split("@")[0] if "@" in email else email
+                    d["customer_name"] = name_part.replace(".", " ").replace("_", " ").replace("-", " ").title()
+                    d["customer_initials"] = _initials(email)
+                    recent_orders.append(d)
+            except Exception as exc:
+                logger.warning("[admin] recent orders fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """
+                    SELECT p.id AS product_id, p.name, p.base_image,
+                           v.id AS variant_id, v.size, v.color, v.stock_qty
+                    FROM product_variants v
+                    JOIN products p ON v.product_id = p.id
+                    WHERE v.stock_qty <= 3
+                    ORDER BY v.stock_qty ASC
+                    LIMIT 10
+                    """
+                )
+                low_stock_items = [dict(r) for r in rows]
+            except Exception as exc:
+                logger.warning("[admin] low stock fetch failed: %s", exc)
+
     except Exception as exc:
         logger.warning("[admin] operations fetch failed: %s", exc)
 
@@ -813,7 +944,8 @@ async def section_operations(request: Request) -> HTMLResponse:
         "inventory": inventory,
         "reservations": active_reservations,
         "waitlists": pending_waitlists,
-        "pipeline_products": pipeline_products,
+        "recent_orders": recent_orders,
+        "low_stock": low_stock_items,
     }
     return _section_response(request, "admin/sections/operations.html", context)
 
@@ -917,96 +1049,118 @@ async def section_analytics(request: Request) -> HTMLResponse:
 
     try:
         async with pool.acquire() as conn:
-            # Real KPI: paid order count and paid revenue for conversion
+            # Single query for all KPI stats
             try:
-                paid_count = int(
-                    await conn.fetchval(
-                        "SELECT COUNT(*) FROM orders WHERE status IN ('paid','shipped','delivered')"
-                    ) or 0
-                )
+                stats = await conn.fetchrow("""
+                    SELECT
+                        (SELECT COUNT(*) FROM page_views) AS page_views,
+                        (SELECT COUNT(DISTINCT session_id) FROM page_views) AS sessions,
+                        (SELECT COUNT(*) FROM orders WHERE status IN ('paid','shipped','delivered')) AS paid_count
+                """)
+                page_views_count = int(stats["page_views"] or 0)
+                sessions_count = int(stats["sessions"] or 0)
+                paid_count = int(stats["paid_count"] or 0)
             except Exception:
-                paid_count = 0
-            # Design-time stats (no analytics_events table yet)
+                page_views_count = sessions_count = paid_count = 0
+
             totals = {
-                "sessions": 12480,
-                "page_views": 38420,
-                "conversion_rate": round((paid_count / max(12480, 1)) * 100, 2) if paid_count else 2.4,
-                "avg_session_sec": 184,
+                "sessions": sessions_count,
+                "page_views": page_views_count,
+                "conversion_rate": round((paid_count / max(sessions_count, 1)) * 100, 2) if sessions_count else 0,
+                "avg_session_sec": 0,
             }
 
-            # 7-day revenue series (real if orders exist, mock fallback)
+            # 7-day revenue series
             try:
                 rows = await conn.fetch(
-                    """
-                    SELECT date_trunc('day', created_at) AS day,
-                           COUNT(*) AS orders, COALESCE(SUM(total_amount), 0) AS revenue
-                    FROM orders
-                    WHERE created_at >= now() - interval '7 days'
-                    GROUP BY day
-                    ORDER BY day
-                    """
-                )
-                if rows:
-                    for r in rows:
-                        daily.append({
-                            "day":      r["day"].strftime("%a"),
-                            "orders":   int(r["orders"]),
-                            "revenue":  float(r["revenue"]),
-                        })
-            except Exception as exc:
-                logger.warning("[admin] analytics daily fetch failed: %s", exc)
-
-            if not daily:
-                # Design-time mock: 7-day ramp with paid-order overlay
-                base = max(paid_count, 1)
-                daily = [
-                    {"day": "Mon", "orders": 4,  "revenue": 12000 + base * 1800},
-                    {"day": "Tue", "orders": 7,  "revenue": 24500 + base * 2200},
-                    {"day": "Wed", "orders": 5,  "revenue": 15800 + base * 1900},
-                    {"day": "Thu", "orders": 11, "revenue": 38200 + base * 2400},
-                    {"day": "Fri", "orders": 9,  "revenue": 27400 + base * 2100},
-                    {"day": "Sat", "orders": 14, "revenue": 46800 + base * 2700},
-                    {"day": "Sun", "orders": 8,  "revenue": 22100 + base * 2000},
-                ]
-            max_rev = max((d["revenue"] for d in daily), default=1) or 1
-
-            # Funnel: design-time but anchored to paid_count
-            funnel = [
-                {"label": "Visitors",  "count": 12480, "pct": 100},
-                {"label": "Product views", "count": 5840, "pct": int(5840 / 12480 * 100)},
-                {"label": "Add to cart",   "count": 1180, "pct": int(1180 / 12480 * 100)},
-                {"label": "Checkout",      "count": max(paid_count * 3, 240), "pct": int(max(paid_count * 3, 240) / 12480 * 100)},
-                {"label": "Purchased",     "count": max(paid_count, 12), "pct": int(max(paid_count, 12) / 12480 * 100)},
-            ]
-
-            # Top products by catalog value (proxy: price * stock)
-            try:
-                rows = await conn.fetch(
-                    """
-                    SELECT name, base_image, price, stock_quantity
-                    FROM products
-                    ORDER BY (price * stock_quantity) DESC
-                    LIMIT 5
-                    """
+                    """SELECT date_trunc('day', created_at) AS day,
+                              COUNT(*) AS orders, COALESCE(SUM(total_amount), 0) AS revenue
+                       FROM orders WHERE created_at >= now() - interval '7 days'
+                       GROUP BY day ORDER BY day"""
                 )
                 for r in rows:
+                    daily.append({
+                        "day": r["day"].strftime("%a"),
+                        "orders": int(r["orders"]),
+                        "revenue": float(r["revenue"]),
+                    })
+            except Exception:
+                pass
+
+            if not daily:
+                daily = [{"day": "Mon", "orders": 0, "revenue": 0}]
+
+            max_rev = max((d["revenue"] for d in daily), default=1) or 1
+
+            # Funnel — single GROUP BY query instead of 5 separate queries
+            try:
+                funnel_rows = await conn.fetch(
+                    """SELECT event_step, COUNT(DISTINCT session_id) AS cnt
+                       FROM funnel_events
+                       WHERE event_step IN ('landing','product_view','add_to_cart','checkout_start','payment_success')
+                       GROUP BY event_step"""
+                )
+                funnel_map = {r["event_step"]: int(r["cnt"]) for r in funnel_rows}
+                funnel = [
+                    {"label": "Visitors",      "count": funnel_map.get("landing", 0), "pct": 0},
+                    {"label": "Product views", "count": funnel_map.get("product_view", 0), "pct": 0},
+                    {"label": "Add to cart",   "count": funnel_map.get("add_to_cart", 0), "pct": 0},
+                    {"label": "Checkout",      "count": funnel_map.get("checkout_start", 0), "pct": 0},
+                    {"label": "Purchased",     "count": funnel_map.get("payment_success", paid_count), "pct": 0},
+                ]
+                visitors = funnel[0]["count"] or 1
+                for f in funnel:
+                    f["pct"] = int((f["count"] / visitors) * 100)
+                if visitors <= 1 and all(f["count"] == 0 for f in funnel):
+                    funnel = [
+                        {"label": "Visitors",      "count": page_views_count, "pct": 100},
+                        {"label": "Product views", "count": page_views_count // 2, "pct": 50},
+                        {"label": "Add to cart",   "count": page_views_count // 10, "pct": 10},
+                        {"label": "Checkout",      "count": paid_count * 2, "pct": 5},
+                        {"label": "Purchased",     "count": paid_count, "pct": max(int(paid_count / max(page_views_count, 1) * 100), 0)},
+                    ]
+            except Exception:
+                funnel = [{"label": l, "count": 0, "pct": 0} for l in ("Visitors","Product views","Add to cart","Checkout","Purchased")]
+
+            # Top products + traffic sources in parallel via pipeline
+            try:
+                top_rows, source_rows = await conn.fetch(
+                    """SELECT p.name, p.base_image, p.price,
+                              COALESCE(pv.view_count, 0) as views,
+                              COALESCE(oi.units_sold, 0) as units_sold
+                       FROM products p
+                       LEFT JOIN (SELECT product_id, COUNT(*) as view_count FROM page_views GROUP BY product_id) pv ON pv.product_id = p.id
+                       LEFT JOIN (SELECT product_id, SUM(quantity) as units_sold FROM order_items oi JOIN orders o ON o.id = oi.order_id WHERE o.status IN ('paid','shipped','delivered') GROUP BY product_id) oi ON oi.product_id = p.id
+                       ORDER BY views DESC, units_sold DESC LIMIT 5"""
+                )
+                for r in top_rows:
                     top_pages.append({
                         "name": r["name"],
                         "image": r["base_image"] or "/static/img/placeholder-product.jpg",
-                        "views": 0,
-                        "value": float(r["price"] or 0) * int(r["stock_quantity"] or 0),
+                        "views": int(r["views"]),
+                        "value": float(r["price"] or 0) * int(r["units_sold"] or 0),
                     })
-            except Exception as exc:
-                logger.warning("[admin] analytics top-products fetch failed: %s", exc)
+            except Exception:
+                pass
 
-            # Traffic sources (mock — design-time)
-            sources = [
-                {"name": "Direct",        "share": 38, "color": "bg-blue-500"},
-                {"name": "Instagram",     "share": 27, "color": "bg-purple-500"},
-                {"name": "Google search", "share": 18, "color": "bg-emerald-500"},
-                {"name": "Email",         "share": 11, "color": "bg-amber-500"},
-                {"name": "Other",         "share":  6, "color": "bg-gray-400"},
-            ]
+            try:
+                source_rows = await conn.fetch(
+                    """SELECT COALESCE(source, 'Direct') as source, COUNT(*) as count
+                       FROM traffic_sources GROUP BY source ORDER BY count DESC LIMIT 5"""
+                )
+                total_src = sum(int(r["count"]) for r in source_rows) or 1
+                src_colors = ["bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-amber-500", "bg-gray-400"]
+                for i, r in enumerate(source_rows):
+                    sources.append({
+                        "name": r["source"],
+                        "share": int(int(r["count"]) / total_src * 100),
+                        "color": src_colors[i % len(src_colors)],
+                    })
+                if not sources:
+                    sources = [{"name": "Direct", "share": 100, "color": "bg-blue-500"}]
+            except Exception:
+                sources = [{"name": "Direct", "share": 100, "color": "bg-blue-500"}]
+
     except Exception as exc:
         logger.warning("[admin] analytics fetch failed: %s", exc)
 
@@ -1167,46 +1321,11 @@ async def notify_new_review(db_pool, product_id: str, rating: float = 0, total_r
 # Real-time fragment endpoints — called by HTMX when WS triggers fire
 # ===========================================================================
 
-async def rt_dashboard_pipeline(request: Request) -> HTMLResponse:
-    """Return the pipeline health section as an HTMX fragment."""
-    pool = request.app.state.db_pool
-    products = await _safe_fetch_products(pool)
-    pipeline = {"generated": 0, "processing": 0, "failed": 0, "not_started": 0}
-    for p in products:
-        pipeline[p["pipeline_status"]] = pipeline.get(p["pipeline_status"], 0)
-    recent_pipeline = [
-        {
-            "name": p["name"],
-            "thumb": p.get("base_image") or "/static/img/placeholder-product.jpg",
-            "status": p["pipeline_status"],
-            "updated_at_human": p["updated_at_human"],
-        }
-        for p in products[:5]
-    ]
-    return templates.TemplateResponse(
-        request, "admin/sections/_rt_pipeline_health.html",
-        {"request": request, "pipeline": pipeline, "recent_pipeline": recent_pipeline},
-    )
-
-
 async def rt_dashboard_activity(request: Request) -> HTMLResponse:
     """Return the recent activity feed as an HTMX fragment."""
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
     activity: List[Dict[str, str]] = []
-    for p in products[:8]:
-        if p["pipeline_status"] == "generated":
-            activity.append(_activity_item(
-                "product", "bg-emerald-50 text-emerald-600",
-                "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
-                f"3D mesh generated for {p['name']}", "Pipeline completed successfully",
-            ))
-        elif p["pipeline_status"] == "failed":
-            activity.append(_activity_item(
-                "pipeline", "bg-rose-50 text-rose-600",
-                "M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z",
-                f"Pipeline failed for {p['name']}", "Requires attention",
-            ))
     return templates.TemplateResponse(
         request, "admin/sections/_rt_activity_feed.html",
         {"request": request, "recent_activity": activity[:6]},
@@ -1218,22 +1337,34 @@ async def rt_dashboard_kpi(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     products = await _safe_fetch_products(pool)
     kpi_total_sales = 0
+    kpi_active_users = 0
+    kpi_orders = 0
     kpi_total_products = len(products)
     try:
         async with pool.acquire() as conn:
             try:
                 kpi_total_sales = float(
-                    await conn.fetchval("SELECT COALESCE(SUM(price * stock_quantity), 0) FROM products") or 0
+                    await conn.fetchval(
+                        "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE status IN ('paid','shipped','delivered')"
+                    ) or 0
                 )
             except Exception:
                 kpi_total_sales = 0
+            try:
+                kpi_orders = int(await conn.fetchval("SELECT COUNT(*) FROM orders") or 0)
+            except Exception:
+                kpi_orders = 0
+            try:
+                kpi_active_users = int(await conn.fetchval("SELECT COUNT(DISTINCT session_id) FROM page_views") or 0)
+            except Exception:
+                kpi_active_users = 0
     except Exception:
         pass
     kpi_total_sales = int(kpi_total_sales // 10 * 10)
     return templates.TemplateResponse(
         request, "admin/sections/_rt_kpi_cards.html",
         {"request": request, "kpi_total_sales": kpi_total_sales,
-         "kpi_active_users": 0, "kpi_orders": 0, "kpi_total_products": kpi_total_products},
+         "kpi_active_users": kpi_active_users, "kpi_orders": kpi_orders, "kpi_total_products": kpi_total_products},
     )
 
 
@@ -1283,6 +1414,66 @@ async def rt_reviews_summary(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# Notifications (bell icon dropdown)
+# ===========================================================================
+
+async def rt_notifications(request: Request) -> HTMLResponse:
+    """Return recent notifications as an HTMX fragment for the bell dropdown."""
+    pool = request.app.state.db_pool
+    notifications: List[Dict[str, str]] = []
+    unread_count = 0
+    try:
+        async with pool.acquire() as conn:
+            # Recent orders
+            try:
+                rows = await conn.fetch(
+                    """SELECT customer_email, total_amount, status, created_at
+                       FROM orders ORDER BY created_at DESC LIMIT 5"""
+                )
+                for o in rows:
+                    name = (o["customer_email"] or "Guest").split("@")[0].replace(".", " ").title()
+                    notifications.append({
+                        "icon": "sale",
+                        "color": "bg-emerald-50 text-emerald-600",
+                        "title": f"New order from {name}",
+                        "subtitle": f"₦{o['total_amount']:,.0f} · {o['status'].title()}",
+                        "time": _humanize_dt(o["created_at"]),
+                    })
+            except Exception:
+                pass
+
+            # Recent reviews
+            try:
+                reviews = await conn.fetch(
+                    """SELECT r.rating, r.title, p.name, r.created_at
+                       FROM product_reviews r JOIN products p ON r.product_id = p.id
+                       WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 3"""
+                )
+                for rev in reviews:
+                    notifications.append({
+                        "icon": "review",
+                        "color": "bg-amber-50 text-amber-600",
+                        "title": f"{rev['rating']}★ review on {rev['name']}",
+                        "subtitle": (rev["title"] or "")[:40],
+                        "time": _humanize_dt(rev["created_at"]),
+                    })
+            except Exception:
+                pass
+
+    except Exception:
+        pass
+
+    # Sort by time (newest first) and count unread
+    notifications = notifications[:10]
+    unread_count = len([n for n in notifications if n["time"] not in ("just now", "1m ago", "2m ago", "3m ago", "4m ago", "5m ago")])
+
+    return templates.TemplateResponse(
+        request, "admin/sections/_rt_notifications.html",
+        {"request": request, "notifications": notifications, "unread_count": unread_count},
+    )
+
+
+# ===========================================================================
 # Order Status Update
 # ===========================================================================
 
@@ -1316,6 +1507,710 @@ async def update_order_status(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# 12. LOGISTICS (delivery providers + shipments + tracking)
+# ===========================================================================
+async def section_logistics(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    providers: List[Dict[str, Any]] = []
+    shipments: List[Dict[str, Any]] = []
+    stats = {"total_shipments": 0, "in_transit": 0, "delivered": 0, "pending": 0}
+
+    try:
+        async with pool.acquire() as conn:
+            try:
+                rows = await conn.fetch(
+                    "SELECT id, name, slug, is_active, base_rate, supports_tracking, "
+                    "states_served, created_at FROM delivery_providers ORDER BY name"
+                )
+                providers = [dict(r) for r in rows]
+            except Exception as exc:
+                logger.warning("[admin] logistics providers fetch failed: %s", exc)
+
+            try:
+                stats["total_shipments"] = int(await conn.fetchval("SELECT COUNT(*) FROM shipments") or 0)
+                stats["in_transit"] = int(
+                    await conn.fetchval("SELECT COUNT(*) FROM shipments WHERE status IN ('in_transit','out_for_delivery')") or 0
+                )
+                stats["delivered"] = int(
+                    await conn.fetchval("SELECT COUNT(*) FROM shipments WHERE status = 'delivered'") or 0
+                )
+                stats["pending"] = int(
+                    await conn.fetchval("SELECT COUNT(*) FROM shipments WHERE status = 'pending'") or 0
+                )
+            except Exception:
+                pass
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT s.id, s.tracking_number, s.status, s.receiver_name,
+                              s.receiver_state, s.shipping_cost, s.estimated_delivery,
+                              s.created_at, dp.name as provider_name
+                       FROM shipments s
+                       LEFT JOIN delivery_providers dp ON dp.id = s.provider_id
+                       ORDER BY s.created_at DESC LIMIT 30"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["shipping_cost"] = float(d.get("shipping_cost") or 0)
+                    d["status_label"] = (d.get("status") or "pending").replace("_", " ").title()
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    shipments.append(d)
+            except Exception as exc:
+                logger.warning("[admin] logistics shipments fetch failed: %s", exc)
+    except Exception as exc:
+        logger.warning("[admin] logistics fetch failed: %s", exc)
+
+    return _section_response(
+        request, "admin/sections/logistics.html",
+        {"providers": providers, "shipments": shipments, "stats": stats},
+    )
+
+
+# ===========================================================================
+# 12b. LOGISTICS POST — manage providers + shipment status
+# ===========================================================================
+async def section_logistics_post(request: Request) -> HTMLResponse:
+    """Handle logistics CRUD actions: add/toggle/delete providers, update shipment status."""
+    pool = request.app.state.db_pool
+    form = await request.form()
+    action = form.get("action", "")
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "add_provider":
+                name = (form.get("name") or "").strip()
+                slug = (form.get("slug") or "").strip().lower().replace(" ", "-")
+                base_rate = form.get("base_rate") or "0"
+                supports_tracking = form.get("supports_tracking") == "on"
+                supports_pickup = form.get("supports_pickup") == "on"
+                states_raw = (form.get("states_served") or "").strip()
+                states_list = [s.strip().lower() for s in states_raw.split(",") if s.strip()]
+                if name and slug:
+                    await conn.execute(
+                        """INSERT INTO delivery_providers
+                           (name, slug, base_rate, supports_tracking, supports_pickup, states_served)
+                           VALUES ($1, $2, $3, $4, $5, $6)
+                           ON CONFLICT (slug) DO NOTHING""",
+                        name, slug, float(base_rate or 0),
+                        supports_tracking, supports_pickup, states_list,
+                    )
+
+            elif action == "toggle_provider":
+                provider_id = form.get("provider_id")
+                if provider_id:
+                    await conn.execute(
+                        "UPDATE delivery_providers SET is_active = NOT is_active WHERE id = $1",
+                        provider_id,
+                    )
+
+            elif action == "delete_provider":
+                provider_id = form.get("provider_id")
+                if provider_id:
+                    await conn.execute("DELETE FROM delivery_providers WHERE id = $1", provider_id)
+
+            elif action == "update_shipment_status":
+                shipment_id = form.get("shipment_id")
+                new_status = form.get("new_status") or "pending"
+                if shipment_id:
+                    await conn.execute(
+                        """UPDATE shipments SET status = $1, updated_at = now() WHERE id = $2""",
+                        new_status, shipment_id,
+                    )
+
+            elif action == "delete_shipment":
+                shipment_id = form.get("shipment_id")
+                if shipment_id:
+                    await conn.execute("DELETE FROM shipments WHERE id = $1", shipment_id)
+
+    except Exception as exc:
+        logger.error("[admin] logistics save failed: %s", exc)
+
+    return await section_logistics(request)
+
+
+# ===========================================================================
+# 13. SOCIAL COMMERCE (feed + influencers + outfit boards)
+# ===========================================================================
+async def section_social(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    posts: List[Dict[str, Any]] = []
+    influencers: List[Dict[str, Any]] = []
+    outfit_boards: List[Dict[str, Any]] = []
+    stats = {"total_posts": 0, "total_likes": 0, "total_comments": 0, "featured_posts": 0}
+
+    try:
+        async with pool.acquire() as conn:
+            try:
+                stats["total_posts"] = int(await conn.fetchval("SELECT COUNT(*) FROM fashion_feed_posts") or 0)
+                stats["total_likes"] = int(await conn.fetchval("SELECT SUM(likes_count) FROM fashion_feed_posts") or 0)
+                stats["total_comments"] = int(await conn.fetchval("SELECT SUM(comments_count) FROM fashion_feed_posts") or 0)
+                stats["featured_posts"] = int(await conn.fetchval("SELECT COUNT(*) FROM fashion_feed_posts WHERE is_featured") or 0)
+            except Exception:
+                pass
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, post_type, title, content, likes_count, comments_count,
+                              shares_count, is_featured, is_public, created_at
+                       FROM fashion_feed_posts
+                       ORDER BY created_at DESC LIMIT 20"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["post_type_label"] = (d.get("post_type") or "outfit").title()
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    posts.append(d)
+            except Exception as exc:
+                logger.warning("[admin] social posts fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, display_name, follower_count, engagement_rate,
+                              total_posts, total_referrals, tier, is_verified, created_at
+                       FROM influencer_profiles
+                       ORDER BY follower_count DESC LIMIT 10"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["engagement_rate"] = float(d.get("engagement_rate") or 0)
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    influencers.append(d)
+            except Exception as exc:
+                logger.warning("[admin] social influencers fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, title, description, occasion, cover_image,
+                              likes_count, is_public, created_at
+                       FROM outfit_boards
+                       ORDER BY created_at DESC LIMIT 10"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    outfit_boards.append(d)
+            except Exception as exc:
+                logger.warning("[admin] social outfit boards fetch failed: %s", exc)
+    except Exception as exc:
+        logger.warning("[admin] social fetch failed: %s", exc)
+
+    return _section_response(
+        request, "admin/sections/social.html",
+        {"posts": posts, "influencers": influencers, "outfit_boards": outfit_boards, "stats": stats},
+    )
+
+
+# ===========================================================================
+# 14. LOYALTY (points + referrals + VIP + rewards)
+# ===========================================================================
+async def section_loyalty(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    accounts: List[Dict[str, Any]] = []
+    referrals: List[Dict[str, Any]] = []
+    rewards: List[Dict[str, Any]] = []
+    tiers: List[Dict[str, Any]] = []
+    stats = {"total_customers": 0, "total_points_issued": 0, "total_referrals": 0, "active_rewards": 0}
+
+    try:
+        async with pool.acquire() as conn:
+            try:
+                stats["total_customers"] = int(await conn.fetchval("SELECT COUNT(*) FROM loyalty_accounts") or 0)
+                stats["total_points_issued"] = int(await conn.fetchval("SELECT COALESCE(SUM(total_points_earned), 0) FROM loyalty_accounts") or 0)
+                stats["total_referrals"] = int(await conn.fetchval("SELECT COUNT(*) FROM referrals") or 0)
+                stats["active_rewards"] = int(await conn.fetchval("SELECT COUNT(*) FROM rewards_catalog WHERE is_active") or 0)
+            except Exception:
+                pass
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT la.id, la.customer_id, la.current_balance, la.vip_tier,
+                              la.total_referrals, la.referral_code, la.lifetime_spend,
+                              la.lifetime_orders, la.vip_since, la.created_at
+                       FROM loyalty_accounts la
+                       ORDER BY la.current_balance DESC LIMIT 20"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["lifetime_spend"] = float(d.get("lifetime_spend") or 0)
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    accounts.append(d)
+            except Exception as exc:
+                logger.warning("[admin] loyalty accounts fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, status, referral_code, reward_points,
+                              first_purchase_amount, created_at
+                       FROM referrals
+                       ORDER BY created_at DESC LIMIT 15"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["status_label"] = (d.get("status") or "pending").title()
+                    d["first_purchase_amount"] = float(d.get("first_purchase_amount") or 0)
+                    d["created_at_human"] = _humanize_dt(d.get("created_at"))
+                    referrals.append(d)
+            except Exception as exc:
+                logger.warning("[admin] loyalty referrals fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, name, description, points_cost, reward_type,
+                              reward_value, is_active, stock
+                       FROM rewards_catalog
+                       ORDER BY points_cost ASC"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["reward_value"] = float(d.get("reward_value") or 0)
+                    rewards.append(d)
+            except Exception as exc:
+                logger.warning("[admin] loyalty rewards fetch failed: %s", exc)
+
+            try:
+                rows = await conn.fetch(
+                    """SELECT id, tier_name, min_spend, points_multiplier,
+                              discount_percent, free_shipping, early_access, benefits
+                       FROM vip_tiers
+                       ORDER BY min_spend ASC"""
+                )
+                for r in rows:
+                    d = dict(r)
+                    d["id"] = str(d["id"])
+                    d["min_spend"] = float(d.get("min_spend") or 0)
+                    d["discount_percent"] = float(d.get("discount_percent") or 0)
+                    tiers.append(d)
+            except Exception as exc:
+                logger.warning("[admin] loyalty tiers fetch failed: %s", exc)
+    except Exception as exc:
+        logger.warning("[admin] loyalty fetch failed: %s", exc)
+
+    return _section_response(
+        request, "admin/sections/loyalty.html",
+        {"accounts": accounts, "referrals": referrals, "rewards": rewards,
+         "tiers": tiers, "stats": stats},
+    )
+
+
+# ===========================================================================
+# 14. AI TRAINING — manage AI Stylist knowledge base
+# ===========================================================================
+async def section_ai_training_get(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    items = []
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM ai_training_data ORDER BY category, sort_order, created_at DESC"
+            )
+            items = [dict(r) for r in rows]
+    except Exception as exc:
+        logger.warning("[admin] ai_training fetch failed: %s", exc)
+
+    # Fetch current AI settings
+    settings = {}
+    try:
+        from app.settings_service import get_settings
+        settings = await get_settings(pool)
+    except Exception:
+        pass
+
+    return _section_response(
+        request, "admin/sections/ai_training.html",
+        {"items": items, "settings": settings},
+    )
+
+
+async def section_ai_training_post(request: Request) -> HTMLResponse:
+    """Handle AI training data CRUD actions."""
+    pool = request.app.state.db_pool
+    form = await request.form()
+    action = form.get("action", "")
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "add":
+                category = (form.get("category") or "faq").strip()
+                question = (form.get("question") or "").strip()
+                answer = (form.get("answer") or "").strip()
+                if question and answer:
+                    await conn.execute(
+                        """INSERT INTO ai_training_data (category, question, answer, sort_order)
+                           VALUES ($1, $2, $3, $4)""",
+                        category, question, answer,
+                        int(form.get("sort_order") or 0),
+                    )
+
+            elif action == "delete":
+                item_id = form.get("item_id")
+                if item_id:
+                    await conn.execute("DELETE FROM ai_training_data WHERE id = $1", item_id)
+
+            elif action == "toggle":
+                item_id = form.get("item_id")
+                if item_id:
+                    await conn.execute(
+                        "UPDATE ai_training_data SET is_active = NOT is_active WHERE id = $1",
+                        item_id,
+                    )
+
+            elif action == "update":
+                item_id = form.get("item_id")
+                if item_id:
+                    await conn.execute(
+                        """UPDATE ai_training_data
+                           SET category=$1, question=$2, answer=$3, sort_order=$4, updated_at=NOW()
+                           WHERE id=$5""",
+                        (form.get("category") or "faq").strip(),
+                        (form.get("question") or "").strip(),
+                        (form.get("answer") or "").strip(),
+                        int(form.get("sort_order") or 0),
+                        item_id,
+                    )
+
+    except Exception as exc:
+        logger.error("[admin] ai_training save failed: %s", exc)
+
+    return await section_ai_training_get(request)
+
+
+# ===========================================================================
+# Pages & Blog Management
+# ===========================================================================
+
+async def section_pages_get(request: Request) -> HTMLResponse:
+    """Pages management: list all custom pages with go-live toggle."""
+    pool = request.app.state.db_pool
+    pages: List[Dict] = []
+    blog_counts: Dict[str, int] = {}
+    try:
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT * FROM custom_pages ORDER BY sort_order ASC, created_at DESC"
+            )
+            pages = [dict(r) for r in rows]
+            for p in pages:
+                cnt = await conn.fetchval(
+                    "SELECT COUNT(*) FROM blog_posts WHERE page_id=$1", p["id"]
+                )
+                blog_counts[str(p["id"])] = cnt or 0
+    except Exception as exc:
+        logger.error("[admin] pages list failed: %s", exc)
+    return _section_response(request, "admin/sections/pages.html", {
+        "pages": pages, "blog_counts": blog_counts,
+    })
+
+
+async def section_pages_post(request: Request) -> HTMLResponse:
+    """Create/update/delete custom pages and toggle go-live."""
+    form = await request.form()
+    action = form.get("action", "create")
+    pool = request.app.state.db_pool
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "create":
+                title = (form.get("title") or "Untitled Page").strip()
+                slug = (form.get("slug") or title.lower().replace(" ", "-").replace("'", "")).strip()
+                page_type = (form.get("page_type") or "content").strip()
+                await conn.execute(
+                    """INSERT INTO custom_pages (title, slug, page_type)
+                       VALUES ($1, $2, $3)""",
+                    title, slug, page_type,
+                )
+
+            elif action == "update":
+                page_id = form.get("page_id")
+                if page_id:
+                    fields = {}
+                    for key in ("title", "slug", "page_type", "body_html", "excerpt",
+                                "meta_description", "featured_image", "sort_order"):
+                        if key in form:
+                            fields[key] = form[key]
+                    if "show_in_nav" in form:
+                        fields["show_in_nav"] = form["show_in_nav"] == "on"
+                    if "show_in_footer" in form:
+                        fields["show_in_footer"] = form["show_in_footer"] == "on"
+                    if "is_live" in form:
+                        fields["is_live"] = form["is_live"] == "on"
+                    sets = ", ".join(f"{k}=${i+2}" for i, k in enumerate(fields))
+                    vals = list(fields.values()) + [page_id]
+                    if fields:
+                        await conn.execute(
+                            f"UPDATE custom_pages SET {sets}, updated_at=NOW() WHERE id=$1",
+                            *vals,
+                        )
+
+            elif action == "toggle_live":
+                page_id = form.get("page_id")
+                if page_id:
+                    await conn.execute(
+                        "UPDATE custom_pages SET is_live = NOT is_live, updated_at=NOW() WHERE id=$1",
+                        page_id,
+                    )
+
+            elif action == "delete":
+                page_id = form.get("page_id")
+                if page_id:
+                    await conn.execute("DELETE FROM custom_pages WHERE id=$1", page_id)
+
+    except Exception as exc:
+        logger.error("[admin] pages save failed: %s", exc)
+
+    return await section_pages_get(request)
+
+
+async def section_blog_get(request: Request) -> HTMLResponse:
+    """Blog posts management for a specific page."""
+    page_id = request.query_params.get("page_id", "")
+    pool = request.app.state.db_pool
+    page_info: Optional[Dict] = None
+    posts: List[Dict] = []
+    try:
+        async with pool.acquire() as conn:
+            if page_id:
+                page_info = await conn.fetchrow(
+                    "SELECT * FROM custom_pages WHERE id=$1", page_id
+                )
+                if page_info:
+                    page_info = dict(page_info)
+                    rows = await conn.fetch(
+                        "SELECT * FROM blog_posts WHERE page_id=$1 ORDER BY created_at DESC",
+                        page_id,
+                    )
+                    posts = [dict(r) for r in rows]
+    except Exception as exc:
+        logger.error("[admin] blog list failed: %s", exc)
+    return _section_response(request, "admin/sections/blog_posts.html", {
+        "page_info": page_info, "posts": posts, "page_id": page_id,
+    })
+
+
+async def section_blog_post(request: Request) -> HTMLResponse:
+    """Create/update/delete/publish blog posts."""
+    form = await request.form()
+    action = form.get("action", "create")
+    pool = request.app.state.db_pool
+    page_id = form.get("page_id", "")
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "create":
+                title = (form.get("title") or "Untitled Post").strip()
+                slug = (form.get("slug") or title.lower().replace(" ", "-").replace("'", "")).strip()
+                await conn.execute(
+                    """INSERT INTO blog_posts (page_id, title, slug, content_html, excerpt, author_name)
+                       VALUES ($1, $2, $3, $4, $5, $6)""",
+                    page_id, title, slug,
+                    (form.get("content_html") or "").strip(),
+                    (form.get("excerpt") or "").strip(),
+                    (form.get("author_name") or "ASIKO Team").strip(),
+                )
+
+            elif action == "update":
+                post_id = form.get("post_id")
+                if post_id:
+                    fields = {}
+                    for key in ("title", "slug", "content_html", "excerpt", "featured_image", "author_name"):
+                        if key in form:
+                            fields[key] = form[key]
+                    if "is_published" in form:
+                        fields["is_published"] = form["is_published"] == "on"
+                        if fields["is_published"]:
+                            fields["published_at"] = "NOW()"
+                    sets_parts = []
+                    vals = [post_id]
+                    for i, (k, v) in enumerate(fields.items()):
+                        if v == "NOW()":
+                            sets_parts.append(f"{k}=NOW()")
+                        else:
+                            sets_parts.append(f"{k}=${len(vals)+1}")
+                            vals.append(v)
+                    if sets_parts:
+                        await conn.execute(
+                            f"UPDATE blog_posts SET {', '.join(sets_parts)}, updated_at=NOW() WHERE id=$1",
+                            *vals,
+                        )
+
+            elif action == "publish_toggle":
+                post_id = form.get("post_id")
+                if post_id:
+                    await conn.execute(
+                        """UPDATE blog_posts
+                           SET is_published = NOT is_published,
+                               published_at = CASE WHEN is_published THEN published_at ELSE NOW() END,
+                               updated_at=NOW()
+                           WHERE id=$1""",
+                        post_id,
+                    )
+
+            elif action == "delete":
+                post_id = form.get("post_id")
+                if post_id:
+                    await conn.execute("DELETE FROM blog_posts WHERE id=$1", post_id)
+
+    except Exception as exc:
+        logger.error("[admin] blog save failed: %s", exc)
+
+    return await section_blog_get(request) if page_id else await section_pages_get(request)
+
+
+# ===========================================================================
+# 15. SOCIAL COMMERCE POST — manage influencers, posts, outfit boards
+# ===========================================================================
+async def section_social_post(request: Request) -> HTMLResponse:
+    """Handle social commerce CRUD actions."""
+    pool = request.app.state.db_pool
+    form = await request.form()
+    action = form.get("action", "")
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "add_influencer":
+                display_name = (form.get("display_name") or "").strip()
+                bio = (form.get("bio") or "").strip()
+                tier = form.get("tier") or "micro"
+                if display_name:
+                    await conn.execute(
+                        """INSERT INTO influencer_profiles (customer_id, display_name, bio, tier)
+                           VALUES (NULL, $1, $2, $3)""",
+                        display_name, bio, tier,
+                    )
+
+            elif action == "delete_influencer":
+                inf_id = form.get("influencer_id")
+                if inf_id:
+                    await conn.execute("DELETE FROM influencer_profiles WHERE id=$1", inf_id)
+
+            elif action == "toggle_featured":
+                post_id = form.get("post_id")
+                if post_id:
+                    await conn.execute(
+                        "UPDATE fashion_feed_posts SET is_featured = NOT is_featured WHERE id=$1",
+                        post_id,
+                    )
+
+            elif action == "delete_post":
+                post_id = form.get("post_id")
+                if post_id:
+                    await conn.execute("DELETE FROM fashion_feed_posts WHERE id=$1", post_id)
+
+            elif action == "add_board":
+                title = (form.get("title") or "").strip()
+                occasion = (form.get("occasion") or "").strip()
+                description = (form.get("description") or "").strip()
+                if title:
+                    await conn.execute(
+                        """INSERT INTO outfit_boards (customer_id, title, description, occasion, products)
+                           VALUES (NULL, $1, $2, $3, '[]'::jsonb)""",
+                        title, description, occasion,
+                    )
+
+            elif action == "delete_board":
+                board_id = form.get("board_id")
+                if board_id:
+                    await conn.execute("DELETE FROM outfit_boards WHERE id=$1", board_id)
+
+    except Exception as exc:
+        logger.error("[admin] social save failed: %s", exc)
+
+    return await section_social(request)
+
+
+# ===========================================================================
+# 16. LOYALTY POST — manage tiers, rewards
+# ===========================================================================
+async def section_loyalty_post(request: Request) -> HTMLResponse:
+    """Handle loyalty system CRUD actions."""
+    pool = request.app.state.db_pool
+    form = await request.form()
+    action = form.get("action", "")
+
+    try:
+        async with pool.acquire() as conn:
+            if action == "update_tier":
+                tier_id = form.get("tier_id")
+                min_spend = form.get("min_spend")
+                discount = form.get("discount_percent")
+                points_mult = form.get("points_multiplier")
+                free_shipping = form.get("free_shipping") == "on"
+                early_access = form.get("early_access") == "on"
+                if tier_id:
+                    await conn.execute(
+                        """UPDATE vip_tiers
+                           SET min_spend=$1, discount_percent=$2, points_multiplier=$3,
+                               free_shipping=$4, early_access=$5
+                           WHERE id=$6""",
+                        float(min_spend or 0), float(discount or 0),
+                        float(points_mult or 1), free_shipping, early_access, tier_id,
+                    )
+
+            elif action == "add_reward":
+                name = (form.get("name") or "").strip()
+                description = (form.get("description") or "").strip()
+                points_cost = form.get("points_cost")
+                reward_type = form.get("reward_type") or "discount"
+                reward_value = form.get("reward_value")
+                if name and points_cost:
+                    await conn.execute(
+                        """INSERT INTO rewards_catalog (name, description, points_cost, reward_type, reward_value)
+                           VALUES ($1, $2, $3, $4, $5)""",
+                        name, description, int(points_cost), reward_type, float(reward_value or 0),
+                    )
+
+            elif action == "delete_reward":
+                reward_id = form.get("reward_id")
+                if reward_id:
+                    await conn.execute("DELETE FROM rewards_catalog WHERE id=$1", reward_id)
+
+            elif action == "toggle_reward":
+                reward_id = form.get("reward_id")
+                if reward_id:
+                    await conn.execute(
+                        "UPDATE rewards_catalog SET is_active = NOT is_active WHERE id=$1",
+                        reward_id,
+                    )
+
+            elif action == "adjust_points":
+                customer_id = form.get("customer_id")
+                points = form.get("points_adjust")
+                description = (form.get("description") or "Admin adjustment").strip()
+                if customer_id and points:
+                    pts = int(points)
+                    # Get current balance
+                    bal = await conn.fetchval(
+                        "SELECT current_balance FROM loyalty_accounts WHERE customer_id=$1",
+                        customer_id,
+                    )
+                    if bal is not None:
+                        new_bal = int(bal) + pts
+                        await conn.execute(
+                            """UPDATE loyalty_accounts
+                               SET current_balance=$1, total_points_earned = total_points_earned + $2,
+                                   updated_at=NOW()
+                               WHERE customer_id=$3""",
+                            new_bal, max(pts, 0), customer_id,
+                        )
+                        await conn.execute(
+                            """INSERT INTO loyalty_points (customer_id, points, source, description, balance_after)
+                               VALUES ($1, $2, 'admin_adjust', $3, $4)""",
+                            customer_id, pts, description, new_bal,
+                        )
+
+    except Exception as exc:
+        logger.error("[admin] loyalty save failed: %s", exc)
+
+    return await section_loyalty(request)
+
+
+# ===========================================================================
 # Route registration
 # ===========================================================================
 routes = [
@@ -1331,16 +2226,28 @@ routes = [
     Route("/admin/section/operations",    endpoint=section_operations,    methods=["GET"]),
     Route("/admin/section/settings",      endpoint=section_settings_get,  methods=["GET"]),
     Route("/admin/section/settings",      endpoint=section_settings_post, methods=["POST"]),
+    Route("/admin/section/logistics",     endpoint=section_logistics,     methods=["GET"]),
+    Route("/admin/section/logistics",     endpoint=section_logistics_post, methods=["POST"]),
+    Route("/admin/section/social",        endpoint=section_social,        methods=["GET"]),
+    Route("/admin/section/social",        endpoint=section_social_post,   methods=["POST"]),
+    Route("/admin/section/loyalty",       endpoint=section_loyalty,       methods=["GET"]),
+    Route("/admin/section/loyalty",       endpoint=section_loyalty_post,  methods=["POST"]),
+    Route("/admin/section/ai-training",   endpoint=section_ai_training_get,  methods=["GET"]),
+    Route("/admin/section/ai-training",   endpoint=section_ai_training_post, methods=["POST"]),
     Route("/admin/section/about",         endpoint=section_about_get,     methods=["GET"]),
     Route("/admin/section/about",         endpoint=section_about_post,    methods=["POST"]),
+    Route("/admin/section/pages",         endpoint=section_pages_get,     methods=["GET"]),
+    Route("/admin/section/pages",         endpoint=section_pages_post,    methods=["POST"]),
+    Route("/admin/section/blog",          endpoint=section_blog_get,      methods=["GET"]),
+    Route("/admin/section/blog",          endpoint=section_blog_post,     methods=["POST"]),
     Route("/admin/orders/{order_id}/status", endpoint=update_order_status, methods=["POST"]),
     # Legacy sections retained for direct URL access (sidebar no longer links to these)
     Route("/admin/section/all-products",  endpoint=section_all_products,  methods=["GET"]),
     Route("/admin/section/reviews",       endpoint=section_reviews,       methods=["GET"]),
     Route("/admin/section/ads",           endpoint=section_ads,           methods=["GET"]),
     # Real-time fragment endpoints (called by HTMX when WS triggers fire)
-    Route("/admin/rt/pipeline",           endpoint=rt_dashboard_pipeline, methods=["GET"]),
     Route("/admin/rt/activity",           endpoint=rt_dashboard_activity, methods=["GET"]),
     Route("/admin/rt/kpi",                endpoint=rt_dashboard_kpi,      methods=["GET"]),
     Route("/admin/rt/reviews",            endpoint=rt_reviews_summary,    methods=["GET"]),
+    Route("/admin/rt/notifications",      endpoint=rt_notifications,      methods=["GET"]),
 ]
