@@ -10,6 +10,7 @@ from starlette.routing import Route
 from app.core import templates, get_cart_from_session, save_cart_to_session
 from app.services.brevo import send_transactional_email
 from app.services.settlement import initialize_payment
+from app.settings_service import get_settings
 
 
 async def checkout_page(request: Request) -> HTMLResponse:
