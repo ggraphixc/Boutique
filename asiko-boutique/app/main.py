@@ -18,6 +18,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import HTMLResponse
+from starlette.types import ASGIApp
 
 from app.core import templates
 
@@ -285,7 +286,6 @@ class CustomPagesMiddleware:
     CACHE_TTL: int = 30
 
     async def __call__(self, scope, receive, send):
-        from starlette.types import ASGIApp
         if scope["type"] != "http":
             return await self.app(scope, receive, send)
 
