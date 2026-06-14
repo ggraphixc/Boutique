@@ -291,16 +291,6 @@ def _register_route_modules(app: Starlette) -> None:
 # Session Middleware
 # ---------------------------------------------------------------------------
 
-global_middleware = [
-    Middleware(
-        SessionMiddleware,
-        secret_key=os.getenv("SECRET_KEY", "ASIKO_FALLBACK_SECURE_KEY_770X"),
-        session_cookie="asiko_session",
-        max_age=3600 * 24 * 7,
-    )
-]
-
-
 # ---------------------------------------------------------------------------
 # Custom Pages Middleware — injects nav/footer pages into every request
 # ---------------------------------------------------------------------------
@@ -384,6 +374,23 @@ class AdminAuthMiddleware:
 
 
 # ---------------------------------------------------------------------------
+# Session Middleware + Admin Auth Middleware
+# SessionMiddleware FIRST so it populates scope["session"] before AdminAuth reads it.
+# In Starlette global_middleware list, first item = outermost (runs first).
+# ---------------------------------------------------------------------------
+
+global_middleware = [
+    Middleware(
+        SessionMiddleware,
+        secret_key=os.getenv("SECRET_KEY", "ASIKO_FALLBACK_SECURE_KEY_770X"),
+        session_cookie="asiko_session",
+        max_age=3600 * 24 * 7,
+    ),
+    Middleware(AdminAuthMiddleware),
+]
+
+
+# ---------------------------------------------------------------------------
 # Initialize Starlette App Instance
 # ---------------------------------------------------------------------------
 
@@ -396,7 +403,6 @@ app = Starlette(
 
 # Inject custom pages middleware after app creation
 app.add_middleware(CustomPagesMiddleware)
-app.add_middleware(AdminAuthMiddleware)
 
 _register_route_modules(app)
 _is_debug = os.getenv("ASIKO_DEBUG", "true").lower() in ("true", "1", "yes")
