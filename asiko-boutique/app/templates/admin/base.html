@@ -408,13 +408,19 @@
             </div>
         </nav>
 
-        <!-- Bottom: Help & Support + Hide -->
+        <!-- Bottom: Help & Support + Logout + Hide -->
         <div class="flex-shrink-0 border-t border-gray-100 px-3 py-3 space-y-1">
             <a href="/admin/help" class="nav-item">
                 <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
                 <span class="sidebar-bottom-label nav-label">Help & Support</span>
+            </a>
+            <a href="/admin/logout" class="nav-item text-red-500 hover:text-red-600 hover:bg-red-50">
+                <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                <span class="sidebar-bottom-label nav-label">Logout</span>
             </a>
             <button @click="sidebarOpen = !sidebarOpen; localStorage.setItem('asiko:sidebarOpen', sidebarOpen); $root.setAttribute('data-sidebar-open', sidebarOpen); document.documentElement.classList.toggle('sidebar-collapsed', !sidebarOpen)"
                     class="nav-item w-full">

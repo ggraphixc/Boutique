@@ -174,6 +174,32 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             )
     logger.info("LOG_SYSTEM: Migration 24 — email settings columns added.")
 
+    # Migration 25: admin_users table for admin authentication
+    async with app.state.db_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_users (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                email VARCHAR(255) UNIQUE NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                full_name VARCHAR(255) DEFAULT '',
+                role VARCHAR(50) DEFAULT 'admin',
+                is_active BOOLEAN DEFAULT TRUE,
+                last_login TIMESTAMP,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+            CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
+        """)
+        # Seed default admin account if none exists
+        import hashlib, os as _os
+        _salt = _os.environ.get("AUTH_SALT", "asiko-boutique-salt-2024")
+        _hash = hashlib.sha256(f"{_salt}admin123".encode()).hexdigest()
+        await conn.execute("""
+            INSERT INTO admin_users (email, password_hash, full_name, role)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (email) DO NOTHING
+        """, "admin@asikoboutique.com", _hash, "ASIKO Admin", "owner")
+    logger.info("LOG_SYSTEM: Migration 25 — admin_users table ready. Default admin seeded.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
@@ -228,6 +254,7 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.admin_dashboard import routes as admin_dashboard_routes
     from app.routes.admin_sections import routes as admin_sections_routes
     from app.routes.admin import routes as admin_crud_routes
+    from app.routes.admin_auth import routes as admin_auth_routes
     from app.routes.waitlist import routes as waitlist_routes
     from app.routes.dpp_verification import routes as dpp_routes
     from app.routes.customer import routes as customer_routes
@@ -243,6 +270,7 @@ def _register_route_modules(app: Starlette) -> None:
         checkout_routes,
         webhook_routes,
         sse_routes,
+        admin_auth_routes,
         admin_inventory_routes,
         admin_dashboard_routes,
         admin_sections_routes,
@@ -314,6 +342,48 @@ class CustomPagesMiddleware:
 
 
 # ---------------------------------------------------------------------------
+# Admin Auth Middleware — redirects unauthenticated users to /admin/login
+# ---------------------------------------------------------------------------
+
+class AdminAuthMiddleware:
+    """Protects /admin/* routes except /admin/login and /static/*."""
+
+    _PUBLIC_PATHS = frozenset({"/admin/login", "/admin/logout"})
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+
+        path = scope.get("path", "")
+
+        # Only protect /admin/* routes
+        if not path.startswith("/admin"):
+            return await self.app(scope, receive, send)
+
+        # Allow public admin paths (login page, logout)
+        if path in self._PUBLIC_PATHS:
+            return await self.app(scope, receive, send)
+
+        # Allow static files under /admin
+        if path.startswith("/static"):
+            return await self.app(scope, receive, send)
+
+        # Check session for admin_id
+        request = Request(scope, receive, send)
+        session = request.scope.get("session", {})
+        if session.get("admin_id"):
+            return await self.app(scope, receive, send)
+
+        # Not authenticated — redirect to login
+        from starlette.responses import RedirectResponse
+        response = RedirectResponse("/admin/login", status_code=302)
+        return await response(scope, receive, send)
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+
+# ---------------------------------------------------------------------------
 # Initialize Starlette App Instance
 # ---------------------------------------------------------------------------
 
@@ -326,6 +396,7 @@ app = Starlette(
 
 # Inject custom pages middleware after app creation
 app.add_middleware(CustomPagesMiddleware)
+app.add_middleware(AdminAuthMiddleware)
 
 _register_route_modules(app)
 _is_debug = os.getenv("ASIKO_DEBUG", "true").lower() in ("true", "1", "yes")
