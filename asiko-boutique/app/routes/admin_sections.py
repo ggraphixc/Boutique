@@ -1191,14 +1191,19 @@ async def section_members(request: Request) -> HTMLResponse:
             try:
                 rows = await conn.fetch(
                     """
-                    SELECT customer_email,
-                           COUNT(*)            AS order_count,
-                           SUM(total_amount)   AS lifetime_value,
-                           MAX(created_at)     AS last_order_at
-                    FROM orders
-                    GROUP BY customer_email
-                    ORDER BY last_order_at DESC NULLS LAST
-                    LIMIT 60
+                    SELECT c.id,
+                           c.email,
+                           COALESCE(c.full_name, '')        AS full_name,
+                           c.created_at                     AS registered_at,
+                           COUNT(o.id)                      AS order_count,
+                           COALESCE(SUM(o.total_amount), 0) AS lifetime_value,
+                           MAX(o.created_at)                AS last_order_at
+                    FROM customers c
+                    LEFT JOIN orders o
+                        ON o.customer_email = c.email
+                    GROUP BY c.id, c.email, c.full_name, c.created_at
+                    ORDER BY last_order_at DESC NULLS LAST, c.created_at DESC
+                    LIMIT 80
                     """
                 )
             except Exception as exc:
@@ -1206,31 +1211,49 @@ async def section_members(request: Request) -> HTMLResponse:
                 rows = []
 
             for r in rows:
-                email = r["customer_email"] or ""
+                email = r["email"] or ""
+                name = r["full_name"] or ""
+                display = name if name else email.split("@")[0].replace(".", " ").title()
+                order_count = int(r["order_count"] or 0)
+                lifetime_value = float(r["lifetime_value"] or 0)
+                last_order_at = r["last_order_at"]
+
+                # Status logic
+                status_key = "no_orders"
+                if order_count > 0:
+                    status_key = "returning"
+                    if order_count == 1 and last_order_at:
+                        from datetime import timedelta
+                        if (datetime.now(timezone.utc) - last_order_at).days <= 7:
+                            status_key = "new"
+                    if last_order_at:
+                        from datetime import timedelta
+                        if (datetime.now(timezone.utc) - last_order_at).days <= 30:
+                            status_key = "active"
+
+                status_label = {
+                    "active": "Active",
+                    "new": "New",
+                    "returning": "Returning",
+                    "no_orders": "No orders",
+                }[status_key]
+
                 d = {
                     "email": email,
+                    "name": display,
                     "initials": _initials(email),
-                    "order_count": int(r["order_count"] or 0),
-                    "lifetime_value": float(r["lifetime_value"] or 0),
-                    "last_order_at_human": _humanize_dt(r["last_order_at"]),
+                    "order_count": order_count,
+                    "lifetime_value": lifetime_value,
+                    "last_order_at_human": _humanize_dt(last_order_at) if last_order_at else "—",
+                    "status_key": status_key,
+                    "status_label": status_label,
                 }
-                # Status: Active = order in last 30d, Returning = older orders,
-                # New = first order in last 7d
-                d["status_key"] = "returning"
-                if d["order_count"] == 1 and r["last_order_at"]:
-                    from datetime import timedelta
-                    if (datetime.now(timezone.utc) - r["last_order_at"]).days <= 7:
-                        d["status_key"] = "new"
-                if r["last_order_at"]:
-                    from datetime import timedelta
-                    if (datetime.now(timezone.utc) - r["last_order_at"]).days <= 30:
-                        d["status_key"] = "active"
-                d["status_label"] = {"active": "Active", "new": "New", "returning": "Returning"}[d["status_key"]]
                 members.append(d)
                 totals["total"] += 1
-                totals["with_orders"] += 1
-                totals["lifetime_revenue"] += d["lifetime_value"]
-                if d["status_key"] == "new":
+                if order_count > 0:
+                    totals["with_orders"] += 1
+                    totals["lifetime_revenue"] += lifetime_value
+                if status_key == "new":
                     totals["new_this_month"] += 1
     except Exception as exc:
         logger.warning("[admin] members section fetch failed: %s", exc)
@@ -1239,6 +1262,7 @@ async def section_members(request: Request) -> HTMLResponse:
         "active":    ("bg-emerald-50", "text-emerald-700", "ring-emerald-200"),
         "new":       ("bg-blue-50",    "text-blue-700",    "ring-blue-200"),
         "returning": ("bg-gray-100",   "text-gray-600",    "ring-gray-200"),
+        "no_orders": ("bg-gray-50",    "text-gray-400",    "ring-gray-200"),
     }
 
     return _section_response(
