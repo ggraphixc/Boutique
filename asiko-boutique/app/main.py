@@ -200,6 +200,28 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         """, "zerupth@gmail.com", _hash, "ASIKO Admin", "owner")
     logger.info("LOG_SYSTEM: Migration 25 — admin_users table ready. Default admin seeded.")
 
+    # Migration 26: Add missing store_profile + notification columns to store_settings
+    async with app.state.db_pool.acquire() as conn:
+        for col, typ, default in [
+            ("store_name",        "VARCHAR(255)", "'ASIKO Boutique'"),
+            ("contact_email",     "VARCHAR(255)", "''"),
+            ("store_description", "TEXT",         "''"),
+            ("phone",             "VARCHAR(50)",  "''"),
+            ("store_address",     "TEXT",         "''"),
+            ("notif_new_order",   "BOOLEAN",      "TRUE"),
+            ("notif_pipeline",    "BOOLEAN",      "TRUE"),
+            ("notif_review",      "BOOLEAN",      "TRUE"),
+            ("notif_low_stock",   "BOOLEAN",      "TRUE"),
+            ("session_timeout",   "INT",          "60"),
+        ]:
+            try:
+                await conn.execute(
+                    f"ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS {col} {typ} DEFAULT {default}"
+                )
+            except Exception:
+                pass
+    logger.info("LOG_SYSTEM: Migration 26 — store_profile + notification columns added to store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
