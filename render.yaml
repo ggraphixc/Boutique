@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: asiko-boutique
+    runtime: docker
+    dockerfilePath: asiko-boutique/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: asiko-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ASIKO_DEBUG
+        value: "false"
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        sync: false
+      - key: OPAY_MERCHANT_ID
+        sync: false
+      - key: OPAY_SECRET_KEY
+        sync: false
+      - key: OPAY_PUBLIC_KEY
+        sync: false
+      - key: OPAY_API_URL
+        value: "https://sandbox.api.opay.com"
+    healthCheckPath: /
+    autoDeploy: true
+    branch: main
+
+databases:
+  - name: asiko-db
+    plan: free
+    databaseName: boutique
+    user: asiko
