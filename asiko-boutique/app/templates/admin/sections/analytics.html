@@ -25,25 +25,7 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Sessions</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(totals.sessions) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">+12% week over week</div>
-        </div>
-
-        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
-            <div class="flex items-center justify-between">
-                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                    </svg>
-                </div>
-                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                </svg>
-            </div>
-            <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Page Views</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(totals.page_views) }}</div>
-            </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">3.08 pages / session</div>
+            <div class="mt-3 text-xs font-medium text-emerald-600">{{ '{:,}'.format(totals.pages_per_session) }} pages / session</div>
         </div>
 
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
@@ -61,7 +43,7 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Conversion Rate</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,.2f}'.format(totals.conversion_rate) }}%</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">Anchored to paid orders</div>
+            <div class="mt-3 text-xs font-medium text-emerald-600">{{ '{:,}'.format(totals.sessions) }} sessions → {{ '{:,}'.format(totals.this_week_orders) }} paid</div>
         </div>
 
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
@@ -71,15 +53,23 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
+                {% if totals.revenue_change_pct > 0 %}
                 <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
                 </svg>
+                {% elif totals.revenue_change_pct < 0 %}
+                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6"/>
+                </svg>
+                {% endif %}
             </div>
             <div class="mt-4">
-                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Avg. Session</div>
-                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ (totals.avg_session_sec // 60) }}m {{ (totals.avg_session_sec % 60) }}s</div>
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">This Week</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">₦{{ '{:,.0f}'.format(totals.this_week_revenue) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">3m 4s last week</div>
+            <div class="mt-3 text-xs font-medium {% if totals.revenue_change_pct > 0 %}text-emerald-600{% elif totals.revenue_change_pct < 0 %}text-rose-600{% else %}text-gray-500{% endif %}">
+                {% if totals.revenue_change_pct > 0 %}+{{ totals.revenue_change_pct }}%{% elif totals.revenue_change_pct < 0 %}{{ totals.revenue_change_pct }}%{% else %}No prior week data{% endif %} vs last week
+            </div>
         </div>
     </div>
 
@@ -90,6 +80,7 @@
                 <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">7-day revenue</h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Per-day revenue from paid, processing, and shipped orders</p>
             </div>
+            {% if daily %}
             <div class="flex items-end gap-3 h-56">
                 {% for d in daily %}
                 {% set pct = (d.revenue / max_rev * 100) if max_rev else 0 %}
@@ -100,6 +91,16 @@
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <div class="flex items-center justify-center h-56 text-center">
+                <div>
+                    <svg class="w-10 h-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">No revenue data for the last 7 days</p>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-6">
@@ -159,6 +160,7 @@
                 <h2 class="text-base font-bold text-gray-900 dark:text-gray-100">Traffic sources</h2>
                 <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500 mt-0.5">Last 7 days</p>
             </div>
+            {% if sources %}
             <div class="space-y-3">
                 {% for s in sources %}
                 <div>
@@ -172,6 +174,14 @@
                 </div>
                 {% endfor %}
             </div>
+            {% else %}
+            <div class="text-center py-6">
+                <svg class="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                </svg>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No traffic data yet</p>
+            </div>
+            {% endif %}
         </div>
     </div>
 

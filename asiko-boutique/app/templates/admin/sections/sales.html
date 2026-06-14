@@ -24,7 +24,9 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Gross Revenue</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">₦{{ '{:,.0f}'.format(metrics.gross_revenue) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">+18% from last month</div>
+            <div class="mt-3 text-xs font-medium {% if metrics.revenue_change_pct > 0 %}text-emerald-600{% elif metrics.revenue_change_pct < 0 %}text-rose-600{% else %}text-gray-500{% endif %}">
+                {% if metrics.revenue_change_pct > 0 %}+{{ metrics.revenue_change_pct }}%{% elif metrics.revenue_change_pct < 0 %}{{ metrics.revenue_change_pct }}%{% else %}No prior month data{% endif %} vs last month
+            </div>
         </div>
 
         <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">

@@ -33,7 +33,9 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Total Sales</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">&#8358;{{ '{:,.0f}'.format(kpi_total_sales) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">+12% from last month</div>
+            <div class="mt-3 text-xs font-medium {% if quick_stats.sales_change_pct > 0 %}text-emerald-600{% elif quick_stats.sales_change_pct < 0 %}text-rose-600{% else %}text-gray-500{% endif %}">
+                {% if quick_stats.sales_change_pct > 0 %}+{{ quick_stats.sales_change_pct }}%{% elif quick_stats.sales_change_pct < 0 %}{{ quick_stats.sales_change_pct }}%{% else %}No prior week data{% endif %} vs last week
+            </div>
         </div>
 
         <!-- Active Users -->
@@ -52,7 +54,9 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Active Users</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(kpi_active_users) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">+5% from last week</div>
+            <div class="mt-3 text-xs font-medium {% if quick_stats.users_change_pct > 0 %}text-emerald-600{% elif quick_stats.users_change_pct < 0 %}text-rose-600{% else %}text-gray-500{% endif %}">
+                {% if quick_stats.users_change_pct > 0 %}+{{ quick_stats.users_change_pct }}%{% elif quick_stats.users_change_pct < 0 %}{{ quick_stats.users_change_pct }}%{% else %}No prior week data{% endif %} vs last week
+            </div>
         </div>
 
         <!-- Orders -->
@@ -71,7 +75,7 @@
                 <div class="text-sm font-medium text-gray-500 dark:text-gray-400 dark:text-gray-500">Orders</div>
                 <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(kpi_orders) }}</div>
             </div>
-            <div class="mt-3 text-xs font-medium text-emerald-600">+8% from yesterday</div>
+            <div class="mt-3 text-xs font-medium text-gray-500">{{ kpi_orders }} total orders</div>
         </div>
 
         <!-- Products -->

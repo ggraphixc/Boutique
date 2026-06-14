@@ -121,6 +121,7 @@ async def _safe_fetch_products(pool) -> List[Dict[str, Any]]:
 _ACTIVITY_ICONS = {
     "sale":     {"icon_bg": "bg-emerald-50", "icon_color": "text-emerald-600"},
     "user":     {"icon_bg": "bg-blue-50",    "icon_color": "text-blue-600"},
+    "customer": {"icon_bg": "bg-blue-50",    "icon_color": "text-blue-600"},
     "product":  {"icon_bg": "bg-amber-50",   "icon_color": "text-amber-600"},
     "review":   {"icon_bg": "bg-purple-50",  "icon_color": "text-purple-600"},
     "default":  {"icon_bg": "bg-gray-100",   "icon_color": "text-gray-600"},
@@ -290,7 +291,43 @@ async def section_dashboard(request: Request) -> HTMLResponse:
         "bounce_rate": 0,
         "page_views": f"{page_views_count:,}",
         "page_views_pct": min(page_views_count // 100, 100) if page_views_count else 0,
+        "sales_change_pct": 0,
+        "users_change_pct": 0,
     }
+
+    # Week-over-week comparison
+    try:
+        async with pool.acquire() as conn:
+            try:
+                week_cmp = await conn.fetchrow("""
+                    SELECT
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('week', NOW()) THEN total_amount ELSE 0 END), 0) AS this_week,
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('week', NOW()) - interval '7 days'
+                                           AND created_at <  date_trunc('week', NOW()) THEN total_amount ELSE 0 END), 0) AS last_week
+                    FROM orders WHERE status IN ('paid','shipped','delivered')
+                """)
+                this_week = float(week_cmp["this_week"] or 0)
+                last_week = float(week_cmp["last_week"] or 0)
+                if last_week > 0:
+                    quick_stats["sales_change_pct"] = round(((this_week - last_week) / last_week) * 100)
+            except Exception:
+                pass
+            try:
+                user_cmp = await conn.fetchrow("""
+                    SELECT
+                        COUNT(DISTINCT CASE WHEN created_at >= date_trunc('week', NOW()) THEN session_id END) AS this_week,
+                        COUNT(DISTINCT CASE WHEN created_at >= date_trunc('week', NOW()) - interval '7 days'
+                                            AND created_at <  date_trunc('week', NOW()) THEN session_id END) AS last_week
+                    FROM page_views
+                """)
+                this_week_u = int(user_cmp["this_week"] or 0)
+                last_week_u = int(user_cmp["last_week"] or 0)
+                if last_week_u > 0:
+                    quick_stats["users_change_pct"] = round(((this_week_u - last_week_u) / last_week_u) * 100)
+            except Exception:
+                pass
+    except Exception:
+        pass
 
     context = {
         "request": request,
@@ -964,6 +1001,9 @@ async def section_sales(request: Request) -> HTMLResponse:
         "pending_count": 0,
         "cancelled_count": 0,
         "fulfilled_count": 0,
+        "this_month_revenue": 0.0,
+        "last_month_revenue": 0.0,
+        "revenue_change_pct": 0,
     }
 
     try:
@@ -1007,6 +1047,24 @@ async def section_sales(request: Request) -> HTMLResponse:
                 else:
                     metrics["pending_count"] += 1
                     metrics["pending_revenue"] += d["total_amount"]
+
+            # This month vs last month revenue
+            try:
+                month_stats = await conn.fetchrow("""
+                    SELECT
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('month', NOW()) THEN total_amount ELSE 0 END), 0) AS this_month,
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('month', NOW()) - interval '1 month'
+                                           AND created_at <  date_trunc('month', NOW()) THEN total_amount ELSE 0 END), 0) AS last_month
+                    FROM orders WHERE status IN ('paid','shipped','delivered')
+                """)
+                metrics["this_month_revenue"] = float(month_stats["this_month"] or 0)
+                metrics["last_month_revenue"] = float(month_stats["last_month"] or 0)
+                if metrics["last_month_revenue"] > 0:
+                    metrics["revenue_change_pct"] = round(
+                        ((metrics["this_month_revenue"] - metrics["last_month_revenue"]) / metrics["last_month_revenue"]) * 100
+                    )
+            except Exception:
+                pass
     except Exception as exc:
         logger.warning("[admin] sales fetch failed: %s", exc)
 
@@ -1041,6 +1099,13 @@ async def section_analytics(request: Request) -> HTMLResponse:
         "page_views": 0,
         "conversion_rate": 0.0,
         "avg_session_sec": 0,
+        "pages_per_session": 0.0,
+        "this_week_orders": 0,
+        "this_week_revenue": 0.0,
+        "last_week_orders": 0,
+        "last_week_revenue": 0.0,
+        "revenue_change_pct": 0,
+        "orders_change_pct": 0,
     }
     daily: List[Dict[str, Any]] = []
     top_pages: List[Dict[str, Any]] = []
@@ -1063,12 +1128,49 @@ async def section_analytics(request: Request) -> HTMLResponse:
             except Exception:
                 page_views_count = sessions_count = paid_count = 0
 
+            # Pages per session
+            pages_per_session = round(page_views_count / max(sessions_count, 1), 2) if sessions_count else 0
+
             totals = {
                 "sessions": sessions_count,
                 "page_views": page_views_count,
                 "conversion_rate": round((paid_count / max(sessions_count, 1)) * 100, 2) if sessions_count else 0,
                 "avg_session_sec": 0,
+                "pages_per_session": pages_per_session,
+                "this_week_orders": 0,
+                "this_week_revenue": 0.0,
+                "last_week_orders": 0,
+                "last_week_revenue": 0.0,
+                "revenue_change_pct": 0,
+                "orders_change_pct": 0,
             }
+
+            # This week vs last week revenue/orders
+            try:
+                week_stats = await conn.fetchrow("""
+                    SELECT
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('week', NOW()) THEN total_amount ELSE 0 END), 0) AS this_week_rev,
+                        COALESCE(SUM(CASE WHEN created_at >= date_trunc('week', NOW()) - interval '7 days'
+                                           AND created_at <  date_trunc('week', NOW()) THEN total_amount ELSE 0 END), 0) AS last_week_rev,
+                        COUNT(CASE WHEN created_at >= date_trunc('week', NOW()) THEN 1 END) AS this_week_cnt,
+                        COUNT(CASE WHEN created_at >= date_trunc('week', NOW()) - interval '7 days'
+                                    AND created_at <  date_trunc('week', NOW()) THEN 1 END) AS last_week_cnt
+                    FROM orders WHERE status IN ('paid','shipped','delivered')
+                """)
+                totals["this_week_revenue"] = float(week_stats["this_week_rev"] or 0)
+                totals["last_week_revenue"] = float(week_stats["last_week_rev"] or 0)
+                totals["this_week_orders"] = int(week_stats["this_week_cnt"] or 0)
+                totals["last_week_orders"] = int(week_stats["last_week_cnt"] or 0)
+                if totals["last_week_revenue"] > 0:
+                    totals["revenue_change_pct"] = round(
+                        ((totals["this_week_revenue"] - totals["last_week_revenue"]) / totals["last_week_revenue"]) * 100
+                    )
+                if totals["last_week_orders"] > 0:
+                    totals["orders_change_pct"] = round(
+                        ((totals["this_week_orders"] - totals["last_week_orders"]) / totals["last_week_orders"]) * 100
+                    )
+            except Exception:
+                pass
 
             # 7-day revenue series
             try:
@@ -1087,12 +1189,9 @@ async def section_analytics(request: Request) -> HTMLResponse:
             except Exception:
                 pass
 
-            if not daily:
-                daily = [{"day": "Mon", "orders": 0, "revenue": 0}]
-
             max_rev = max((d["revenue"] for d in daily), default=1) or 1
 
-            # Funnel — single GROUP BY query instead of 5 separate queries
+            # Funnel — real data from funnel_events table
             try:
                 funnel_rows = await conn.fetch(
                     """SELECT event_step, COUNT(DISTINCT session_id) AS cnt
@@ -1111,20 +1210,12 @@ async def section_analytics(request: Request) -> HTMLResponse:
                 visitors = funnel[0]["count"] or 1
                 for f in funnel:
                     f["pct"] = int((f["count"] / visitors) * 100)
-                if visitors <= 1 and all(f["count"] == 0 for f in funnel):
-                    funnel = [
-                        {"label": "Visitors",      "count": page_views_count, "pct": 100},
-                        {"label": "Product views", "count": page_views_count // 2, "pct": 50},
-                        {"label": "Add to cart",   "count": page_views_count // 10, "pct": 10},
-                        {"label": "Checkout",      "count": paid_count * 2, "pct": 5},
-                        {"label": "Purchased",     "count": paid_count, "pct": max(int(paid_count / max(page_views_count, 1) * 100), 0)},
-                    ]
             except Exception:
                 funnel = [{"label": l, "count": 0, "pct": 0} for l in ("Visitors","Product views","Add to cart","Checkout","Purchased")]
 
-            # Top products + traffic sources in parallel via pipeline
+            # Top products + traffic sources
             try:
-                top_rows, source_rows = await conn.fetch(
+                top_rows = await conn.fetch(
                     """SELECT p.name, p.base_image, p.price,
                               COALESCE(pv.view_count, 0) as views,
                               COALESCE(oi.units_sold, 0) as units_sold
@@ -1156,10 +1247,8 @@ async def section_analytics(request: Request) -> HTMLResponse:
                         "share": int(int(r["count"]) / total_src * 100),
                         "color": src_colors[i % len(src_colors)],
                     })
-                if not sources:
-                    sources = [{"name": "Direct", "share": 100, "color": "bg-blue-500"}]
             except Exception:
-                sources = [{"name": "Direct", "share": 100, "color": "bg-blue-500"}]
+                pass
 
     except Exception as exc:
         logger.warning("[admin] analytics fetch failed: %s", exc)
@@ -1348,11 +1437,71 @@ async def notify_new_review(db_pool, product_id: str, rating: float = 0, total_r
 async def rt_dashboard_activity(request: Request) -> HTMLResponse:
     """Return the recent activity feed as an HTMX fragment."""
     pool = request.app.state.db_pool
-    products = await _safe_fetch_products(pool)
     activity: List[Dict[str, str]] = []
+
+    try:
+        async with pool.acquire() as conn:
+            # Recent orders
+            try:
+                order_rows = await conn.fetch(
+                    """SELECT customer_email, total_amount, status, created_at
+                       FROM orders ORDER BY created_at DESC LIMIT 5"""
+                )
+                for o in order_rows:
+                    email = o["customer_email"] or "Guest"
+                    name = email.split("@")[0].replace(".", " ").title()
+                    activity.append(_activity_item(
+                        "sale",
+                        f"New order from {name}",
+                        f"₦{o['total_amount']:,.0f} · {o['status']}",
+                        _humanize_dt(o["created_at"]),
+                    ))
+            except Exception:
+                pass
+
+            # Recent reviews
+            try:
+                review_rows = await conn.fetch(
+                    """SELECT r.rating, r.title, p.name, r.created_at
+                       FROM product_reviews r JOIN products p ON r.product_id = p.id
+                       WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 3"""
+                )
+                for rev in review_rows:
+                    activity.append(_activity_item(
+                        "review",
+                        f"{rev['rating']}★ review on {rev['name']}",
+                        f'"{rev["title"][:40]}"' if rev["title"] else "",
+                        _humanize_dt(rev["created_at"]),
+                    ))
+            except Exception:
+                pass
+
+            # Recent new customers
+            try:
+                customer_rows = await conn.fetch(
+                    """SELECT email, full_name, created_at
+                       FROM customers ORDER BY created_at DESC LIMIT 3"""
+                )
+                for c in customer_rows:
+                    name = c["full_name"] or c["email"].split("@")[0].replace(".", " ").title()
+                    activity.append(_activity_item(
+                        "customer",
+                        f"New customer: {name}",
+                        c["email"],
+                        _humanize_dt(c["created_at"]),
+                    ))
+            except Exception:
+                pass
+
+    except Exception:
+        pass
+
+    # Sort by recency (approximate via order) and limit
+    activity = activity[:8]
+
     return templates.TemplateResponse(
         request, "admin/sections/_rt_activity_feed.html",
-        {"request": request, "recent_activity": activity[:6]},
+        {"request": request, "recent_activity": activity},
     )
 
 
