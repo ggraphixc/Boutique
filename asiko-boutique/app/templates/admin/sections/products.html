@@ -341,12 +341,13 @@
             </div>
 
             <!-- Modal body -->
-            <form :hx-post="'/admin/products/' + editId + '/edit'"
+            <form hx-post="/admin/products/edit"
                   hx-target="#workspace-content"
                   hx-swap="innerHTML"
                   hx-indicator="#edit-product-btn"
                   enctype="multipart/form-data"
                   class="px-6 py-5 space-y-4">
+                <input type="hidden" name="product_id" :value="editId">
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">What are you selling? *</label>

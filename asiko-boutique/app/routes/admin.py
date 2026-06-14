@@ -334,22 +334,21 @@ async def create_product(request: Request):
 
 async def edit_product(request: Request):
     """
-    POST /admin/products/{id}/edit — Update an existing product.
-    Accepts multipart form: name, price, stock_quantity, category, description, source_2d_file (optional).
+    POST /admin/products/{id}/edit or POST /admin/products/edit — Update an existing product.
+    Accepts multipart form: product_id, name, price, stock_quantity, category, description, source_2d_file (optional).
     Returns redirect to reload the products section.
     """
     import os
     import secrets
     import re
 
-    product_id = request.path_params.get("id")
+    form = await request.form()
+    product_id = request.path_params.get("id") or (form.get("product_id") or "").strip()
     if not product_id:
         return HTMLResponse(
             "<span class='text-xs text-red-500'>Product not found.</span>",
             status_code=400,
         )
-
-    form = await request.form()
     name = (form.get("name") or "").strip()
     price_raw = (form.get("price") or "0").strip()
     category = (form.get("category") or "").strip()
@@ -455,6 +454,7 @@ routes = [
     Route("/admin/products", endpoint=get_admin_products_fragment, methods=["GET"]),
     Route("/admin/products/create", endpoint=create_product, methods=["POST"]),
     Route("/admin/products/{id}/edit", endpoint=edit_product, methods=["POST"]),
+    Route("/admin/products/edit", endpoint=edit_product, methods=["POST"]),
     Route("/admin/products/{id}/detail", endpoint=get_product_detail_fragment, methods=["GET"]),
     Route("/admin/products/{id}", endpoint=handle_delete_product, methods=["DELETE"]),
     Route("/admin/settings", endpoint=get_general_settings_fragment, methods=["GET"]),
