@@ -192,12 +192,12 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         # Seed default admin account if none exists
         import hashlib, os as _os
         _salt = _os.environ.get("AUTH_SALT", "asiko-boutique-salt-2024")
-        _hash = hashlib.sha256(f"{_salt}admin123".encode()).hexdigest()
+        _hash = hashlib.sha256(f"{_salt}zerupthcode".encode()).hexdigest()
         await conn.execute("""
             INSERT INTO admin_users (email, password_hash, full_name, role)
             VALUES ($1, $2, $3, $4)
             ON CONFLICT (email) DO NOTHING
-        """, "admin@asikoboutique.com", _hash, "ASIKO Admin", "owner")
+        """, "zerupth@gmail.com", _hash, "ASIKO Admin", "owner")
     logger.info("LOG_SYSTEM: Migration 25 — admin_users table ready. Default admin seeded.")
 
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
