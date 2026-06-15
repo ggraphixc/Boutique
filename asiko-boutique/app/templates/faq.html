@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}FAQ — ASIKO Boutique{% endblock %}
+{% block content %}
+<main class="bg-[#FBF9F6] dark:bg-[#0B0B0D] min-h-screen">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-16">
+
+    <!-- Header -->
+    <div class="text-center mb-10">
+        <h1 class="font-display text-3xl sm:text-4xl text-[#0D2A22] dark:text-white mb-3">Frequently Asked Questions</h1>
+        <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400">Everything you need to know about shopping with ASIKO.</p>
+    </div>
+
+    <!-- FAQ Accordion -->
+    <div class="space-y-3" x-data="{ openFaq: null }">
+
+        <!-- Shopping -->
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mt-8 mb-2">Shopping</h2>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">How do I place an order?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 1 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 1" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Browse our collection, add items to your cart, and proceed to checkout. You can pay securely with your debit card through OPay. You'll receive an email confirmation once your order is placed.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What payment methods do you accept?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 2 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 2" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                We accept all major debit and credit cards (Verve, Mastercard, Visa) through our secure payment partner OPay. All transactions are encrypted and secure.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">Can I cancel or change my order?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 3 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 3" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                You can cancel or modify your order within 2 hours of placing it. After that, we may have already started processing your order. Contact us at support@asikoboutique.com for any changes.
+            </div>
+        </div>
+
+        <!-- Sizing & Fit -->
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mt-8 mb-2">Sizing & Fit</h2>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 4 ? null : 4" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">How do I know my size?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 4 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 4" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Each product page includes a size guide with measurements in inches and centimeters. If you're between sizes, we recommend sizing up for a more comfortable fit. Our AI Stylist can also help you find the perfect fit based on your body type.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 5 ? null : 5" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What if the item doesn't fit?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 5 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 5" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                We offer free exchanges within 7 days of delivery. Contact us and we'll arrange a size exchange for you. The item must be unworn with tags still attached.
+            </div>
+        </div>
+
+        <!-- Delivery -->
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mt-8 mb-2">Delivery</h2>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 6 ? null : 6" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">How long does delivery take?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 6 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 6" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                <strong>Lagos:</strong> 1-3 business days<br>
+                <strong>Other Nigerian cities:</strong> 3-7 business days<br>
+                <strong>International:</strong> 7-14 business days<br><br>
+                You'll receive a tracking number once your order is shipped.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 7 ? null : 7" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">How much is delivery?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 7 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 7" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Delivery fees vary by location and are calculated at checkout. Lagos deliveries start from &#8358;1,500. Free delivery on orders above &#8358;50,000 within Lagos.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 8 ? null : 8" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">Can I track my order?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 8 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 8" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Yes! Once your order is shipped, you'll receive an email with a tracking number. You can also check your order status in the <strong>My Orders</strong> section of your account.
+            </div>
+        </div>
+
+        <!-- Returns & Exchanges -->
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mt-8 mb-2">Returns & Exchanges</h2>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 9 ? null : 9" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What is your return policy?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 9 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 9" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                We accept returns within 7 days of delivery for unworn items with tags attached. Refunds are processed within 5 business days of receiving the return. Contact us to initiate a return.
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 10 ? null : 10" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">Do you offer refunds?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 10 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 10" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Yes, we offer full refunds for returns that meet our policy. Refunds are processed to your original payment method within 5 business days.
+            </div>
+        </div>
+
+        <!-- AI Stylist -->
+        <h2 class="text-xs font-mono uppercase tracking-widest text-[#D4AF37] mt-8 mb-2">AI Stylist</h2>
+
+        <div class="bg-white dark:bg-[#18181B] rounded-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+            <button @click="openFaq = openFaq === 11 ? null : 11" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What is the AI Stylist?</span>
+                <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 11 && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div x-show="openFaq === 11" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                Our AI Stylist is a personal fashion assistant that helps you find the perfect outfit. It knows all our products, understands Nigerian fashion, and can suggest outfits based on your body type, occasion, and style preferences. Try it at <a href="/stylist" class="text-[#D4AF37] hover:underline">/stylist</a>.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Still have questions -->
+    <div class="mt-12 text-center">
+        <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400 mb-4">Still have questions?</p>
+        <a href="mailto:support@asikoboutique.com" class="inline-flex items-center gap-2 px-6 py-3 bg-[#0D2A22] text-white text-sm font-semibold rounded-lg hover:bg-[#0a1f1a] transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+            </svg>
+            Contact Us
+        </a>
+    </div>
+
+</div>
+</main>
+{% endblock %}

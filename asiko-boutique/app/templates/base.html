@@ -63,6 +63,7 @@
                         <a href="/#storefront" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Shop</a>
                         <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Lookbook</a>
                         <a href="/about" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">About</a>
+                        <a href="/faq" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">FAQ</a>
                         {% for page in request.state.nav_pages %}
                         <a href="/page/{{ page.slug }}" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">{{ page.title }}</a>
                         {% endfor %}
@@ -126,13 +127,14 @@
                     <a href="/#storefront" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Shop</a>
                     <a href="/lookbook" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Lookbook</a>
                     <a href="/about" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">About</a>
+                    <a href="/faq" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">FAQ</a>
                     {% for page in request.state.nav_pages %}
                     <a href="/page/{{ page.slug }}" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">{{ page.title }}</a>
                     {% endfor %}
                     <div class="border-t border-[#D4AF37]/10 dark:border-gray-800 my-2"></div>
                     {% if request.session.get("customer_email") %}
                     <a href="/account" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">My Account</a>
-                    <a href="/orders" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">My Orders</a>
+                    <a href="/account" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">My Orders</a>
                     <a href="/logout" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">Sign Out</a>
                     {% else %}
                     <a href="/login" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Sign In</a>
@@ -215,11 +217,13 @@
                         <ul class="space-y-2.5">
                             {% if request.session.get("customer_email") %}
                             <li><a href="/account" class="text-sm text-white/60 hover:text-white transition-colors">My Account</a></li>
+                            <li><a href="/account" class="text-sm text-white/60 hover:text-white transition-colors">My Orders</a></li>
                             {% else %}
                             <li><a href="/login" class="text-sm text-white/60 hover:text-white transition-colors">Sign In</a></li>
                             <li><a href="/register" class="text-sm text-white/60 hover:text-white transition-colors">Create Account</a></li>
                             {% endif %}
                             <li><a href="/stylist" class="text-sm text-white/60 hover:text-white transition-colors">AI Stylist</a></li>
+                            <li><a href="/faq" class="text-sm text-white/60 hover:text-white transition-colors">FAQ</a></li>
                             <li><a href="#" class="text-sm text-white/60 hover:text-white transition-colors">Gift Cards</a></li>
                         </ul>
                     </div>

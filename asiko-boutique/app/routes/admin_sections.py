@@ -2384,6 +2384,13 @@ async def section_loyalty_post(request: Request) -> HTMLResponse:
 
 
 # ===========================================================================
+# HELP & SUPPORT
+# ===========================================================================
+async def section_help(request: Request) -> HTMLResponse:
+    return _section_response(request, "admin/sections/help.html", {})
+
+
+# ===========================================================================
 # Route registration
 # ===========================================================================
 routes = [
@@ -2409,6 +2416,7 @@ routes = [
     Route("/admin/section/ai-training",   endpoint=section_ai_training_post, methods=["POST"]),
     Route("/admin/section/about",         endpoint=section_about_get,     methods=["GET"]),
     Route("/admin/section/about",         endpoint=section_about_post,    methods=["POST"]),
+    Route("/admin/section/help",          endpoint=section_help,          methods=["GET"]),
     Route("/admin/section/pages",         endpoint=section_pages_get,     methods=["GET"]),
     Route("/admin/section/pages",         endpoint=section_pages_post,    methods=["POST"]),
     Route("/admin/section/blog",          endpoint=section_blog_get,      methods=["GET"]),

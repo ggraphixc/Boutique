@@ -222,6 +222,33 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
                 pass
     logger.info("LOG_SYSTEM: Migration 26 — store_profile + notification columns added to store_settings.")
 
+    # Migration 27: Seed AI Stylist training data
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            count = await conn.fetchval("SELECT COUNT(*) FROM ai_training_data")
+            if count == 0:
+                await conn.execute("""
+                    INSERT INTO ai_training_data (category, question, answer, is_active, sort_order) VALUES
+                    ('brand', 'What is ASIKO?', 'ASIKO Boutique is a Nigerian fashion brand offering authentic, curated styles with transparent pricing. Every piece is crafted with verified provenance and fair-trade standards.', TRUE, 1),
+                    ('brand', 'What does ASIKO mean?', 'ASIKO means "time" or "era" in Yoruba. It represents timeless fashion that transcends trends.', TRUE, 2),
+                    ('brand', 'Where is ASIKO located?', 'ASIKO Boutique is based in Lagos, Nigeria. We ship nationwide across all 36 states and the FCT.', TRUE, 3),
+                    ('brand', 'What makes ASIKO different?', 'We combine verified provenance, transparent pricing (no "DM for price"), and fair-trade standards. Every product shows its real price upfront.', TRUE, 4),
+                    ('faq', 'Do you have physical stores?', 'Currently ASIKO operates online only at asikoboutique.com. We''re working on pop-up events in Lagos.', TRUE, 10),
+                    ('faq', 'What sizes do you carry?', 'We carry sizes XS through XXL. Each product has a detailed size guide. Our AI Stylist can recommend the best size for your body type.', TRUE, 11),
+                    ('faq', 'How do I track my order?', 'Once your order ships, you''ll receive an email with a tracking number. Check My Orders in your account anytime.', TRUE, 12),
+                    ('faq', 'Can I return or exchange?', 'Yes! Returns and exchanges within 7 days of delivery. Items must be unworn with tags. Contact support@asikoboutique.com.', TRUE, 13),
+                    ('style', 'What styles does ASIKO specialize in?', 'Contemporary Nigerian fashion: Ankara prints, Aso-Oke, Adire (tie-dye), solid-color modern pieces, and fusion styles blending heritage with global trends.', TRUE, 20),
+                    ('style', 'How do I style for Nigerian weather?', 'Lightweight cotton/linen for dry season, breathable fabrics for rainy season, layerable pieces for harmattan. Our AI Stylist suggests outfits by location and season.', TRUE, 21),
+                    ('style', 'What are popular outfit combinations?', 'Ankara top + solid skirt/trousers, Adire dress + leather accessories, Aso-Oke wrapper + modern blouse, solid agbada for men, mix-and-match separates.', TRUE, 22),
+                    ('voice', 'How should the AI communicate?', 'Warm, friendly, knowledgeable — like a trusted fashion friend. Use Nigerian English naturally. Reference specific products. Use ₦ for prices.', TRUE, 30),
+                    ('voice', 'What tone should the AI use?', 'Conversational, helpful, confident. Not robotic. Think of a knowledgeable boutique owner who genuinely cares about helping customers look their best.', TRUE, 31)
+                """)
+                logger.info("LOG_SYSTEM: Migration 27 — AI Stylist training data seeded (14 entries).")
+            else:
+                logger.info("LOG_SYSTEM: Migration 27 — AI Stylist training data already exists (%d entries).", count)
+    except Exception as exc:
+        logger.warning("LOG_SYSTEM: Migration 27 failed (non-fatal): %s", exc)
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")

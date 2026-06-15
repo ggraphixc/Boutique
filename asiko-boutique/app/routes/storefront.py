@@ -486,9 +486,18 @@ async def blog_post_detail(request: Request) -> HTMLResponse:
     })
 
 
+async def faq_page(request: Request) -> HTMLResponse:
+    settings = await _get_settings(request)
+    return templates.TemplateResponse(request, "faq.html", {
+        "request": request,
+        "settings": settings,
+    })
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/about", endpoint=about_page, methods=["GET"]),
+    Route("/faq", endpoint=faq_page, methods=["GET"]),
     Route("/lookbook", endpoint=lookbook, methods=["GET"]),
     Route("/htmx/products", endpoint=product_grid_fragment, methods=["GET"]),
     Route("/product/{product_id}", endpoint=product_detail, methods=["GET"]),
