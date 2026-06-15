@@ -82,12 +82,8 @@
             </div>
             <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">API Key</label><input type="password" name="ai_api_key" value="{{ settings.ai_api_key or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="Optional for OpenRouter free"></div>
             <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Model</label>
-                <select name="ai_model" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
-                    <option value="google/gemini-2.0-flash-001" {% if settings.ai_model=='google/gemini-2.0-flash-001' %}selected{% endif %}>Gemini 2.0 Flash</option>
-                    <option value="meta-llama/llama-3.3-70b-instruct:free" {% if settings.ai_model=='meta-llama/llama-3.3-70b-instruct:free' %}selected{% endif %}>Llama 3.3 70B</option>
-                    <option value="mistralai/mistral-small-3.1-24b-instruct:free" {% if settings.ai_model=='mistralai/mistral-small-3.1-24b-instruct:free' %}selected{% endif %}>Mistral Small</option>
-                    <option value="qwen/qwen3-235b-a22b:free" {% if settings.ai_model=='qwen/qwen3-235b-a22b:free' %}selected{% endif %}>Qwen3 235B</option>
-                </select>
+                <input type="text" name="ai_model" value="{{ settings.ai_model or 'google/gemini-2.0-flash-001' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 font-mono" placeholder="e.g. google/gemini-2.0-flash-001">
+                <p class="text-[10px] text-gray-400 mt-1">Paste any model ID. Free examples: <code>google/gemini-2.0-flash-001</code>, <code>meta-llama/llama-3.3-70b-instruct:free</code>, <code>qwen/qwen3-235b-a22b:free</code></p>
             </div>
             <div class="grid grid-cols-2 gap-3">
                 <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Max tokens</label><input type="number" name="ai_max_tokens" value="{{ settings.ai_max_tokens or 1024 }}" min="100" max="4096" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"></div>
@@ -470,5 +466,140 @@
             {% endfor %}
         </div>
     </div>
+
+    <!-- ==================== SEO & SEARCH OPTIMIZATION ==================== -->
+    <form hx-post="/admin/section/settings" hx-swap="none" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
+        <input type="hidden" name="section" value="seo">
+        <div class="flex items-center justify-between mb-3 sm:mb-4">
+            <h3 class="font-medium text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> SEO & Search Optimization
+            </h3>
+            <button type="submit" class="text-[11px] font-semibold text-white bg-[#0D2A22] dark:bg-[#D4AF37] dark:text-[#0D2A22] px-4 py-1.5 rounded-lg hover:bg-[#0D2A22]/90 transition-colors">Save</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- SEO -->
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">SEO Title (appears in Google results)</label>
+                <input type="text" name="seo_title" value="{{ settings.seo_title or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="ASIKO Boutique — Authentic Nigerian Fashion">
+            </div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">SEO Description (meta description for search engines)</label>
+                <textarea name="seo_description" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="Shop authentic Nigerian fashion — dresses, shirts, accessories. Free delivery in Lagos.">{{ settings.seo_description or '' }}</textarea>
+            </div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">SEO Keywords (comma-separated)</label>
+                <input type="text" name="seo_keywords" value="{{ settings.seo_keywords or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="nigerian fashion, african dresses, online boutique, lagos fashion">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">OG Image URL (for social sharing)</label>
+                <input type="text" name="seo_og_image" value="{{ settings.seo_og_image or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="https://asikoboutique.com/static/images/og-image.jpg">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Twitter/X Handle</label>
+                <input type="text" name="seo_twitter_handle" value="{{ settings.seo_twitter_handle or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="@asikoboutique">
+            </div>
+            <div class="flex items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="seo_structured_data" value="false">
+                    <input type="checkbox" name="seo_structured_data" value="true" {% if settings.seo_structured_data %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">Structured Data (JSON-LD)</span>
+                </label>
+            </div>
+            <div class="flex items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="seo_sitemap_enabled" value="false">
+                    <input type="checkbox" name="seo_sitemap_enabled" value="true" {% if settings.seo_sitemap_enabled %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">Auto Sitemap</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="seo_robots_enabled" value="false">
+                    <input type="checkbox" name="seo_robots_enabled" value="true" {% if settings.seo_robots_enabled %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">Robots.txt</span>
+                </label>
+            </div>
+            <!-- Google Analytics / GTM -->
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Google Analytics ID</label>
+                <input type="text" name="seo_google_analytics" value="{{ settings.seo_google_analytics or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="G-XXXXXXXXXX">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Google Tag Manager ID</label>
+                <input type="text" name="seo_google_tag_manager" value="{{ settings.seo_google_tag_manager or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="GTM-XXXXXXX">
+            </div>
+            <!-- GEO -->
+            <div class="md:col-span-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">GEO — Local Business (for Google Maps / AI local search)</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="geo_enabled" value="false">
+                    <input type="checkbox" name="geo_enabled" value="true" {% if settings.geo_enabled %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">Enable Local Business Schema</span>
+                </label>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Business Name</label>
+                <input type="text" name="geo_business_name" value="{{ settings.brand_name or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Street Address</label>
+                <input type="text" name="geo_street" value="" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="123 Fashion Avenue">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">City</label>
+                <input type="text" name="geo_city" value="Lagos" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Region / State</label>
+                <input type="text" name="geo_region" value="Lagos" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Country</label>
+                <input type="text" name="geo_country" value="NG" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Postal Code</label>
+                <input type="text" name="geo_postal" value="" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="100001">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Phone</label>
+                <input type="text" name="geo_phone" value="{{ settings.phone or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="+234 800 000 0000">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Latitude</label>
+                <input type="text" name="geo_lat" value="6.5244" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Longitude</label>
+                <input type="text" name="geo_lng" value="3.3792" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+            </div>
+            <!-- AEO -->
+            <div class="md:col-span-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">AEO — Answer Engine Optimization (for AI citations)</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="aeo_faq_schema" value="false">
+                    <input type="checkbox" name="aeo_faq_schema" value="true" {% if settings.aeo_faq_schema %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">FAQ Schema on /faq page</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="hidden" name="aeo_product_schema" value="false">
+                    <input type="checkbox" name="aeo_product_schema" value="true" {% if settings.aeo_product_schema %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                    <span class="text-xs text-gray-700 dark:text-gray-200">Product Schema on PDP</span>
+                </label>
+            </div>
+            <!-- SEM -->
+            <div class="md:col-span-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">SEM — Search Engine Marketing (conversion tracking)</p>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Google Ads Conversion ID</label>
+                <input type="text" name="sem_conversion_id" value="{{ settings.sem_conversion_id or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="AW-XXXXXXXXX">
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Conversion Label</label>
+                <input type="text" name="sem_conversion_label" value="{{ settings.sem_conversion_label or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="AbCdEfGhIjKl">
+            </div>
+            <div class="md:col-span-2"><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Remarketing Tag (full snippet)</label>
+                <textarea name="sem_remarketing_tag" rows="2" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 font-mono text-xs" placeholder="<!-- Google Ads remarketing tag -->">{{ settings.sem_remarketing_tag or '' }}</textarea>
+            </div>
+            <!-- SMO -->
+            <div class="md:col-span-2 border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">SMO — Social Media Optimization</p>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Twitter Card Type</label>
+                <select name="smo_twitter_card" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    <option value="summary" {% if settings.smo_twitter_card=='summary' %}selected{% endif %}>Summary</option>
+                    <option value="summary_large_image" {% if settings.smo_twitter_card=='summary_large_image' %}selected{% endif %}>Summary Large Image</option>
+                </select>
+            </div>
+            <div><label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Facebook App ID</label>
+                <input type="text" name="smo_facebook_app_id" value="{{ settings.smo_facebook_app_id or '' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40" placeholder="123456789">
+            </div>
+        </div>
+    </form>
 
 </section>

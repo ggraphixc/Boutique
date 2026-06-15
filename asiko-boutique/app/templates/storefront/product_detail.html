@@ -1,5 +1,13 @@
 {% extends "base.html" %}
 {% block title %}{{ product.name }} — {{ settings.brand_name or 'ASIKO' }} Boutique{% endblock %}
+{% block seo %}
+{{ super() }}
+{% if settings.aeo_product_schema %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Product","name":"{{ product.name }}","description":"{{ product.description | default('', true) | e }}","image":"{{ product.base_image or '' }}","brand":{"@type":"Brand","name":"{{ settings.brand_name or 'ASIKO' }}"},"offers":{"@type":"Offer","price":"{{ product.price }}","priceCurrency":"{{ settings.brand_currency_code or 'NGN' }}","availability":"{% if product.stock_quantity | default(0) > 0 %}https://schema.org/InStock{% else %}https://schema.org/OutOfStock{% endif %}","seller":{"@type":"Organization","name":"{{ settings.brand_name or 'ASIKO' }}"}}}
+</script>
+{% endif %}
+{% endblock %}
 
 {% block content %}
 <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">

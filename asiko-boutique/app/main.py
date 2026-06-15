@@ -363,6 +363,32 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             await conn.execute(col_def)
     logger.info("LOG_SYSTEM: Migration 31 — brand identity columns added to store_settings.")
 
+    # Migration 32: SEO / GEO / AEO / SEM / SMO settings
+    async with app.state.db_pool.acquire() as conn:
+        for col_def in [
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_title VARCHAR(200) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_description TEXT DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_keywords TEXT DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_og_image VARCHAR(500) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_twitter_handle VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_google_analytics VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_google_tag_manager VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_structured_data BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_sitemap_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS seo_robots_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS geo_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS geo_local_business JSONB DEFAULT '{}'::jsonb",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS aeo_faq_schema BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS aeo_product_schema BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS smo_twitter_card VARCHAR(50) DEFAULT 'summary_large_image'",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS smo_facebook_app_id VARCHAR(50) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS sem_conversion_id VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS sem_conversion_label VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS sem_remarketing_tag TEXT DEFAULT ''",
+        ]:
+            await conn.execute(col_def)
+    logger.info("LOG_SYSTEM: Migration 32 — SEO/GEO/AEO/SEM/SMO settings added to store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
@@ -428,9 +454,11 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.fashion_chat import routes as fashion_chat_routes
     from app.routes.wardrobe import routes as wardrobe_routes
     from app.routes.search import routes as search_routes
+    from app.routes.seo import routes as seo_routes
 
     for route_list in [
         search_routes,
+        seo_routes,
         storefront_routes,
         cart_routes,
         checkout_routes,

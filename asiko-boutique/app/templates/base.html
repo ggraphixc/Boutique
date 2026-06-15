@@ -4,6 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{{ settings.brand_name or 'ASIKO' }} Boutique{% endblock %}</title>
+    {% block seo %}
+    {% set seo_title = settings.seo_title or (settings.brand_name or 'ASIKO') ~ ' — ' ~ (settings.brand_tagline or 'Authentic Nigerian Fashion') %}
+    {% set seo_desc = settings.seo_description or 'Shop authentic Nigerian fashion — dresses, shirts, trousers, accessories. Free delivery in Lagos. Pay with OPay.' %}
+    {% set seo_keywords = settings.seo_keywords or 'nigerian fashion, african dresses, online boutique, lagos fashion, asiko' %}
+    <meta name="description" content="{{ seo_desc }}">
+    <meta name="keywords" content="{{ seo_keywords }}">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="{{ request.url }}">
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{{ seo_title }}">
+    <meta property="og:description" content="{{ seo_desc }}">
+    <meta property="og:url" content="{{ request.url }}">
+    {% if settings.seo_og_image %}<meta property="og:image" content="{{ settings.seo_og_image }}">{% endif %}
+    <meta property="og:site_name" content="{{ settings.brand_name or 'ASIKO' }} Boutique">
+    <meta property="og:locale" content="en_NG">
+    <!-- Twitter -->
+    <meta name="twitter:card" content="{{ settings.smo_twitter_card or 'summary_large_image' }}">
+    <meta name="twitter:title" content="{{ seo_title }}">
+    <meta name="twitter:description" content="{{ seo_desc }}">
+    {% if settings.seo_twitter_handle %}<meta name="twitter:site" content="{{ settings.seo_twitter_handle }}">{% endif %}
+    {% if settings.seo_og_image %}<meta name="twitter:image" content="{{ settings.seo_og_image }}">{% endif %}
+    {% if settings.smo_facebook_app_id %}<meta property="fb:app_id" content="{{ settings.smo_facebook_app_id }}">{% endif %}
+    {% endblock %}
+    {% block structured_data %}{% endblock %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Apply persisted theme synchronously to prevent FOUC.
@@ -612,5 +637,28 @@
     </script>
 
     {% block scripts %}{% endblock %}
+
+    <!-- SEO: Google Analytics -->
+    {% if settings.seo_google_analytics %}
+    <script async src="https://www.googletagmanager.com/gtag/js?id={{ settings.seo_google_analytics }}"></script>
+    <script>window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}gtag('js', new Date());gtag('config', '{{ settings.seo_google_analytics }}');</script>
+    {% endif %}
+
+    <!-- SEO: Google Tag Manager -->
+    {% if settings.seo_google_tag_manager %}
+    <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','{{ settings.seo_google_tag_manager }}');</script>
+    {% endif %}
+
+    <!-- SEM: Google Ads Remarketing Tag -->
+    {% if settings.sem_remarketing_tag %}
+    {{ settings.sem_remarketing_tag | safe }}
+    {% endif %}
+
+    <!-- SEM: Conversion Tracking -->
+    {% if settings.sem_conversion_id and settings.sem_conversion_label %}
+    <script>gtag('event', 'conversion', {'send_to': '{{ settings.sem_conversion_id }}/{{ settings.sem_conversion_label }}'});</script>
+    {% endif %}
+
+    {% block seo_scripts %}{% endblock %}
 </body>
 </html>

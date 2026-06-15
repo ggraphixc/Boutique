@@ -1,5 +1,12 @@
 {% extends "base.html" %}
 {% block title %}{{ settings.brand_name or 'ASIKO' }} Boutique — Contemporary Nigerian Fashion{% endblock %}
+{% block structured_data %}
+{% if settings.geo_enabled %}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"ClothingStore","name":"{{ settings.brand_name or 'ASIKO' }} Boutique","description":"{{ settings.brand_tagline or 'Authentic Nigerian Fashion' }}","url":"{{ request.url }}","telephone":"{{ settings.phone or '' }}","address":{"@type":"PostalAddress","addressLocality":"Lagos","addressRegion":"Lagos","addressCountry":"NG"},"geo":{"@type":"GeoCoordinates","latitude":6.5244,"longitude":3.3792}}
+</script>
+{% endif %}
+{% endblock %}
 {% block content %}
 <style>
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
@@ -120,14 +127,29 @@
     <p class="text-[#1A1A1A]/60 dark:text-gray-400 text-base max-w-2xl mx-auto font-light">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
 </section>
 
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16" x-data="{ search: '', category: 'all' }">
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-16" x-data="{ search: '', category: 'all', aiResults: '', aiSearching: false }">
     <!-- Search + Filter Bar -->
     <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-8">
-        <div class="relative flex-1">
+        <form @submit.prevent="
+          if (!search.trim()) return;
+          aiSearching = true;
+          aiResults = '';
+          try {
+              const r = await fetch('/api/search?q=' + encodeURIComponent(search));
+              const d = await r.json();
+              if (d.ai_answer) { aiResults = d.ai_answer; }
+              else if (d.results && d.results.length > 0) { aiResults = 'Found ' + d.results.length + ' result(s). Showing matching products below.'; }
+              else { aiResults = 'No results found. Try different keywords.'; }
+          } catch(e) { aiResults = 'Search failed.'; }
+          aiSearching = false;
+        " class="relative flex-1 flex items-center">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#0D2A22]/30 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input type="text" x-model="search" placeholder="Search collection..."
-                   class="w-full pl-10 pr-4 py-2.5 border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-[#18181B] dark:text-white focus:outline-none focus:border-[#D4AF37]">
-        </div>
+            <input type="text" x-model="search" @keydown.enter.prevent="$el.closest('form').dispatchEvent(new Event('submit'))" placeholder="Search collection..."
+                   class="w-full pl-10 pr-10 py-2.5 border border-[#0D2A22]/15 dark:border-gray-700 rounded-lg text-sm bg-white dark:bg-[#18181B] dark:text-white focus:outline-none focus:border-[#D4AF37]">
+            <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-white transition-colors" title="Search with AI">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+            </button>
+        </form>
         <div class="flex gap-2 overflow-x-auto pb-1">
             <button @click="category = 'all'" :class="category === 'all' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
                     class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">All</button>
@@ -142,6 +164,18 @@
             <button @click="category = 'footwear'" :class="category === 'footwear' ? 'bg-[#0D2A22] text-white dark:bg-[#D4AF37] dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#0D2A22]/15 dark:border-gray-700'"
                     class="px-3 py-1.5 text-xs font-medium rounded-full whitespace-nowrap transition-colors">Footwear</button>
         </div>
+    </div>
+
+    <!-- AI Search Results -->
+    <div x-show="aiResults" x-cloak class="mb-6 bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10 rounded-xl border border-[#D4AF37]/20 p-4 flex items-start gap-3">
+        <svg class="w-5 h-5 text-[#D4AF37] flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+        <div class="flex-1">
+            <p class="text-xs font-bold uppercase tracking-wider text-[#D4AF37] mb-1" x-text="aiSearching ? 'Searching...' : 'AI Answer'"></p>
+            <p class="text-sm text-[#0D2A22]/70 dark:text-gray-300 leading-relaxed" x-text="aiResults"></p>
+        </div>
+        <button @click="aiResults=''" class="text-[#0D2A22]/30 hover:text-[#0D2A22]/60 dark:hover:text-gray-400 transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

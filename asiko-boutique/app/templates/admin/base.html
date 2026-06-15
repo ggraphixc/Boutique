@@ -243,16 +243,43 @@
         </div>
 
         <!-- Search + Navigation wrapper (shared Alpine scope) -->
-        <div x-data="{ adminSearch: '' }">
+        <div x-data="{ adminSearch: '', adminSearchResults: '', adminSearching: false }">
         <!-- Search -->
         <div class="px-3 pt-3">
-            <div class="sidebar-search relative flex items-center bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
-                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input type="text" x-model="adminSearch" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 ml-2 px-0 py-0">
-                <span class="sidebar-search-icon-only hidden items-center justify-center w-full"></span>
-            </div>
+            <form @submit.prevent="
+              if (!adminSearch.trim()) return;
+              adminSearching = true;
+              adminSearchResults = '';
+              try {
+                  const r = await fetch('/api/search?q=' + encodeURIComponent(adminSearch));
+                  const d = await r.json();
+                  if (d.results && d.results.length > 0) {
+                      adminSearchResults = d.results.map(r => r.title).join(', ');
+                  } else if (d.ai_answer) {
+                      adminSearchResults = d.ai_answer;
+                  } else {
+                      adminSearchResults = 'No results found.';
+                  }
+              } catch(e) { adminSearchResults = 'Search failed.'; }
+              adminSearching = false;
+            ">
+              <div class="sidebar-search relative flex items-center bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
+                  <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                  </svg>
+                  <input type="text" x-model="adminSearch" @keydown.enter.prevent="$el.closest('form').dispatchEvent(new Event('submit'))" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 ml-2 px-0 py-0">
+                  <span class="sidebar-search-icon-only hidden items-center justify-center w-full"></span>
+              </div>
+              <!-- AI Search results dropdown -->
+              <div x-show="adminSearchResults" x-cloak class="mt-2 p-3 bg-white dark:bg-[#18181B] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+                  <div class="flex items-center gap-2 mb-2">
+                      <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400" x-text="adminSearching ? 'Searching...' : 'AI Search'"></span>
+                  </div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400 leading-relaxed" x-text="adminSearchResults"></p>
+                  <button @click="adminSearchResults=''; adminSearch=''" class="mt-2 text-[10px] text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">Clear</button>
+              </div>
+            </form>
         </div>
 
         <!-- Navigation (single group) -->
