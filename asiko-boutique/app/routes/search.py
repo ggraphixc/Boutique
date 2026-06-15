@@ -106,32 +106,38 @@ async def search_endpoint(request: Request) -> JSONResponse:
                     if settings.get("ai_api_key"):
                         from app.fashion_ai import _get_provider_config
                         config = _get_provider_config(settings=settings)
-                        if config:
+                        if config and config["provider"] != "none" and config["api_key"]:
                             import httpx
                             headers = {}
-                            if config["provider"] == "openrouter":
+                            provider = config["provider"]
+                            if provider == "openrouter":
+                                api_url = "https://openrouter.ai/api/v1/chat/completions"
                                 headers = {"Authorization": f"Bearer {config['api_key']}", "HTTP-Referer": "https://asikoboutique.com"}
-                            elif config["provider"] == "openai":
+                            elif provider == "openai":
+                                api_url = "https://api.openai.com/v1/chat/completions"
                                 headers = {"Authorization": f"Bearer {config['api_key']}"}
+                            else:
+                                api_url = ""
 
-                            system_prompt = (
-                                "You are ASIKO Boutique's fashion assistant. Answer questions about Nigerian fashion, "
-                                "styling, products, sizing, delivery, and returns. Be helpful and concise. "
-                                "If the question is about a specific product, suggest browsing the shop."
-                            )
-                            payload = {
-                                "model": config["model"],
-                                "messages": [
-                                    {"role": "system", "content": system_prompt},
-                                    {"role": "user", "content": q}
-                                ],
-                                "max_tokens": 300,
-                            }
-                            async with httpx.AsyncClient(timeout=15) as client:
-                                resp = await client.post(config["url"], json=payload, headers=headers)
-                                if resp.status_code == 200:
-                                    data = resp.json()
-                                    ai_answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                            if api_url:
+                                system_prompt = (
+                                    "You are ASIKO Boutique's fashion assistant. Answer questions about Nigerian fashion, "
+                                    "styling, products, sizing, delivery, and returns. Be helpful and concise. "
+                                    "If the question is about a specific product, suggest browsing the shop."
+                                )
+                                payload = {
+                                    "model": config["model"],
+                                    "messages": [
+                                        {"role": "system", "content": system_prompt},
+                                        {"role": "user", "content": q}
+                                    ],
+                                    "max_tokens": 300,
+                                }
+                                async with httpx.AsyncClient(timeout=15) as client:
+                                    resp = await client.post(api_url, json=payload, headers=headers)
+                                    if resp.status_code == 200:
+                                        data = resp.json()
+                                        ai_answer = data.get("choices", [{}])[0].get("message", {}).get("content", "")
                 except Exception as exc:
                     logger.warning("[search] AI assist failed: %s", exc)
 

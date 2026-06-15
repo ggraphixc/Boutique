@@ -57,10 +57,19 @@ def _get_provider_config(db_pool=None, settings: dict = None) -> dict:
     if not api_key:
         provider = "none"
 
+    # Resolve API URL from provider
+    _urls = {
+        "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+        "openai": "https://api.openai.com/v1/chat/completions",
+        "anthropic": "https://api.anthropic.com/v1/messages",
+    }
+    api_url = _urls.get(provider, "")
+
     return {
         "provider": provider,
         "api_key": api_key,
         "model": model,
+        "url": api_url,
         "system_prompt_override": system_prompt_override,
         "max_tokens": max_tokens,
         "temperature": temperature,
