@@ -573,14 +573,11 @@ async def section_settings_get(request: Request) -> HTMLResponse:
 async def _render_settings_section(request: Request) -> str:
     """Re-render the settings section HTML for HTMX response."""
     pool = request.app.state.db_pool
-    settings: Dict[str, Any] = {}
     try:
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT * FROM store_settings WHERE id = 1")
-            if row:
-                settings = dict(row)
+        from app.settings_service import get_settings
+        settings = await get_settings(pool)
     except Exception:
-        pass
+        settings = {}
 
     # Use the app's Jinja2 environment directly for reliable rendering
     from jinja2 import Environment, FileSystemLoader
