@@ -103,6 +103,26 @@ DEFAULTS: Dict[str, Any] = {
     "email_shipping_enabled": True,
     "email_newsletter_enabled": True,
     "email_password_reset_enabled": True,
+    # Notification toggles
+    "notif_new_order": True,
+    "notif_pipeline": True,
+    "notif_review": True,
+    "notif_low_stock": True,
+    # Session
+    "session_timeout": 30,
+    # Page visibility
+    "page_contact_visible": True,
+    "page_faq_visible": True,
+    "page_shipping_visible": True,
+    "page_size_guide_visible": True,
+    "page_stylist_visible": True,
+    "page_lookbook_visible": True,
+    # Email campaign
+    "email_from_name": "ASIKO Boutique",
+    "email_reply_to": "support@asikoboutique.com",
+    "email_tracking_enabled": True,
+    "email_unsubscribe_link": True,
+    "email_footer_text": "ASIKO Boutique — Authentic Nigerian Fashion",
 }
 
 
@@ -153,7 +173,7 @@ async def save_settings(db_pool, payload: Dict[str, Any], partial: bool = False)
     BOOLEAN_KEYS = {
         "auto_mesh", "ai_stylist_enabled", "shop_show_3d_badge",
         "chatbot_enabled", "blog_enabled",
-        "admin_auth", "notif_new_order", "notif_pipeline",
+        "notif_new_order", "notif_pipeline",
         "notif_review", "notif_low_stock",
         "email_welcome_enabled", "email_order_enabled", "email_shipping_enabled",
         "email_newsletter_enabled", "email_password_reset_enabled",

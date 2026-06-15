@@ -50,7 +50,7 @@ def _humanize_dt(dt) -> str:
     now = datetime.now(timezone.utc)
     delta = now - dt
     if delta.days > 30:
-        return dt.strftime("%b %-d, %Y")
+        return dt.strftime("%b %d, %Y")
     if delta.days >= 1:
         return f"{delta.days}d ago"
     hours = int(delta.total_seconds() // 3600)
@@ -82,10 +82,10 @@ async def section_email_get(request: Request) -> HTMLResponse:
                 logger.warning("[admin] email_templates fetch failed (table may not exist yet): %s", exc)
 
             try:
-                rows = await conn.fetch("SELECT * FROM email_logs ORDER BY created_at DESC LIMIT 50")
+                rows = await conn.fetch("SELECT * FROM email_logs ORDER BY sent_at DESC LIMIT 50")
                 email_logs = [dict(r) for r in rows]
                 for log in email_logs:
-                    log["created_at"] = _humanize_dt(log.get("created_at"))
+                    log["sent_at"] = _humanize_dt(log.get("sent_at"))
             except Exception as exc:
                 logger.warning("[admin] email_logs fetch failed (table may not exist yet): %s", exc)
 

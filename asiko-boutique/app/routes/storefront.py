@@ -382,6 +382,7 @@ async def about_page(request: Request) -> HTMLResponse:
             "location": about.get("location") or settings.get("about_location", ""),
             "email": about.get("email") or settings.get("about_email", ""),
             "founded_year": about.get("founded_year") or settings.get("about_founded_year", 2024),
+            "instagram": about.get("instagram") or "",
         }
     else:
         ctx = {
@@ -392,6 +393,7 @@ async def about_page(request: Request) -> HTMLResponse:
             "location": settings.get("about_location", ""),
             "email": settings.get("about_email", ""),
             "founded_year": settings.get("about_founded_year", 2024),
+            "instagram": "",
         }
 
     return templates.TemplateResponse(request, "storefront/about.html", {
@@ -502,6 +504,62 @@ async def contact_page(request: Request) -> HTMLResponse:
         "request": request, "settings": settings,
     })
 
+
+async def contact_submit(request: Request) -> HTMLResponse:
+    """Handle contact form submission — store message and send notification email."""
+    pool = request.app.state.db_pool
+    form = await request.form()
+    name = (form.get("name") or "").strip()
+    email = (form.get("email") or "").strip()
+    subject = (form.get("subject") or "").strip()
+    message = (form.get("message") or "").strip()
+
+    if not name or not email or not message:
+        return HTMLResponse(
+            '<div class="text-center py-12"><h2 class="text-xl font-bold text-gray-900 mb-2">Missing Information</h2>'
+            '<p class="text-gray-600">Please fill in all required fields.</p>'
+            '<a href="/contact" class="mt-4 inline-block text-[#0D2A22] underline">Go back</a></div>',
+            status_code=400,
+        )
+
+    # Store in DB if contact_messages table exists
+    try:
+        async with pool.acquire() as conn:
+            await conn.execute(
+                "CREATE TABLE IF NOT EXISTS contact_messages ("
+                "id UUID PRIMARY KEY DEFAULT gen_random_uuid(),"
+                "name VARCHAR(255) NOT NULL, email VARCHAR(255) NOT NULL,"
+                "subject VARCHAR(500), message TEXT NOT NULL,"
+                "is_read BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW())"
+            )
+            await conn.execute(
+                "INSERT INTO contact_messages (name, email, subject, message) VALUES ($1, $2, $3, $4)",
+                name, email, subject, message,
+            )
+    except Exception as exc:
+        logger.warning("[storefront] contact message save failed: %s", exc)
+
+    # Send notification email to admin (fire-and-forget)
+    try:
+        from app.services.brevo import send_transactional_email
+        admin_email = (await get_settings(pool)).get("admin_email", "hello@asikoboutique.com")
+        html = (
+            f"<h2>New Contact Message</h2>"
+            f"<p><strong>From:</strong> {name} ({email})</p>"
+            f"<p><strong>Subject:</strong> {subject or 'No subject'}</p>"
+            f"<p><strong>Message:</strong></p><p>{message}</p>"
+        )
+        import asyncio
+        asyncio.create_task(send_transactional_email(admin_email, f"Contact: {subject or 'New message from ' + name}", html))
+    except Exception:
+        pass
+
+    return HTMLResponse(
+        '<div class="text-center py-12"><h2 class="text-xl font-bold text-gray-900 mb-2">Message Sent!</h2>'
+        '<p class="text-gray-600">Thank you for reaching out. We\'ll get back to you soon.</p>'
+        '<a href="/" class="mt-4 inline-block px-6 py-2 bg-[#0D2A22] text-white rounded-lg hover:bg-[#0a1f1a] transition-colors">Back to Home</a></div>',
+    )
+
 async def shipping_page(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
     settings = await get_settings(pool)
@@ -533,6 +591,7 @@ routes = [
     Route("/blog", endpoint=blog_listing, methods=["GET"]),
     Route("/blog/{slug}", endpoint=blog_post_detail, methods=["GET"]),
     Route("/contact", endpoint=contact_page, methods=["GET"]),
+    Route("/contact/submit", endpoint=contact_submit, methods=["POST"]),
     Route("/shipping", endpoint=shipping_page, methods=["GET"]),
     Route("/size-guide", endpoint=size_guide_page, methods=["GET"]),
 ]

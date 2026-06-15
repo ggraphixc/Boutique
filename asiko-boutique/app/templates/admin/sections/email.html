@@ -316,7 +316,7 @@
                     <tbody class="divide-y divide-gray-50 dark:divide-gray-800">
                         {% for log in email_logs %}
                         <tr class="hover:bg-gray-50 dark:hover:bg-[#18181B]">
-                            <td class="py-3 text-xs text-gray-500 dark:text-gray-400">{{ log.created_at | default('--') }}</td>
+                            <td class="py-3 text-xs text-gray-500 dark:text-gray-400">{{ log.sent_at | default('--') }}</td>
                             <td class="py-3 text-sm text-gray-900 dark:text-gray-100">{{ log.recipient_email }}</td>
                             <td class="py-3 text-sm text-gray-700 dark:text-gray-200 truncate max-w-xs">{{ log.subject }}</td>
                             <td class="py-3">
