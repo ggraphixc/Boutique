@@ -312,6 +312,38 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("LOG_SYSTEM: Migration 28 failed (non-fatal): %s", exc)
 
+    # Migration 29: Convert existing file-path images to base64 data URLs
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id, base_image FROM products WHERE base_image IS NOT NULL "
+                "AND base_image NOT LIKE 'data:%'"
+            )
+            import base64 as _b64, os as _os
+            converted = 0
+            for row in rows:
+                img = row["base_image"]
+                if not img or not img.startswith("/"):
+                    continue
+                # Resolve relative to app root
+                file_system = _os.path.join(_os.path.dirname(_os.path.dirname(__file__)), img.lstrip("/"))
+                if not _os.path.isfile(file_system):
+                    continue
+                ext = _os.path.splitext(file_system)[1].lower().lstrip(".")
+                mime_map = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+                mime = mime_map.get(ext, "image/jpeg")
+                with open(file_system, "rb") as f:
+                    b64 = _b64.b64encode(f.read()).decode("ascii")
+                data_url = f"data:{mime};base64,{b64}"
+                await conn.execute("UPDATE products SET base_image = $1 WHERE id = $2", data_url, row["id"])
+                converted += 1
+            if converted:
+                logger.info("LOG_SYSTEM: Migration 29 — converted %d file-path images to base64 data URLs.", converted)
+            else:
+                logger.info("LOG_SYSTEM: Migration 29 — no file-path images to convert (all already data URLs or NULL).")
+    except Exception as exc:
+        logger.warning("LOG_SYSTEM: Migration 29 failed (non-fatal): %s", exc)
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")

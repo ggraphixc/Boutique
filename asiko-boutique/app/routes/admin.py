@@ -270,9 +270,9 @@ async def create_product(request: Request):
 
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
-    # Handle optional image upload
-    UPLOAD_DIR = "static/uploads"
+    # Handle optional image upload — store as base64 data URL in DB (persists on Render)
     image_path = None
+    MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB limit
     if uploaded_file and hasattr(uploaded_file, "filename") and uploaded_file.filename:
         ext = os.path.splitext(uploaded_file.filename)[1].lower()
         if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
@@ -280,13 +280,16 @@ async def create_product(request: Request):
                 "<span class='text-xs text-red-500'>Invalid image format. Use JPG, PNG, or WebP.</span>",
                 status_code=400,
             )
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        secure_name = f"prod_{secrets.token_hex(8)}{ext}"
-        file_path = os.path.join(UPLOAD_DIR, secure_name)
+        import base64
         contents = await uploaded_file.read()
-        with open(file_path, "wb") as f:
-            f.write(contents)
-        image_path = f"/{file_path}"
+        if len(contents) > MAX_IMAGE_BYTES:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>Image too large. Max 5 MB.</span>",
+                status_code=400,
+            )
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+        b64 = base64.b64encode(contents).decode("ascii")
+        image_path = f"data:{mime.get(ext.lstrip('.'), 'image/jpeg')};base64,{b64}"
 
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
@@ -374,9 +377,9 @@ async def edit_product(request: Request):
 
     slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
-    # Handle optional new image upload
-    UPLOAD_DIR = "static/uploads"
+    # Handle optional new image upload — store as base64 data URL in DB
     image_path = None
+    MAX_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB limit
     if uploaded_file and hasattr(uploaded_file, "filename") and uploaded_file.filename:
         ext = os.path.splitext(uploaded_file.filename)[1].lower()
         if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
@@ -384,13 +387,16 @@ async def edit_product(request: Request):
                 "<span class='text-xs text-red-500'>Invalid image format. Use JPG, PNG, or WebP.</span>",
                 status_code=400,
             )
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        secure_name = f"prod_{secrets.token_hex(8)}{ext}"
-        file_path = os.path.join(UPLOAD_DIR, secure_name)
+        import base64
         contents = await uploaded_file.read()
-        with open(file_path, "wb") as f:
-            f.write(contents)
-        image_path = f"/{file_path}"
+        if len(contents) > MAX_IMAGE_BYTES:
+            return HTMLResponse(
+                "<span class='text-xs text-red-500'>Image too large. Max 5 MB.</span>",
+                status_code=400,
+            )
+        mime = {"jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp"}
+        b64 = base64.b64encode(contents).decode("ascii")
+        image_path = f"data:{mime.get(ext.lstrip('.'), 'image/jpeg')};base64,{b64}"
 
     pool = request.app.state.db_pool
     async with pool.acquire() as conn:
