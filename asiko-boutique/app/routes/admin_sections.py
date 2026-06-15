@@ -783,6 +783,7 @@ async def section_settings_post(request: Request) -> HTMLResponse:
             "about": save_page_settings,
             "customer_dashboard": save_page_settings,
             "currency_locale": save_page_settings,
+            "shipping": save_shop_settings,
             "pages_blog": save_page_settings,
             "security": save_page_settings,
             "notifications": save_notification_settings,

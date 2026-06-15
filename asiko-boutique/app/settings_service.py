@@ -258,52 +258,76 @@ async def _get_table(db_pool, table_key: str) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Generic per-table write
+# Generic per-table write — INSERT defaults + UPDATE payload columns only
 # ---------------------------------------------------------------------------
+def _coerce_literal(v: Any, is_bool: bool = False, is_int: bool = False,
+                    is_float: bool = False) -> str:
+    """Coerce a value to its PostgreSQL literal string."""
+    if is_bool:
+        bval = bool(str(v).lower() in ("true", "1", "on", "yes")) if v not in (None, "") else False
+        return _pg_literal(bval)
+    if is_int:
+        try:
+            return _pg_literal(int(v))
+        except (ValueError, TypeError):
+            return _pg_literal(0)
+    if is_float:
+        try:
+            return _pg_literal(float(v))
+        except (ValueError, TypeError):
+            return _pg_literal(0.0)
+    return _pg_literal(str(v) if v is not None else "")
+
+
 async def _save_table(db_pool, table_key: str, payload: Dict[str, Any]) -> None:
-    """Upsert a settings table singleton row."""
+    """Save settings to a table.  Two-step write:
+    1. INSERT the singleton row with ALL column defaults (ON CONFLICT DO NOTHING).
+    2. UPDATE only the columns present in *payload*.
+
+    This prevents one section's save from resetting columns owned by another
+    section that shares the same table (e.g. hero / lookbook / about all write
+    to page_settings).
+    """
     if not payload:
         return
-    table_name, _ = _TABLES[table_key]
+    table_name, defaults = _TABLES[table_key]
     bool_keys = _BOOL_KEYS.get(table_key, set())
     int_keys = _INT_KEYS.get(table_key, set())
     float_keys = _FLOAT_KEYS.get(table_key, set())
 
-    columns, literals, set_clauses = [], [], []
+    # --- Build UPDATE SET clauses (payload columns only) ---
+    set_parts: list[str] = []
     for k, v in payload.items():
-        columns.append(k)
-        if k in bool_keys:
-            bval = bool(str(v).lower() in ("true", "1", "on", "yes")) if v not in (None, "") else False
-            lit = _pg_literal(bval)
-        elif k in int_keys:
-            try:
-                lit = _pg_literal(int(v))
-            except (ValueError, TypeError):
-                lit = _pg_literal(0)
-        elif k in float_keys:
-            try:
-                lit = _pg_literal(float(v))
-            except (ValueError, TypeError):
-                lit = _pg_literal(0.0)
-        else:
-            lit = _pg_literal(str(v) if v is not None else "")
-        literals.append(lit)
-        set_clauses.append(f"{k} = {lit}")
+        lit = _coerce_literal(v, k in bool_keys, k in int_keys, k in float_keys)
+        set_parts.append(f"{k} = {lit}")
 
-    cols_str = ", ".join(["id"] + columns)
-    vals_str = ", ".join(["1"] + literals)
-    sets_str = ", ".join(set_clauses)
+    if not set_parts:
+        return
 
-    query = f"""
-        INSERT INTO {table_name} ({cols_str}, updated_at)
-        VALUES ({vals_str}, now())
-        ON CONFLICT (id) DO UPDATE SET
-            {sets_str},
-            updated_at = now()
-    """
+    # --- Build INSERT with ALL defaults (ensures row exists) ---
+    all_cols = list(defaults.keys())
+    all_lits = []
+    for k in all_cols:
+        v = defaults[k]
+        all_lits.append(_coerce_literal(v, k in bool_keys, k in int_keys, k in float_keys))
+
+    cols_str = ", ".join(["id"] + all_cols)
+    vals_str = ", ".join(["1"] + all_lits)
+    sets_str = ", ".join(set_parts)
+
+    insert_sql = (
+        f"INSERT INTO {table_name} ({cols_str}, updated_at) "
+        f"VALUES ({vals_str}, now()) ON CONFLICT (id) DO NOTHING"
+    )
+    update_sql = (
+        f"UPDATE {table_name} SET {sets_str}, updated_at = now() WHERE id = 1"
+    )
+
     try:
         async with db_pool.acquire() as conn:
-            await conn.execute(query)
+            async with conn.transaction():
+                await conn.execute(insert_sql)
+                await conn.execute(update_sql)
         invalidate_settings_cache()
     except Exception as exc:
         logger.error("[%s] save failed: %s", table_name, exc)
