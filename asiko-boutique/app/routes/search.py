@@ -29,7 +29,7 @@ async def search_endpoint(request: Request) -> JSONResponse:
                 conditions = []
                 params = []
                 for i, word in enumerate(q_words):
-                    conditions.append(f"(name ILIKE ${i*2+1} OR description ILIKE ${i*2+2})")
+                    conditions.append(f"(p.name ILIKE ${i*2+1} OR p.description ILIKE ${i*2+2})")
                     params.extend([f"%{word}%", f"%{word}%"])
                 where = " AND ".join(conditions)
                 rows = await conn.fetch(
@@ -104,8 +104,8 @@ async def search_endpoint(request: Request) -> JSONResponse:
                     from app.settings_service import get_settings
                     settings = await get_settings(pool)
                     if settings.get("ai_api_key"):
-                        from app.fashion_ai import get_provider_config
-                        config = get_provider_config(settings)
+                        from app.fashion_ai import _get_provider_config
+                        config = _get_provider_config(settings=settings)
                         if config:
                             import httpx
                             headers = {}
