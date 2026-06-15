@@ -242,19 +242,28 @@
             </div>
         </div>
 
+        <!-- Search + Navigation wrapper (shared Alpine scope) -->
+        <div x-data="{ adminSearch: '' }">
         <!-- Search -->
         <div class="px-3 pt-3">
             <div class="sidebar-search relative flex items-center bg-gray-50 dark:bg-[#18181B] border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2">
                 <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <input type="text" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 ml-2 px-0 py-0">
+                <input type="text" x-model="adminSearch" placeholder="Search..." class="sidebar-search-input w-full bg-transparent border-0 focus:outline-none focus:ring-0 text-sm text-gray-700 dark:text-gray-200 placeholder-gray-400 ml-2 px-0 py-0">
                 <span class="sidebar-search-icon-only hidden items-center justify-center w-full"></span>
             </div>
         </div>
 
         <!-- Navigation (single group) -->
         <nav class="flex-1 overflow-y-auto panel-scroll px-3 py-5">
+            <div class="space-y-0.5" x-effect="
+                document.querySelectorAll('.nav-item').forEach(el => {
+                    const label = (el.querySelector('.nav-label')?.textContent || '').toLowerCase();
+                    const match = !adminSearch || label.includes(adminSearch.toLowerCase());
+                    el.style.display = match ? '' : 'none';
+                });
+            ">
             <div class="space-y-0.5">
 
                 <button hx-get="/admin/section/dashboard" hx-target="#workspace-content" hx-push-url="true"
@@ -420,6 +429,7 @@
                 </div>
             </div>
         </nav>
+        </div><!-- /x-data adminSearch wrapper -->
 
         <!-- Bottom: Help & Support + Logout + Hide -->
         <div class="flex-shrink-0 border-t border-gray-100 px-3 py-3 space-y-1">

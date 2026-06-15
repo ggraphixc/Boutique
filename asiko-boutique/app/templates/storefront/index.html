@@ -147,7 +147,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {% for product in products %}
         {% set cat = (product.category_name | default('', true)) | lower %}
-        <div x-show="category === 'all' || '{{ cat }}' === category" x-transition class="group relative" onclick="window.location='/product/{{ product.id }}'" style="cursor:pointer">
+        <div x-show="(category === 'all' || '{{ cat }}' === category) && (!search || '{{ (product.name | default('', true)) | lower }}'.includes(search.toLowerCase()) || '{{ (product.description | default('', true)) | lower }}'.includes(search.toLowerCase()))" x-transition class="group relative" onclick="window.location='/product/{{ product.id }}'" style="cursor:pointer">
             <div class="overflow-hidden rounded-2xl bg-white dark:bg-[#18181B] shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/10 dark:hover:shadow-[#D4AF37]/5 hover:-translate-y-1">
                 <!-- Image -->
                 <div class="relative aspect-[3/4] bg-gradient-to-br from-[#FBF9F6] to-[#F5F0E8] dark:from-[#111] dark:to-[#1a1a1a] overflow-hidden">

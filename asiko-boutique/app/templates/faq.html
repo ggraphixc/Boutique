@@ -12,21 +12,75 @@
       <p class="text-[#D4AF37] text-xs font-medium tracking-[0.3em] uppercase mb-4">Support</p>
       <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white mb-5 leading-tight">How Can We Help?</h1>
       <p class="text-white/50 text-sm sm:text-base max-w-lg mx-auto mb-8">Find answers about shopping, sizing, delivery, and more.</p>
-      <!-- Decorative search bar -->
+      <!-- Search bar -->
       <div class="max-w-xl mx-auto">
-        <div class="flex items-center gap-3 bg-white/10 border border-white/10 rounded-2xl px-5 py-3.5 pointer-events-none">
+        <div class="flex items-center gap-3 bg-white/10 border border-white/10 rounded-2xl px-5 py-3.5 focus-within:border-[#D4AF37]/40 transition-colors">
           <svg class="w-5 h-5 text-[#D4AF37] flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/></svg>
-          <span class="text-white/30 text-sm">Search our help centre...</span>
+          <input type="text" x-model="faqSearch" placeholder="Search our help centre..." class="flex-1 bg-transparent text-white text-sm placeholder-white/30 focus:outline-none">
+          <button x-show="faqSearch" @click="faqSearch=''; searchResults=[]; searchAI=''" class="text-white/40 hover:text-white transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
         </div>
       </div>
     </div>
   </section>
 
   <!-- FAQ Content -->
-  <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20" x-data="{ filter: 'all', openFaq: null }">
+  <section class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20" x-data="{ filter: 'all', openFaq: null, faqSearch: '', searchResults: [], searching: false, searchAI: '' }" x-effect="
+    const q = faqSearch.toLowerCase().trim();
+    if (!q) { searchResults = []; searchAI = ''; return; }
+    const items = document.querySelectorAll('[data-category]');
+    searchResults = [];
+    items.forEach(el => {
+        const btn = el.querySelector('button');
+        const ans = el.querySelector('.px-6.pb-5');
+        const text = ((btn ? btn.textContent : '') + ' ' + (ans ? ans.textContent : '')).toLowerCase();
+        if (text.includes(q)) {
+            const id = btn ? btn.getAttribute('@click')?.match(/openFaq = '([^']+)'/)?.[1] : null;
+            if (id) searchResults.push(id);
+        }
+    });
+    if (searchResults.length === 0 && q.length > 2) {
+        searchAI = 'Searching...';
+        fetch('/api/search?q=' + encodeURIComponent(faqSearch))
+            .then(r => r.json())
+            .then(d => { searchAI = d.ai_answer || 'No results found. Try different keywords.'; })
+            .catch(() => { searchAI = 'Could not search. Please try again.'; });
+    } else { searchAI = ''; }
+  ">
+
+    <!-- Search results / AI answer -->
+    <div x-show="faqSearch.length > 0" class="mb-8">
+      <template x-if="searchResults.length > 0">
+        <div class="bg-white dark:bg-[#18181B] rounded-2xl border border-[#D4AF37]/10 dark:border-gray-800 p-6">
+          <h3 class="text-sm font-semibold text-[#0D2A22] dark:text-gray-100 mb-4 flex items-center gap-2">
+            <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <span x-text="searchResults.length + ' result(s) found'"></span>
+          </h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Showing matching FAQs below. Clear search to see all.</p>
+        </div>
+      </template>
+      <template x-if="searchAI && searchAI !== 'Searching...'">
+        <div class="bg-[#D4AF37]/5 dark:bg-[#D4AF37]/10 rounded-2xl border border-[#D4AF37]/20 p-6">
+          <h3 class="text-sm font-semibold text-[#0D2A22] dark:text-gray-100 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+            AI Answer
+          </h3>
+          <p class="text-sm text-[#1A1A1A]/70 dark:text-gray-300 leading-relaxed" x-text="searchAI"></p>
+        </div>
+      </template>
+      <template x-if="searchAI === 'Searching...'">
+        <div class="text-center py-6">
+          <div class="inline-flex items-center gap-2 text-sm text-[#D4AF37]">
+            <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            Searching our help centre...
+          </div>
+        </div>
+      </template>
+    </div>
 
     <!-- Category Filter Pills -->
-    <div class="flex flex-wrap items-center justify-center gap-2 mb-12">
+    <div x-show="faqSearch.length === 0" class="flex flex-wrap items-center justify-center gap-2 mb-12">
       <button @click="filter = 'all'; openFaq = null" :class="filter === 'all' ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#D4AF37]/15 dark:border-gray-700'" class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200">All</button>
       <button @click="filter = 'shopping'; openFaq = null" :class="filter === 'shopping' ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#D4AF37]/15 dark:border-gray-700'" class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200">Shopping</button>
       <button @click="filter = 'sizing'; openFaq = null" :class="filter === 'sizing' ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22]' : 'bg-white dark:bg-[#18181B] text-[#0D2A22] dark:text-gray-300 border border-[#D4AF37]/15 dark:border-gray-700'" class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-200">Sizing & Fit</button>
@@ -36,7 +90,7 @@
     </div>
 
     <!-- Shopping -->
-    <div x-show="filter === 'all' || filter === 'shopping'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+    <div x-show="(faqSearch.length === 0) && (filter === 'all' || filter === 'shopping')" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-1 h-6 bg-[#D4AF37] rounded-full"></div>
         <h2 class="font-display text-lg text-[#0D2A22] dark:text-white">Shopping</h2>
@@ -87,7 +141,7 @@
     </div>
 
     <!-- Sizing & Fit -->
-    <div x-show="filter === 'all' || filter === 'sizing'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+    <div x-show="(faqSearch.length === 0) && (filter === 'all' || filter === 'sizing')" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-1 h-6 bg-[#D4AF37] rounded-full"></div>
         <h2 class="font-display text-lg text-[#0D2A22] dark:text-white">Sizing & Fit</h2>
@@ -128,7 +182,7 @@
     </div>
 
     <!-- Delivery -->
-    <div x-show="filter === 'all' || filter === 'delivery'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+    <div x-show="(faqSearch.length === 0) && (filter === 'all' || filter === 'delivery')" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-1 h-6 bg-[#D4AF37] rounded-full"></div>
         <h2 class="font-display text-lg text-[#0D2A22] dark:text-white">Delivery</h2>
@@ -174,7 +228,7 @@
     </div>
 
     <!-- Returns -->
-    <div x-show="filter === 'all' || filter === 'returns'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+    <div x-show="(faqSearch.length === 0) && (filter === 'all' || filter === 'returns')" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-1 h-6 bg-[#D4AF37] rounded-full"></div>
         <h2 class="font-display text-lg text-[#0D2A22] dark:text-white">Returns</h2>
@@ -205,7 +259,7 @@
     </div>
 
     <!-- AI Stylist -->
-    <div x-show="filter === 'all' || filter === 'stylist'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+    <div x-show="(faqSearch.length === 0) && (filter === 'all' || filter === 'stylist')" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
       <div class="flex items-center gap-3 mb-5">
         <div class="w-1 h-6 bg-[#D4AF37] rounded-full"></div>
         <h2 class="font-display text-lg text-[#0D2A22] dark:text-white">AI Stylist</h2>
