@@ -48,9 +48,9 @@ def _section_response(request: Request, template: str, context: dict) -> HTMLRes
     if request.headers.get("HX-Request"):
         return templates.TemplateResponse(request, template, ctx)
     # Direct navigation — render section inside the admin shell
-    from app.settings_service import DEFAULTS, SEO_DEFAULTS
+    from app.settings_service import DEFAULTS
     if "settings" not in ctx:
-        ctx["settings"] = {**DEFAULTS, **SEO_DEFAULTS}
+        ctx["settings"] = dict(DEFAULTS)
     ctx["section_template"] = template
     return templates.TemplateResponse(request, "admin/base.html", ctx)
 
@@ -753,7 +753,11 @@ async def section_settings_post(request: Request) -> HTMLResponse:
     }
 
     try:
-        from app.settings_service import save_settings, save_seo_settings
+        from app.settings_service import (
+            save_store_profile, save_brand_settings, save_ai_settings,
+            save_chatbot_settings, save_page_settings, save_shop_settings,
+            save_notification_settings, save_seo_settings,
+        )
 
         # Handle brand_logo file upload (multipart/form-data)
         if section == "brand":
@@ -769,17 +773,39 @@ async def section_settings_post(request: Request) -> HTMLResponse:
                 b64 = base64.b64encode(contents).decode("ascii")
                 SECTION_PAYLOADS["brand"]["brand_logo"] = f"data:{mime};base64,{b64}"
 
-        # SEO section saves to dedicated seo_settings table
-        if section == "seo":
-            await save_seo_settings(pool, SECTION_PAYLOADS["seo"])
-        elif section and section in SECTION_PAYLOADS:
-            await save_settings(pool, SECTION_PAYLOADS[section], partial=True)
+        # Section → save function routing
+        _SAVE路由 = {
+            "store_profile": save_store_profile,
+            "brand": save_brand_settings,
+            "ai_provider": save_ai_settings,
+            "ai_stylist_page": save_ai_settings,
+            "chatbot": save_chatbot_settings,
+            "hero": save_page_settings,
+            "shop": save_shop_settings,
+            "lookbook": save_page_settings,
+            "about": save_page_settings,
+            "customer_dashboard": save_page_settings,
+            "currency_locale": save_page_settings,
+            "pages_blog": save_page_settings,
+            "security": save_page_settings,
+            "notifications": save_notification_settings,
+            "email_config": save_notification_settings,
+            "email_notifications": save_notification_settings,
+            "seo": save_seo_settings,
+        }
+
+        if section and section in SECTION_PAYLOADS:
+            save_fn = _SAVE路由.get(section)
+            if save_fn:
+                await save_fn(pool, SECTION_PAYLOADS[section])
         else:
-            full_payload = {}
+            # Save all sections to their respective tables
+            saved_tables = set()
             for sec_key, sec_payload in SECTION_PAYLOADS.items():
-                if sec_key != "seo":
-                    full_payload.update(sec_payload)
-            await save_settings(pool, full_payload, partial=False)
+                save_fn = _SAVE路由.get(sec_key)
+                if save_fn and save_fn not in saved_tables:
+                    await save_fn(pool, sec_payload)
+                    saved_tables.add(save_fn)
 
         # Success — return with HX-Trigger toast
         from starlette.responses import HTMLResponse

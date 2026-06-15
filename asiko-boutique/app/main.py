@@ -443,6 +443,193 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             """)
     logger.info("LOG_SYSTEM: Migration 33 — seo_settings table created, data migrated from store_settings.")
 
+    # Migration 34: dedicated settings tables for each admin section
+    async with app.state.db_pool.acquire() as conn:
+        for ddl in [
+            # 1. Store profile
+            """CREATE TABLE IF NOT EXISTS store_profile (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                store_name VARCHAR(100) DEFAULT 'ASIKO Boutique',
+                contact_email VARCHAR(200) DEFAULT '',
+                store_description TEXT DEFAULT '',
+                phone VARCHAR(50) DEFAULT '',
+                store_address VARCHAR(300) DEFAULT '',
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 2. Brand settings
+            """CREATE TABLE IF NOT EXISTS brand_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                brand_name VARCHAR(100) DEFAULT 'ASIKO Boutique',
+                brand_tagline VARCHAR(200) DEFAULT 'Authentic Nigerian Fashion',
+                brand_footer_text VARCHAR(300) DEFAULT '',
+                brand_currency_symbol VARCHAR(10) DEFAULT '&#8358;',
+                brand_currency_code VARCHAR(10) DEFAULT 'NGN',
+                brand_logo TEXT DEFAULT '',
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 3. AI settings (provider + stylist)
+            """CREATE TABLE IF NOT EXISTS ai_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                ai_provider VARCHAR(20) DEFAULT 'openrouter',
+                ai_api_key VARCHAR(500) DEFAULT '',
+                ai_model VARCHAR(120) DEFAULT 'google/gemini-2.0-flash-001',
+                ai_system_prompt TEXT DEFAULT '',
+                ai_max_tokens INTEGER DEFAULT 1024,
+                ai_temperature REAL DEFAULT 0.7,
+                ai_stylist_enabled BOOLEAN DEFAULT TRUE,
+                ai_stylist_welcome TEXT DEFAULT '',
+                ai_stylist_suggestions TEXT DEFAULT '',
+                mesh_provider VARCHAR(50) DEFAULT 'hunyuan3d2',
+                auto_mesh BOOLEAN DEFAULT TRUE,
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 4. Chatbot settings
+            """CREATE TABLE IF NOT EXISTS chatbot_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                chatbot_enabled BOOLEAN DEFAULT TRUE,
+                chatbot_welcome TEXT DEFAULT '',
+                chatbot_color_primary VARCHAR(20) DEFAULT '#0D2A22',
+                chatbot_color_accent VARCHAR(20) DEFAULT '#D4AF37',
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 5. Page settings (hero, lookbook, about, dashboard, currency, blog, security, visibility)
+            """CREATE TABLE IF NOT EXISTS page_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                hero_title VARCHAR(100) DEFAULT 'Authentic',
+                hero_title_accent VARCHAR(100) DEFAULT 'Nigerian Fashion',
+                hero_subtitle TEXT DEFAULT '',
+                hero_badge_text VARCHAR(100) DEFAULT '',
+                hero_cta_text VARCHAR(50) DEFAULT 'Shop Collection',
+                hero_cta_link VARCHAR(200) DEFAULT '#storefront',
+                lookbook_title VARCHAR(100) DEFAULT 'The Lookbook',
+                lookbook_subtitle TEXT DEFAULT '',
+                about_title VARCHAR(100) DEFAULT 'ASIKO Boutique',
+                about_tagline VARCHAR(200) DEFAULT '',
+                about_story TEXT DEFAULT '',
+                about_location VARCHAR(100) DEFAULT 'Lagos, Nigeria',
+                about_email VARCHAR(200) DEFAULT '',
+                about_founded_year INTEGER DEFAULT 2024,
+                customer_welcome_title VARCHAR(100) DEFAULT 'Welcome back',
+                customer_welcome_subtitle TEXT DEFAULT '',
+                currency VARCHAR(10) DEFAULT 'NGN',
+                timezone VARCHAR(50) DEFAULT 'Africa/Lagos',
+                locale VARCHAR(10) DEFAULT 'en',
+                blog_enabled BOOLEAN DEFAULT TRUE,
+                blog_posts_per_page INTEGER DEFAULT 6,
+                session_timeout INTEGER DEFAULT 30,
+                page_contact_visible BOOLEAN DEFAULT TRUE,
+                page_faq_visible BOOLEAN DEFAULT TRUE,
+                page_shipping_visible BOOLEAN DEFAULT TRUE,
+                page_size_guide_visible BOOLEAN DEFAULT TRUE,
+                page_stylist_visible BOOLEAN DEFAULT TRUE,
+                page_lookbook_visible BOOLEAN DEFAULT TRUE,
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 6. Shop settings
+            """CREATE TABLE IF NOT EXISTS shop_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                shop_products_per_page INTEGER DEFAULT 12,
+                shop_default_sort VARCHAR(20) DEFAULT 'newest',
+                shop_show_3d_badge BOOLEAN DEFAULT TRUE,
+                shipping_domestic REAL DEFAULT 0,
+                shipping_international REAL DEFAULT 0,
+                free_shipping_threshold REAL DEFAULT 0,
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+            # 7. Notification settings
+            """CREATE TABLE IF NOT EXISTS notification_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                notif_new_order BOOLEAN DEFAULT TRUE,
+                notif_pipeline BOOLEAN DEFAULT TRUE,
+                notif_review BOOLEAN DEFAULT TRUE,
+                notif_low_stock BOOLEAN DEFAULT TRUE,
+                email_from_name VARCHAR(100) DEFAULT 'ASIKO Boutique',
+                email_reply_to VARCHAR(200) DEFAULT '',
+                email_tracking_enabled BOOLEAN DEFAULT TRUE,
+                email_unsubscribe_link BOOLEAN DEFAULT TRUE,
+                email_footer_text TEXT DEFAULT '',
+                updated_at TIMESTAMP DEFAULT now()
+            )""",
+        ]:
+            await conn.execute(ddl)
+
+        # Migrate data from store_settings into each new table
+        migrate_queries = [
+            # 1. store_profile
+            """INSERT INTO store_profile (id, store_name, contact_email, store_description, phone, store_address)
+               SELECT 1, COALESCE(store_name,'ASIKO Boutique'), COALESCE(contact_email,''),
+                      COALESCE(store_description,''), COALESCE(phone,''), COALESCE(store_address,'')
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 2. brand_settings
+            """INSERT INTO brand_settings (id, brand_name, brand_tagline, brand_footer_text, brand_currency_symbol, brand_currency_code, brand_logo)
+               SELECT 1, COALESCE(brand_name,'ASIKO Boutique'), COALESCE(brand_tagline,'Authentic Nigerian Fashion'),
+                      COALESCE(brand_footer_text,''), COALESCE(brand_currency_symbol,'&#8358;'),
+                      COALESCE(brand_currency_code,'NGN'), COALESCE(brand_logo,'')
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 3. ai_settings
+            """INSERT INTO ai_settings (id, ai_provider, ai_api_key, ai_model, ai_system_prompt, ai_max_tokens, ai_temperature,
+                                        ai_stylist_enabled, ai_stylist_welcome, ai_stylist_suggestions, mesh_provider, auto_mesh)
+               SELECT 1, COALESCE(ai_provider,'openrouter'), COALESCE(ai_api_key,''),
+                      COALESCE(ai_model,'google/gemini-2.0-flash-001'), COALESCE(ai_system_prompt,''),
+                      COALESCE(ai_max_tokens,1024), COALESCE(ai_temperature,0.7),
+                      COALESCE(ai_stylist_enabled,TRUE), COALESCE(ai_stylist_welcome,''),
+                      COALESCE(ai_stylist_suggestions,''), COALESCE(mesh_provider,'hunyuan3d2'), COALESCE(auto_mesh,TRUE)
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 4. chatbot_settings
+            """INSERT INTO chatbot_settings (id, chatbot_enabled, chatbot_welcome, chatbot_color_primary, chatbot_color_accent)
+               SELECT 1, COALESCE(chatbot_enabled,TRUE), COALESCE(chatbot_welcome,''),
+                      COALESCE(chatbot_color_primary,'#0D2A22'), COALESCE(chatbot_color_accent,'#D4AF37')
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 5. page_settings
+            """INSERT INTO page_settings (id, hero_title, hero_title_accent, hero_subtitle, hero_badge_text, hero_cta_text, hero_cta_link,
+                                          lookbook_title, lookbook_subtitle, about_title, about_tagline, about_story,
+                                          about_location, about_email, about_founded_year,
+                                          customer_welcome_title, customer_welcome_subtitle,
+                                          currency, timezone, locale, blog_enabled, blog_posts_per_page,
+                                          session_timeout, page_contact_visible, page_faq_visible, page_shipping_visible,
+                                          page_size_guide_visible, page_stylist_visible, page_lookbook_visible)
+               SELECT 1, COALESCE(hero_title,'Authentic'), COALESCE(hero_title_accent,'Nigerian Fashion'),
+                      COALESCE(hero_subtitle,''), COALESCE(hero_badge_text,''), COALESCE(hero_cta_text,'Shop Collection'),
+                      COALESCE(hero_cta_link,'#storefront'),
+                      COALESCE(lookbook_title,'The Lookbook'), COALESCE(lookbook_subtitle,''),
+                      COALESCE(about_title,'ASIKO Boutique'), COALESCE(about_tagline,''), COALESCE(about_story,''),
+                      COALESCE(about_location,'Lagos, Nigeria'), COALESCE(about_email,''), COALESCE(about_founded_year,2024),
+                      COALESCE(customer_welcome_title,'Welcome back'), COALESCE(customer_welcome_subtitle,''),
+                      COALESCE(currency,'NGN'), COALESCE(timezone,'Africa/Lagos'), COALESCE(locale,'en'),
+                      COALESCE(blog_enabled,TRUE), COALESCE(blog_posts_per_page,6), COALESCE(session_timeout,30),
+                      COALESCE(page_contact_visible,TRUE), COALESCE(page_faq_visible,TRUE), COALESCE(page_shipping_visible,TRUE),
+                      COALESCE(page_size_guide_visible,TRUE), COALESCE(page_stylist_visible,TRUE), COALESCE(page_lookbook_visible,TRUE)
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 6. shop_settings
+            """INSERT INTO shop_settings (id, shop_products_per_page, shop_default_sort, shop_show_3d_badge,
+                                          shipping_domestic, shipping_international, free_shipping_threshold)
+               SELECT 1, COALESCE(shop_products_per_page,12), COALESCE(shop_default_sort,'newest'),
+                      COALESCE(shop_show_3d_badge,TRUE),
+                      COALESCE(shipping_domestic,0), COALESCE(shipping_international,0), COALESCE(free_shipping_threshold,0)
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+            # 7. notification_settings
+            """INSERT INTO notification_settings (id, notif_new_order, notif_pipeline, notif_review, notif_low_stock,
+                                                 email_from_name, email_reply_to, email_tracking_enabled,
+                                                 email_unsubscribe_link, email_footer_text)
+               SELECT 1, COALESCE(notif_new_order,TRUE), COALESCE(notif_pipeline,TRUE),
+                      COALESCE(notif_review,TRUE), COALESCE(notif_low_stock,TRUE),
+                      COALESCE(sender_name,'ASIKO Boutique'), COALESCE(admin_email,'hello@asikoboutique.com'),
+                      COALESCE(email_tracking_enabled,TRUE), COALESCE(email_unsubscribe_link,TRUE),
+                      COALESCE(email_footer_text,'')
+               FROM store_settings WHERE id = 1
+               ON CONFLICT (id) DO NOTHING""",
+        ]
+        for q in migrate_queries:
+            await conn.execute(q)
+
+    logger.info("LOG_SYSTEM: Migration 34 — 7 settings tables created, data migrated from store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
