@@ -301,8 +301,10 @@ async def customer_order_detail(request: Request) -> HTMLResponse:
 async def forgot_password_page(request: Request) -> HTMLResponse:
     error = request.query_params.get("error", "")
     success = request.query_params.get("success", "")
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     return templates.TemplateResponse(request, "customer/forgot_password.html", {
-        "request": request, "error": error, "success": success,
+        "request": request, "error": error, "success": success, "settings": settings,
     })
 
 
@@ -347,8 +349,10 @@ async def reset_password_page(request: Request) -> HTMLResponse:
     error = request.query_params.get("error", "")
     if not token:
         return RedirectResponse("/login", status_code=302)
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     return templates.TemplateResponse(request, "customer/reset_password.html", {
-        "request": request, "token": token, "error": error,
+        "request": request, "token": token, "error": error, "settings": settings,
     })
 
 
