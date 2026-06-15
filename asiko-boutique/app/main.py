@@ -554,6 +554,9 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             await conn.execute(ddl)
 
         # Migrate data from store_settings into each new table
+        # NOTE: Some columns in store_settings were created as VARCHAR(500) by Migration 28
+        # but contain boolean values. We use (COALESCE(col, 'true'))::boolean to avoid
+        # the "COALESCE types character varying and boolean cannot be matched" error.
         migrate_queries = [
             # 1. store_profile
             """INSERT INTO store_profile (id, store_name, contact_email, store_description, phone, store_address)
@@ -585,6 +588,8 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
                FROM store_settings WHERE id = 1
                ON CONFLICT (id) DO NOTHING""",
             # 5. page_settings
+            # Columns page_contact_visible..page_lookbook_visible and blog_enabled are VARCHAR(500) in store_settings
+            # so we cast them to avoid COALESCE type mismatch
             """INSERT INTO page_settings (id, hero_title, hero_title_accent, hero_subtitle, hero_badge_text, hero_cta_text, hero_cta_link,
                                           lookbook_title, lookbook_subtitle, about_title, about_tagline, about_story,
                                           about_location, about_email, about_founded_year,
@@ -600,27 +605,28 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
                       COALESCE(about_location,'Lagos, Nigeria'), COALESCE(about_email,''), COALESCE(about_founded_year,2024),
                       COALESCE(customer_welcome_title,'Welcome back'), COALESCE(customer_welcome_subtitle,''),
                       COALESCE(currency,'NGN'), COALESCE(timezone,'Africa/Lagos'), COALESCE(locale,'en'),
-                      COALESCE(blog_enabled,TRUE), COALESCE(blog_posts_per_page,6), COALESCE(session_timeout,30),
-                      COALESCE(page_contact_visible,TRUE), COALESCE(page_faq_visible,TRUE), COALESCE(page_shipping_visible,TRUE),
-                      COALESCE(page_size_guide_visible,TRUE), COALESCE(page_stylist_visible,TRUE), COALESCE(page_lookbook_visible,TRUE)
+                      (COALESCE(blog_enabled, 'true'))::boolean, COALESCE(blog_posts_per_page,6), COALESCE(session_timeout,30),
+                      (COALESCE(page_contact_visible, 'true'))::boolean, (COALESCE(page_faq_visible, 'true'))::boolean, (COALESCE(page_shipping_visible, 'true'))::boolean,
+                      (COALESCE(page_size_guide_visible, 'true'))::boolean, (COALESCE(page_stylist_visible, 'true'))::boolean, (COALESCE(page_lookbook_visible, 'true'))::boolean
                FROM store_settings WHERE id = 1
                ON CONFLICT (id) DO NOTHING""",
             # 6. shop_settings
             """INSERT INTO shop_settings (id, shop_products_per_page, shop_default_sort, shop_show_3d_badge,
                                           shipping_domestic, shipping_international, free_shipping_threshold)
                SELECT 1, COALESCE(shop_products_per_page,12), COALESCE(shop_default_sort,'newest'),
-                      COALESCE(shop_show_3d_badge,TRUE),
+                      (COALESCE(shop_show_3d_badge, 'true'))::boolean,
                       COALESCE(shipping_domestic,0), COALESCE(shipping_international,0), COALESCE(free_shipping_threshold,0)
                FROM store_settings WHERE id = 1
                ON CONFLICT (id) DO NOTHING""",
             # 7. notification_settings
+            # email_tracking_enabled and email_unsubscribe_link are VARCHAR(500) in store_settings
             """INSERT INTO notification_settings (id, notif_new_order, notif_pipeline, notif_review, notif_low_stock,
                                                  email_from_name, email_reply_to, email_tracking_enabled,
                                                  email_unsubscribe_link, email_footer_text)
-               SELECT 1, COALESCE(notif_new_order,TRUE), COALESCE(notif_pipeline,TRUE),
-                      COALESCE(notif_review,TRUE), COALESCE(notif_low_stock,TRUE),
+               SELECT 1, (COALESCE(notif_new_order, 'true'))::boolean, (COALESCE(notif_pipeline, 'true'))::boolean,
+                      (COALESCE(notif_review, 'true'))::boolean, (COALESCE(notif_low_stock, 'true'))::boolean,
                       COALESCE(sender_name,'ASIKO Boutique'), COALESCE(admin_email,'hello@asikoboutique.com'),
-                      COALESCE(email_tracking_enabled,TRUE), COALESCE(email_unsubscribe_link,TRUE),
+                      (COALESCE(email_tracking_enabled, 'true'))::boolean, (COALESCE(email_unsubscribe_link, 'true'))::boolean,
                       COALESCE(email_footer_text,'')
                FROM store_settings WHERE id = 1
                ON CONFLICT (id) DO NOTHING""",
