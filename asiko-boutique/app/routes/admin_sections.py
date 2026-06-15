@@ -698,7 +698,7 @@ async def section_settings_post(request: Request) -> HTMLResponse:
             "email_newsletter_enabled": _bool("email_newsletter_enabled", True),
             "email_password_reset_enabled": _bool("email_password_reset_enabled", True),
         },
-        "brand_identity": {
+        "brand": {
             "brand_name": _val("brand_name", "ASIKO Boutique", 100),
             "brand_tagline": _val("brand_tagline", "Authentic Nigerian Fashion", 200),
             "brand_footer_text": _val("brand_footer_text", "© 2026 ASIKO Boutique. All rights reserved.", 300),
@@ -723,6 +723,21 @@ async def section_settings_post(request: Request) -> HTMLResponse:
 
     try:
         from app.settings_service import save_settings
+
+        # Handle brand_logo file upload (multipart/form-data)
+        if section == "brand":
+            logo_file = form.get("brand_logo")
+            if logo_file and hasattr(logo_file, "filename") and logo_file.filename:
+                import base64
+                contents = await logo_file.read()
+                if len(contents) > 2 * 1024 * 1024:
+                    raise ValueError("Logo file too large (max 2MB)")
+                ext = logo_file.filename.rsplit(".", 1)[-1].lower() if "." in logo_file.filename else "png"
+                mime_map = {"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "gif": "image/gif", "svg": "image/svg+xml", "webp": "image/webp"}
+                mime = mime_map.get(ext, "image/png")
+                b64 = base64.b64encode(contents).decode("ascii")
+                SECTION_PAYLOADS["brand"]["brand_logo"] = f"data:{mime};base64,{b64}"
+
         if section and section in SECTION_PAYLOADS:
             await save_settings(pool, SECTION_PAYLOADS[section], partial=True)
         else:

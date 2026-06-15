@@ -36,6 +36,7 @@ DEFAULTS: Dict[str, Any] = {
     "brand_footer_text": "© 2026 ASIKO Boutique. All rights reserved.",
     "brand_currency_symbol": "&#8358;",
     "brand_currency_code": "NGN",
+    "brand_logo": "",
     # Currency / locale
     "currency": "NGN",
     "timezone": "Africa/Lagos",

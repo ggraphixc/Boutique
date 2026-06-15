@@ -59,7 +59,11 @@
                 <!-- Center brand -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-12">
                     <div class="w-16 h-px bg-[#D4AF37]/30 mb-6"></div>
-                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-3">ASIKO</span>
+                    {% if settings.brand_logo %}
+                        <img src="{{ settings.brand_logo }}" alt="ASIKO" class="h-14 w-auto object-contain mb-3">
+                    {% else %}
+                        <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-3">ASIKO</span>
+                    {% endif %}
                     <p class="text-white/30 text-xs tracking-[0.35em] uppercase">Admin Panel</p>
                     <div class="w-16 h-px bg-[#D4AF37]/30 mt-6"></div>
                     <p class="text-white/20 text-xs mt-6 max-w-xs leading-relaxed">Manage your boutique. Track orders. Control inventory.</p>
@@ -76,7 +80,11 @@
             <div class="w-full max-w-md mx-auto">
                 <!-- Mobile brand -->
                 <div class="text-center mb-8 lg:hidden">
-                    <span class="font-display text-3xl tracking-wider text-[#D4AF37]">ASIKO</span>
+                    {% if settings.brand_logo %}
+                        <img src="{{ settings.brand_logo }}" alt="ASIKO" class="h-10 w-auto object-contain mx-auto">
+                    {% else %}
+                        <span class="font-display text-3xl tracking-wider text-[#D4AF37]">ASIKO</span>
+                    {% endif %}
                     <p class="text-[10px] text-white/30 mt-1 font-mono uppercase tracking-[0.3em]">Admin Panel</p>
                 </div>
 

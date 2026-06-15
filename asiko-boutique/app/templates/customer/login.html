@@ -68,7 +68,11 @@
 
                 <!-- Center text -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-12">
-                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">{{ settings.brand_name or 'ASIKO' }}</span>
+                    {% if settings.brand_logo %}
+                        <img src="{{ settings.brand_logo }}" alt="{{ settings.brand_name or 'ASIKO' }}" class="h-14 w-auto object-contain mb-4">
+                    {% else %}
+                        <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">{{ settings.brand_name or 'ASIKO' }}</span>
+                    {% endif %}
                     <p class="text-white/40 text-sm tracking-widest uppercase">{{ settings.brand_tagline or 'Boutique' }}</p>
                     <div class="w-12 h-px bg-[#D4AF37]/30 mt-6"></div>
                     <p class="text-white/30 text-xs mt-4 max-w-xs">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
@@ -81,7 +85,13 @@
             <div class="w-full max-w-md mx-auto">
                 <!-- Mobile brand -->
                 <div class="text-center mb-6 lg:mb-8 lg:hidden">
-                    <a href="/" class="font-display text-3xl tracking-wide text-[#0D2A22]">{{ settings.brand_name or 'ASIKO' }}</a>
+                    <a href="/" class="flex items-center justify-center gap-2">
+                        {% if settings.brand_logo %}
+                            <img src="{{ settings.brand_logo }}" alt="{{ settings.brand_name or 'ASIKO' }}" class="h-8 w-auto object-contain">
+                        {% else %}
+                            <span class="font-display text-3xl tracking-wide text-[#0D2A22]">{{ settings.brand_name or 'ASIKO' }}</span>
+                        {% endif %}
+                    </a>
                     <p class="text-xs text-[#0D2A22]/40 mt-1 font-mono uppercase tracking-widest">{{ settings.brand_tagline or 'Boutique' }}</p>
                 </div>
 

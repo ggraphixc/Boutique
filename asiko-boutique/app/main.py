@@ -344,6 +344,13 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("LOG_SYSTEM: Migration 29 failed (non-fatal): %s", exc)
 
+    # Migration 30: add brand_logo column to store_settings (base64 data URL)
+    async with app.state.db_pool.acquire() as conn:
+        await conn.execute(
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_logo TEXT DEFAULT ''"
+        )
+    logger.info("LOG_SYSTEM: Migration 30 — brand_logo column added to store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
