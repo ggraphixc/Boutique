@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Contact Us — ASIKO Boutique{% endblock %}
+{% block content %}
+<main class="bg-[#FBF9F6] dark:bg-[#0B0B0D] min-h-screen">
+
+    <!-- Hero -->
+    <section class="bg-[#0D2A22] text-white py-16 sm:py-20">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl text-white mb-4">Get in Touch</h1>
+            <p class="text-white/60 text-sm sm:text-base max-w-lg mx-auto">We'd love to hear from you. Whether you have a question about an order, need styling advice, or just want to say hello — we're here for you.</p>
+        </div>
+    </section>
+
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
+
+        <!-- Contact Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-16">
+
+            <!-- Email -->
+            <a href="mailto:support@asikoboutique.com" class="group bg-white dark:bg-[#18181B] rounded-2xl p-6 shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 hover:shadow-md hover:border-[#D4AF37]/30 transition-all text-center">
+                <div class="w-12 h-12 rounded-xl bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-[#0D2A22] dark:text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-[#0D2A22] dark:text-white mb-1">Email Us</h3>
+                <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">support@asikoboutique.com</p>
+            </a>
+
+            <!-- WhatsApp -->
+            <a href="https://wa.me/2348000000000" target="_blank" rel="noopener" class="group bg-white dark:bg-[#18181B] rounded-2xl p-6 shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 hover:shadow-md hover:border-[#D4AF37]/30 transition-all text-center">
+                <div class="w-12 h-12 rounded-xl bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-[#0D2A22] dark:text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm3.375.375a.375.375 0 100-.75.375.375 0 000 .75zM12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25z"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-[#0D2A22] dark:text-white mb-1">WhatsApp</h3>
+                <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">+234 800 000 0000</p>
+            </a>
+
+            <!-- Location -->
+            <div class="group bg-white dark:bg-[#18181B] rounded-2xl p-6 shadow-sm border border-[#D4AF37]/10 dark:border-gray-800 hover:shadow-md hover:border-[#D4AF37]/30 transition-all text-center">
+                <div class="w-12 h-12 rounded-xl bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                    <svg class="w-6 h-6 text-[#0D2A22] dark:text-[#D4AF37]" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-[#0D2A22] dark:text-white mb-1">Visit Us</h3>
+                <p class="text-xs text-[#1A1A1A]/50 dark:text-gray-400">Lagos, Nigeria</p>
+            </div>
+        </div>
+
+        <!-- Contact Form + FAQ -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+
+            <!-- Form -->
+            <div>
+                <h2 class="font-display text-2xl text-[#0D2A22] dark:text-white mb-2">Send a Message</h2>
+                <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400 mb-8">Fill out the form below and we'll get back to you within 24 hours.</p>
+
+                <form action="/contact/submit" method="POST" class="space-y-5">
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-[#0D2A22] dark:text-gray-200 mb-1.5">Your Name</label>
+                        <input type="text" id="name" name="name" required placeholder="E.g. Adaeze"
+                               class="w-full px-4 py-3 bg-white dark:bg-[#18181B] border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl text-sm text-[#1A1A1A] dark:text-white placeholder-[#1A1A1A]/30 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] transition-all">
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-[#0D2A22] dark:text-gray-200 mb-1.5">Email Address</label>
+                        <input type="email" id="email" name="email" required placeholder="you@example.com"
+                               class="w-full px-4 py-3 bg-white dark:bg-[#18181B] border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl text-sm text-[#1A1A1A] dark:text-white placeholder-[#1A1A1A]/30 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] transition-all">
+                    </div>
+
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-[#0D2A22] dark:text-gray-200 mb-1.5">Subject</label>
+                        <select id="subject" name="subject"
+                                class="w-full px-4 py-3 bg-white dark:bg-[#18181B] border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl text-sm text-[#1A1A1A] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] transition-all appearance-none"
+                                style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23999' stroke-width='1.5'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E&quot;); background-repeat: no-repeat; background-position: right 1rem center; background-size: 1rem;">
+                            <option value="general">General Inquiry</option>
+                            <option value="order">Order Support</option>
+                            <option value="returns">Returns &amp; Exchanges</option>
+                            <option value="wholesale">Wholesale</option>
+                            <option value="partnership">Partnership</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="message" class="block text-sm font-medium text-[#0D2A22] dark:text-gray-200 mb-1.5">Your Message</label>
+                        <textarea id="message" name="message" rows="5" required placeholder="Tell us how we can help..."
+                                  class="w-full px-4 py-3 bg-white dark:bg-[#18181B] border border-[#D4AF37]/20 dark:border-gray-700 rounded-xl text-sm text-[#1A1A1A] dark:text-white placeholder-[#1A1A1A]/30 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 focus:border-[#D4AF37] transition-all resize-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-3.5 bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] text-sm font-semibold rounded-xl hover:bg-[#0a1f1a] dark:hover:bg-[#E6C875] transition-colors">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+
+            <!-- FAQ Preview -->
+            <div>
+                <h2 class="font-display text-2xl text-[#0D2A22] dark:text-white mb-2">Quick Answers</h2>
+                <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400 mb-8">Here are some of the things people ask us most often.</p>
+
+                <div class="space-y-3" x-data="{ openFaq: null }">
+
+                    <div class="bg-white dark:bg-[#18181B] rounded-2xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+                        <button @click="openFaq = openFaq === 1 ? null : 1" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                            <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">How long does delivery take?</span>
+                            <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 1 && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="openFaq === 1" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                            Lagos deliveries arrive within 1-3 business days, other Nigerian cities within 3-7 business days. You'll get a tracking number once your order is on the way.
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#18181B] rounded-2xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+                        <button @click="openFaq = openFaq === 2 ? null : 2" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                            <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What is your return policy?</span>
+                            <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 2 && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="openFaq === 2" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                            We accept returns within 7 days of delivery for unworn items with tags still on. Refunds are processed within 5 business days of receiving the return.
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-[#18181B] rounded-2xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+                        <button @click="openFaq = openFaq === 3 ? null : 3" class="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-gray-50 dark:hover:bg-[#1f1f23] transition-colors">
+                            <span class="text-sm font-medium text-[#0D2A22] dark:text-gray-100">What payment methods do you accept?</span>
+                            <svg class="w-4 h-4 text-[#D4AF37] transition-transform flex-shrink-0 ml-2" :class="openFaq === 3 && 'rotate-180'" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div x-show="openFaq === 3" x-collapse class="px-5 pb-4 text-sm text-[#1A1A1A]/60 dark:text-gray-400">
+                            We accept all major debit and credit cards — Verve, Mastercard, and Visa — through our secure payment partner OPay. Every transaction is fully encrypted.
+                        </div>
+                    </div>
+
+                    <div class="mt-6 text-center">
+                        <a href="/faq" class="inline-flex items-center gap-1.5 text-sm font-medium text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-white transition-colors">
+                            View all questions
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Links -->
+        <div class="text-center pb-16">
+            <p class="text-sm text-[#1A1A1A]/50 dark:text-gray-400 mb-5">Follow us for the latest drops and styling inspiration</p>
+            <div class="flex items-center justify-center gap-4">
+                <a href="#" aria-label="Instagram" class="w-11 h-11 rounded-full bg-white dark:bg-[#18181B] border border-[#D4AF37]/15 dark:border-gray-700 flex items-center justify-center text-[#0D2A22] dark:text-gray-300 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 dark:hover:text-[#D4AF37] transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <rect x="2" y="2" width="20" height="20" rx="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="12" r="5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="X (Twitter)" class="w-11 h-11 rounded-full bg-white dark:bg-[#18181B] border border-[#D4AF37]/15 dark:border-gray-700 flex items-center justify-center text-[#0D2A22] dark:text-gray-300 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 dark:hover:text-[#D4AF37] transition-all">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="TikTok" class="w-11 h-11 rounded-full bg-white dark:bg-[#18181B] border border-[#D4AF37]/15 dark:border-gray-700 flex items-center justify-center text-[#0D2A22] dark:text-gray-300 hover:bg-[#D4AF37]/10 hover:border-[#D4AF37]/40 dark:hover:text-[#D4AF37] transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M9 12a4 4 0 104 4V4a5 5 0 005 5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</main>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}Size Guide — ASIKO Boutique{% endblock %}
+
+{% block content %}
+<div x-data="{ tab: 'women' }">
+
+  <!-- Hero -->
+  <section class="bg-[#0D2A22] text-white py-16 sm:py-24 text-center relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10 pointer-events-none" aria-hidden="true">
+      <svg class="w-full h-full" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="200" cy="200" r="180" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="4 8"/>
+        <circle cx="200" cy="200" r="120" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="2 6"/>
+      </svg>
+    </div>
+    <div class="relative max-w-3xl mx-auto px-4">
+      <p class="text-[#D4AF37] text-sm font-medium tracking-[0.25em] uppercase mb-4">ASIKO Boutique</p>
+      <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl font-light tracking-wide">Size Guide</h1>
+      <p class="mt-4 text-white/60 text-lg">Find your perfect fit</p>
+    </div>
+  </section>
+
+  <!-- Tabs + Tables -->
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+
+    <!-- Tab Buttons -->
+    <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-10">
+      <button @click="tab = 'women'"
+              :class="tab === 'women'
+                ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-[#0D2A22] dark:text-gray-200 hover:border-[#D4AF37]'"
+              class="px-6 py-2.5 rounded-full text-sm font-semibold border border-[#D4AF37]/30 dark:border-gray-700 transition-all duration-200">
+        Women
+      </button>
+      <button @click="tab = 'men'"
+              :class="tab === 'men'
+                ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-[#0D2A22] dark:text-gray-200 hover:border-[#D4AF37]'"
+              class="px-6 py-2.5 rounded-full text-sm font-semibold border border-[#D4AF37]/30 dark:border-gray-700 transition-all duration-200">
+        Men
+      </button>
+      <button @click="tab = 'shoes'"
+              :class="tab === 'shoes'
+                ? 'bg-[#0D2A22] dark:bg-[#D4AF37] text-white dark:text-[#0D2A22] shadow-lg'
+                : 'bg-white dark:bg-gray-800 text-[#0D2A22] dark:text-gray-200 hover:border-[#D4AF37]'"
+              class="px-6 py-2.5 rounded-full text-sm font-semibold border border-[#D4AF37]/30 dark:border-gray-700 transition-all duration-200">
+        Shoes
+      </button>
+    </div>
+
+    <!-- Women's Table -->
+    <div x-show="tab === 'women'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-[#D4AF37]/10 dark:border-gray-800">
+          <h2 class="font-display text-xl text-[#0D2A22] dark:text-[#D4AF37]">Women's Clothing</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">All measurements in inches (centimetres)</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#D4AF37] text-[#0D2A22]">
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Size</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Bust</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Waist</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Hips</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">XS</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">30–31 / 76–79</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">23–24 / 58–61</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">33–34 / 84–87</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">S</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">32–33 / 81–84</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">25–26 / 63–66</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">35–36 / 89–91</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">M</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">34–35 / 86–89</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">27–28 / 69–71</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">37–38 / 94–97</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">L</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">36–37 / 91–94</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">29–30 / 74–76</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">39–40 / 99–102</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">XL</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">38–39 / 97–99</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">31–32 / 79–81</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">41–42 / 104–107</td>
+              </tr>
+              <tr class="bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">XXL</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">40–41 / 102–104</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">33–34 / 84–86</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">43–44 / 109–112</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Men's Table -->
+    <div x-show="tab === 'men'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-[#D4AF37]/10 dark:border-gray-800">
+          <h2 class="font-display text-xl text-[#0D2A22] dark:text-[#D4AF37]">Men's Clothing</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">All measurements in inches (centimetres)</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#D4AF37] text-[#0D2A22]">
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Size</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Chest</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Waist</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Hips</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">S</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">34–36 / 86–91</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">28–30 / 71–76</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">35–37 / 89–94</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">M</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">38–40 / 97–102</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">32–34 / 81–86</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">39–41 / 99–104</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">L</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">42–44 / 107–112</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">36–38 / 91–97</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">43–45 / 109–114</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">XL</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">46–48 / 117–122</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">40–42 / 102–107</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">47–49 / 119–124</td>
+              </tr>
+              <tr class="bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">XXL</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">50–52 / 127–132</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">44–46 / 112–117</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">51–53 / 130–135</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Shoes Table -->
+    <div x-show="tab === 'shoes'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-[#D4AF37]/10 dark:border-gray-800 overflow-hidden">
+        <div class="px-6 py-4 border-b border-[#D4AF37]/10 dark:border-gray-800">
+          <h2 class="font-display text-xl text-[#0D2A22] dark:text-[#D4AF37]">Shoes</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">EU / UK / US sizes with foot length</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-[#D4AF37] text-[#0D2A22]">
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">EU</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">UK</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">US</th>
+                <th class="px-6 py-3.5 text-left font-semibold tracking-wide">Foot Length</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">36</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">3.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">5.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">23 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">37</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">4</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">6</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">23.5 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">38</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">7</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">24.5 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">39</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">5.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">7.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">25 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">40</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">6</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">8</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">25.5 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">41</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">7</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">9</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">26.5 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">42</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">7.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">9.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">27 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">43</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">8.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">10.5</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">28 cm</td>
+              </tr>
+              <tr class="border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">44</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">9</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">11</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">28.5 cm</td>
+              </tr>
+              <tr class="bg-gray-50 dark:bg-gray-800/50">
+                <td class="px-6 py-4 font-semibold text-[#0D2A22] dark:text-white">45</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">10</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">12</td>
+                <td class="px-6 py-4 text-gray-600 dark:text-gray-300">29.5 cm</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- How to Measure -->
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16">
+    <div class="text-center mb-10">
+      <h2 class="font-display text-2xl sm:text-3xl text-[#0D2A22] dark:text-white">How to Measure</h2>
+      <p class="mt-2 text-gray-500 dark:text-gray-400 text-sm">Use a soft tape measure for the most accurate results</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <!-- Bust -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-[#D4AF37]/10 dark:border-gray-800 p-6 text-center group hover:shadow-xl hover:border-[#D4AF37]/30 transition-all duration-300">
+        <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-10 h-10 text-[#D4AF37]" fill="none" viewBox="0 0 64 64" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="32" cy="20" rx="12" ry="14"/>
+            <path d="M16 52 C16 38 24 32 32 32 C40 32 48 38 48 52"/>
+            <path d="M24 18 C24 18 20 22 20 28" stroke-linecap="round"/>
+            <path d="M40 18 C40 18 44 22 44 28" stroke-linecap="round"/>
+            <line x1="32" y1="14" x2="32" y2="48" stroke-dasharray="2 3" stroke-width="1" opacity="0.4"/>
+          </svg>
+        </div>
+        <h3 class="font-display text-lg text-[#0D2A22] dark:text-white mb-2">Bust</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Measure around the fullest part of your bust, keeping the tape level across your shoulder blades.</p>
+      </div>
+
+      <!-- Waist -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-[#D4AF37]/10 dark:border-gray-800 p-6 text-center group hover:shadow-xl hover:border-[#D4AF37]/30 transition-all duration-300">
+        <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-10 h-10 text-[#D4AF37]" fill="none" viewBox="0 0 64 64" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="32" cy="20" rx="12" ry="14"/>
+            <path d="M16 52 C16 38 24 32 32 32 C40 32 48 38 48 52"/>
+            <path d="M24 18 C24 18 20 22 20 28" stroke-linecap="round"/>
+            <path d="M40 18 C40 18 44 22 44 28" stroke-linecap="round"/>
+            <path d="M24 36 Q32 33 40 36" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="24" cy="36" r="1.5" fill="#D4AF37"/>
+            <circle cx="40" cy="36" r="1.5" fill="#D4AF37"/>
+          </svg>
+        </div>
+        <h3 class="font-display text-lg text-[#0D2A22] dark:text-white mb-2">Waist</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Measure at the narrowest point of your natural waistline, just above your belly button.</p>
+      </div>
+
+      <!-- Hips -->
+      <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-[#D4AF37]/10 dark:border-gray-800 p-6 text-center group hover:shadow-xl hover:border-[#D4AF37]/30 transition-all duration-300">
+        <div class="w-20 h-20 mx-auto mb-5 rounded-full bg-[#0D2A22]/5 dark:bg-[#D4AF37]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+          <svg class="w-10 h-10 text-[#D4AF37]" fill="none" viewBox="0 0 64 64" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="32" cy="20" rx="12" ry="14"/>
+            <path d="M16 52 C16 38 24 32 32 32 C40 32 48 38 48 52"/>
+            <path d="M24 18 C24 18 20 22 20 28" stroke-linecap="round"/>
+            <path d="M40 18 C40 18 44 22 44 28" stroke-linecap="round"/>
+            <path d="M20 44 Q32 48 44 44" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+            <circle cx="20" cy="44" r="1.5" fill="#D4AF37"/>
+            <circle cx="44" cy="44" r="1.5" fill="#D4AF37"/>
+          </svg>
+        </div>
+        <h3 class="font-display text-lg text-[#0D2A22] dark:text-white mb-2">Hips</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">Measure around the widest part of your hips and buttocks, keeping the tape parallel to the floor.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- AI Stylist CTA -->
+  <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 sm:pb-20">
+    <div class="bg-gradient-to-br from-[#0D2A22] to-[#1A3D36] rounded-2xl p-8 sm:p-12 text-center relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-40 h-40 bg-[#D4AF37]/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" aria-hidden="true"></div>
+      <div class="absolute bottom-0 left-0 w-32 h-32 bg-[#D4AF37]/5 rounded-full translate-y-1/2 -translate-x-1/2 pointer-events-none" aria-hidden="true"></div>
+      <div class="relative">
+        <div class="w-14 h-14 mx-auto mb-5 rounded-full bg-[#D4AF37]/20 flex items-center justify-center">
+          <svg class="w-7 h-7 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z"/>
+          </svg>
+        </div>
+        <h2 class="font-display text-2xl sm:text-3xl text-white mb-3">Not sure about your size?</h2>
+        <p class="text-white/60 text-sm sm:text-base max-w-lg mx-auto mb-8">Our AI Stylist can help you find the perfect fit based on your measurements and style preferences.</p>
+        <a href="/stylist"
+           class="inline-flex items-center gap-2 px-8 py-3.5 bg-[#D4AF37] text-[#0D2A22] text-sm font-semibold rounded-full hover:bg-[#E6C875] transition-all duration-200 hover:shadow-lg hover:shadow-[#D4AF37]/20">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M1.394 9.393c5.857-5.858 15.355-5.858 21.213 0"/>
+          </svg>
+          Chat with AI Stylist
+        </a>
+      </div>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

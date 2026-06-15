@@ -1,0 +1,406 @@
+<!-- Email section: templates + send + analytics + settings -->
+<section class="space-y-6" data-section="email" x-data="{ tab: 'templates', showCreateForm: false, editingId: '' }">
+
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 tracking-tight">Email Center</h1>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage templates, send campaigns, track delivery.</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                </div>
+                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Emails Sent</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(email_stats.sent) }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Delivered</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(email_stats.delivered) }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                </div>
+                <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Opened</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(email_stats.opened) }}</div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-card p-5 hover:shadow-card-hover transition-shadow">
+            <div class="flex items-center justify-between">
+                <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"/></svg>
+                </div>
+                <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            </div>
+            <div class="mt-4">
+                <div class="text-sm font-medium text-gray-500 dark:text-gray-400">Clicks</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ '{:,}'.format(email_stats.clicked) }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="border-b border-gray-200 dark:border-gray-800">
+        <nav class="flex gap-6 -mb-px">
+            <button @click="tab = 'templates'" class="py-3 px-1 text-sm font-medium border-b-2 transition-colors"
+                    :class="tab === 'templates' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">Templates</button>
+            <button @click="tab = 'send'" class="py-3 px-1 text-sm font-medium border-b-2 transition-colors"
+                    :class="tab === 'send' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">Send</button>
+            <button @click="tab = 'analytics'" class="py-3 px-1 text-sm font-medium border-b-2 transition-colors"
+                    :class="tab === 'analytics' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">Analytics</button>
+            <button @click="tab = 'settings'" class="py-3 px-1 text-sm font-medium border-b-2 transition-colors"
+                    :class="tab === 'settings' ? 'border-[#D4AF37] text-[#D4AF37]' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">Settings</button>
+        </nav>
+    </div>
+
+    <!-- ==================== TEMPLATES TAB ==================== -->
+    <div x-show="tab === 'templates'" x-cloak>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">Email Templates</h2>
+            <button @click="showCreateForm = !showCreateForm"
+                    class="text-xs px-4 py-2 rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 dark:bg-[#D4AF37] dark:text-[#0D2A22] transition-colors font-semibold">
+                + Create Template
+            </button>
+        </div>
+
+        <!-- Create Template Form -->
+        <div x-show="showCreateForm" x-collapse class="mb-5">
+            <form hx-post="/admin/section/email" hx-target="[data-section='email']" hx-swap="outerHTML"
+                  class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5 space-y-4">
+                <input type="hidden" name="section" value="email_create">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Template Name</label>
+                        <input type="text" name="name" required placeholder="e.g. Welcome Series"
+                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Subject Line</label>
+                        <input type="text" name="subject" required placeholder="e.g. Welcome to ASIKO!"
+                               class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Body (HTML)</label>
+                    <textarea name="body" rows="6" required placeholder="<h1>Welcome!</h1><p>Thanks for joining ASIKO Boutique.</p>"
+                              class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40 font-mono text-xs"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Category</label>
+                        <select name="category" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                            <option value="welcome">Welcome</option>
+                            <option value="order">Order</option>
+                            <option value="promotion">Promotion</option>
+                            <option value="newsletter">Newsletter</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="px-5 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 dark:bg-[#D4AF37] dark:text-[#0D2A22] font-semibold transition-colors">Save Template</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Templates List -->
+        {% if email_templates %}
+        <div class="space-y-3">
+            {% for t in email_templates %}
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5 group hover:shadow-card-hover transition-shadow"
+                 x-data="{ editing: false }">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3">
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ t.name }}</h3>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full
+                                {% if t.category == 'welcome' %}bg-emerald-50 text-emerald-700
+                                {% elif t.category == 'order' %}bg-blue-50 text-blue-700
+                                {% elif t.category == 'promotion' %}bg-amber-50 text-amber-700
+                                {% elif t.category == 'newsletter' %}bg-purple-50 text-purple-700
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                {{ t.category | title }}
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">Subject: {{ t.subject }}</div>
+                        <div class="text-[10px] text-gray-400 dark:text-gray-500 mt-1">Created {{ t.created_at | default('--') }}</div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button @click="editing = !editing" class="text-[10px] text-[#D4AF37] hover:text-[#0D2A22] dark:hover:text-white px-2 py-1 rounded border border-gray-200 dark:border-gray-700 transition-colors">Edit</button>
+                        <button onclick="event.preventDefault(); asikoConfirm('Delete Template?', 'This will permanently remove this template.', {confirmText: 'Delete', danger: true}).then(function(r){ if(r) document.getElementById('delete-tpl-{{ t.id }}').submit(); })"
+                                class="text-[10px] text-red-500 hover:text-red-700 px-2 py-1 rounded border border-red-200 hover:bg-red-50 transition-colors">Delete</button>
+                        <form id="delete-tpl-{{ t.id }}" hx-post="/admin/section/email" hx-target="[data-section='email']" hx-swap="outerHTML" class="hidden">
+                            <input type="hidden" name="section" value="email_delete">
+                            <input type="hidden" name="template_id" value="{{ t.id }}">
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Edit Form (inline) -->
+                <div x-show="editing" x-collapse class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                    <form hx-post="/admin/section/email" hx-target="[data-section='email']" hx-swap="outerHTML" class="space-y-3">
+                        <input type="hidden" name="section" value="email_update">
+                        <input type="hidden" name="template_id" value="{{ t.id }}">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-1">Name</label>
+                                <input type="text" name="name" value="{{ t.name }}" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 focus:border-[#D4AF37] outline-none bg-white dark:bg-[#111114]">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-1">Subject</label>
+                                <input type="text" name="subject" value="{{ t.subject }}" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 focus:border-[#D4AF37] outline-none bg-white dark:bg-[#111114]">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-500 mb-1">Body (HTML)</label>
+                            <textarea name="body" rows="4" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 focus:border-[#D4AF37] outline-none bg-white dark:bg-[#111114] font-mono text-xs">{{ t.body }}</textarea>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 mb-1">Category</label>
+                                <select name="category" class="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700 focus:border-[#D4AF37] outline-none bg-white dark:bg-[#111114]">
+                                    <option value="welcome" {% if t.category == 'welcome' %}selected{% endif %}>Welcome</option>
+                                    <option value="order" {% if t.category == 'order' %}selected{% endif %}>Order</option>
+                                    <option value="promotion" {% if t.category == 'promotion' %}selected{% endif %}>Promotion</option>
+                                    <option value="newsletter" {% if t.category == 'newsletter' %}selected{% endif %}>Newsletter</option>
+                                    <option value="custom" {% if t.category == 'custom' %}selected{% endif %}>Custom</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end gap-2">
+                                <button type="submit" class="px-4 py-2 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90">Save</button>
+                                <button type="button" @click="editing = false" class="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-100">Cancel</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-12 text-center">
+            <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-4">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            </div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">No templates yet</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Create your first email template to start sending campaigns.</p>
+            <button @click="showCreateForm = true" class="text-xs px-4 py-2 rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 transition-colors font-semibold">+ Create Template</button>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- ==================== SEND TAB ==================== -->
+    <div x-show="tab === 'send'" x-cloak>
+        <form hx-post="/admin/section/email" hx-target="[data-section='email']" hx-swap="outerHTML"
+              class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6 space-y-5">
+            <input type="hidden" name="section" value="email_send">
+
+            <div>
+                <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">Send Email</h2>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Choose a template and recipients, then send.</p>
+            </div>
+
+            <!-- Template Selector -->
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Template</label>
+                {% if email_templates %}
+                <select name="template_id" id="send-template-select" required
+                        class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40"
+                        x-on:change="$dispatch('template-changed')">
+                    <option value="">Select a template...</option>
+                    {% for t in email_templates %}
+                    <option value="{{ t.id }}">{{ t.name }} — {{ t.subject }}</option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 py-2">No templates available. Create one in the Templates tab first.</div>
+                {% endif %}
+            </div>
+
+            <!-- Recipient Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Single Recipient (email)</label>
+                    <input type="email" name="recipient_email" placeholder="customer@example.com"
+                           class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1.5">Or Bulk Segment</label>
+                    <select name="segment" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2 bg-white dark:bg-[#111114] focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+                        <option value="">None</option>
+                        <option value="all">All Customers</option>
+                        <option value="active">Active (ordered in last 30 days)</option>
+                        <option value="new">New (joined in last 30 days)</option>
+                        <option value="at_risk">At Risk (no orders in 60+ days)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Preview Panel -->
+            <div class="border border-gray-200 dark:border-gray-800 rounded-lg p-4 bg-gray-50 dark:bg-[#18181B]">
+                <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Preview</div>
+                <div class="text-sm text-gray-500 dark:text-gray-400 italic">Select a template above to preview its subject line here. The full HTML body will be sent to recipients.</div>
+            </div>
+
+            <!-- Send Button -->
+            <div class="flex items-center gap-3">
+                <button type="submit" class="px-6 py-2.5 text-sm rounded-lg bg-[#0D2A22] text-white hover:bg-[#0D2A22]/90 dark:bg-[#D4AF37] dark:text-[#0D2A22] font-semibold transition-colors">
+                    Send Email
+                </button>
+                <span class="text-xs text-gray-400 dark:text-gray-500">Emails are sent via Brevo transactional API.</span>
+            </div>
+        </form>
+    </div>
+
+    <!-- ==================== ANALYTICS TAB ==================== -->
+    <div x-show="tab === 'analytics'" x-cloak>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+                <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Delivery Rate</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {% if email_stats.sent > 0 %}{{ ((email_stats.delivered / email_stats.sent) * 100) | round(1) }}%{% else %}&mdash;{% endif %}
+                </div>
+            </div>
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+                <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Open Rate</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {% if email_stats.delivered > 0 %}{{ ((email_stats.opened / email_stats.delivered) * 100) | round(1) }}%{% else %}&mdash;{% endif %}
+                </div>
+            </div>
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-5">
+                <div class="text-[10px] uppercase tracking-wider text-gray-400 font-mono mb-2">Click Rate</div>
+                <div class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {% if email_stats.opened > 0 %}{{ ((email_stats.clicked / email_stats.opened) * 100) | round(1) }}%{% else %}&mdash;{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Email Log -->
+        <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Recent Emails</h3>
+                <span class="text-xs text-gray-400 font-mono">{{ email_logs|length }} logs</span>
+            </div>
+            {% if email_logs %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-[10px] uppercase tracking-wider text-gray-400 font-mono border-b border-gray-100 dark:border-gray-800">
+                            <th class="pb-3 font-medium">Date</th>
+                            <th class="pb-3 font-medium">Recipient</th>
+                            <th class="pb-3 font-medium">Subject</th>
+                            <th class="pb-3 font-medium">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 dark:divide-gray-800">
+                        {% for log in email_logs %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-[#18181B]">
+                            <td class="py-3 text-xs text-gray-500 dark:text-gray-400">{{ log.created_at | default('--') }}</td>
+                            <td class="py-3 text-sm text-gray-900 dark:text-gray-100">{{ log.recipient_email }}</td>
+                            <td class="py-3 text-sm text-gray-700 dark:text-gray-200 truncate max-w-xs">{{ log.subject }}</td>
+                            <td class="py-3">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded border
+                                    {% if log.status == 'delivered' %}bg-emerald-50 text-emerald-700 border-emerald-200
+                                    {% elif log.status == 'opened' %}bg-blue-50 text-blue-700 border-blue-200
+                                    {% elif log.status == 'clicked' %}bg-purple-50 text-purple-700 border-purple-200
+                                    {% elif log.status == 'failed' %}bg-red-50 text-red-700 border-red-200
+                                    {% else %}bg-gray-50 text-gray-600 border-gray-200{% endif %}">
+                                    {{ log.status | title }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+                No email logs yet. Send your first campaign to see delivery data here.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ==================== SETTINGS TAB ==================== -->
+    <div x-show="tab === 'settings'" x-cloak>
+        <div class="space-y-4">
+            <!-- Brevo Config Quick Access -->
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">Brevo API Configuration</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Transactional email provider settings.</p>
+                    </div>
+                    <button hx-get="/admin/section/settings" hx-target="#workspace-content"
+                            class="text-xs px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#18181B] transition-colors font-medium">
+                        Open Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- Email Notification Toggles Summary -->
+            <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">Email Notifications</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Welcome Email</div>
+                            <div class="text-xs text-gray-500">Sent when a new customer registers</div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Order Confirmation</div>
+                            <div class="text-xs text-gray-500">Sent after successful payment</div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Shipping Update</div>
+                            <div class="text-xs text-gray-500">Sent when order status changes</div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-800 last:border-0">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Newsletter</div>
+                            <div class="text-xs text-gray-500">Campaign emails to subscribers</div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+                    </div>
+                    <div class="flex items-center justify-between py-2">
+                        <div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">Password Reset</div>
+                            <div class="text-xs text-gray-500">Account recovery emails</div>
+                        </div>
+                        <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</section>

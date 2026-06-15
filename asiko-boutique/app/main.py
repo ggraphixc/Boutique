@@ -249,6 +249,69 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
     except Exception as exc:
         logger.warning("LOG_SYSTEM: Migration 27 failed (non-fatal): %s", exc)
 
+    # Migration 28: Email templates and logs tables + page config & email campaign columns
+    try:
+        async with app.state.db_pool.acquire() as conn:
+            # Add page config and email campaign columns
+            for col in ['page_contact_visible', 'page_faq_visible', 'page_shipping_visible',
+                        'page_size_guide_visible', 'page_stylist_visible', 'page_lookbook_visible',
+                        'email_from_name', 'email_reply_to', 'email_tracking_enabled',
+                        'email_unsubscribe_link', 'email_footer_text']:
+                try:
+                    await conn.execute(f"ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS {col} VARCHAR(500)")
+                except Exception:
+                    pass
+            # Set boolean defaults
+            for col in ['page_contact_visible', 'page_faq_visible', 'page_shipping_visible',
+                        'page_size_guide_visible', 'page_stylist_visible', 'page_lookbook_visible',
+                        'email_tracking_enabled', 'email_unsubscribe_link']:
+                try:
+                    await conn.execute(f"UPDATE store_settings SET {col} = 'true' WHERE {col} IS NULL")
+                except Exception:
+                    pass
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS email_templates (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name VARCHAR(255) NOT NULL,
+                    subject VARCHAR(500) NOT NULL,
+                    body TEXT NOT NULL,
+                    category VARCHAR(50) DEFAULT 'custom',
+                    is_active BOOLEAN DEFAULT TRUE,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+            """)
+            await conn.execute("""
+                CREATE TABLE IF NOT EXISTS email_logs (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    recipient_email VARCHAR(255) NOT NULL,
+                    subject VARCHAR(500) NOT NULL,
+                    template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
+                    status VARCHAR(50) DEFAULT 'sent',
+                    sent_at TIMESTAMPTZ DEFAULT NOW(),
+                    opened_at TIMESTAMPTZ,
+                    clicked_at TIMESTAMPTZ
+                )
+            """)
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_email_templates_category ON email_templates(category)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_email_logs_recipient ON email_logs(recipient_email)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_email_logs_status ON email_logs(status)")
+            await conn.execute("CREATE INDEX IF NOT EXISTS idx_email_logs_sent_at ON email_logs(sent_at DESC)")
+            # Seed default templates if empty
+            count = await conn.fetchval("SELECT COUNT(*) FROM email_templates")
+            if count == 0:
+                await conn.execute("""
+                    INSERT INTO email_templates (name, subject, body, category) VALUES
+                    ('Welcome to ASIKO', 'Welcome to ASIKO Boutique!', '<h2>Welcome to ASIKO!</h2><p>Hi {{name}},</p><p>Thank you for joining ASIKO Boutique. We are excited to have you!</p><p>Explore our curated collection of authentic Nigerian fashion with transparent pricing.</p><p>Happy shopping!</p><p>The ASIKO Team</p>', 'welcome'),
+                    ('Order Confirmation', 'Your ASIKO Order is Confirmed', '<h2>Order Confirmed!</h2><p>Hi {{name}},</p><p>Your order <strong>#{{order_id}}</strong> has been confirmed.</p><p><strong>Total:</strong> {{total}}</p><p>We will send you a shipping update soon.</p><p>The ASIKO Team</p>', 'order'),
+                    ('Shipping Update', 'Your ASIKO Order Has Been Shipped', '<h2>Your Order is On Its Way!</h2><p>Hi {{name}},</p><p>Your order <strong>#{{order_id}}</strong> has been shipped.</p><p><strong>Carrier:</strong> {{carrier}}</p><p><strong>Tracking:</strong> {{tracking_number}}</p><p>The ASIKO Team</p>', 'order')
+                """)
+                logger.info("LOG_SYSTEM: Migration 28 — email_templates + email_logs tables created, 3 templates seeded.")
+            else:
+                logger.info("LOG_SYSTEM: Migration 28 — email tables already exist.")
+    except Exception as exc:
+        logger.warning("LOG_SYSTEM: Migration 28 failed (non-fatal): %s", exc)
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
@@ -302,6 +365,7 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.admin_inventory import routes as admin_inventory_routes
     from app.routes.admin_dashboard import routes as admin_dashboard_routes
     from app.routes.admin_sections import routes as admin_sections_routes
+    from app.routes.admin_email import routes as admin_email_routes
     from app.routes.admin import routes as admin_crud_routes
     from app.routes.admin_auth import routes as admin_auth_routes
     from app.routes.waitlist import routes as waitlist_routes
@@ -323,6 +387,7 @@ def _register_route_modules(app: Starlette) -> None:
         admin_inventory_routes,
         admin_dashboard_routes,
         admin_sections_routes,
+        admin_email_routes,
         admin_crud_routes,
         waitlist_routes,
         dpp_routes,

@@ -157,6 +157,9 @@ async def save_settings(db_pool, payload: Dict[str, Any], partial: bool = False)
         "notif_review", "notif_low_stock",
         "email_welcome_enabled", "email_order_enabled", "email_shipping_enabled",
         "email_newsletter_enabled", "email_password_reset_enabled",
+        "page_contact_visible", "page_faq_visible", "page_shipping_visible",
+        "page_size_guide_visible", "page_stylist_visible", "page_lookbook_visible",
+        "email_tracking_enabled", "email_unsubscribe_link",
     }
     INT_KEYS = {
         "shipping_domestic", "shipping_international", "free_shipping_threshold",

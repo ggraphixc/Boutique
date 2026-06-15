@@ -379,6 +379,15 @@
                         <span class="nav-label">Pages</span>
                     </button>
 
+                    <a href="/admin/section/email" hx-get="/admin/section/email" hx-target="#workspace-content" hx-push-url="true"
+                       id="nav-email" class="nav-item group"
+                       onclick="document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));this.classList.add('active');">
+                        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="nav-label">Email</span>
+                    </a>
+
                 </div>
             </div>
             <div class="mt-7 pt-5 border-t border-gray-100">
@@ -565,6 +574,7 @@
                 'nav-loyalty':      { title: 'Loyalty' },
                 'nav-ai-training':  { title: 'AI Stylist' },
                 'nav-pages':        { title: 'Pages' },
+                'nav-email':        { title: 'Email Center' },
                 'nav-settings':     { title: 'Settings' },
                 'nav-about':        { title: 'About Me' },
         };

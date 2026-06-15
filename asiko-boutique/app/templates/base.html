@@ -63,6 +63,7 @@
                         <a href="/#storefront" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Shop</a>
                         <a href="/lookbook" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Lookbook</a>
                         <a href="/about" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">About</a>
+                        <a href="/contact" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">Contact</a>
                         <a href="/faq" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">FAQ</a>
                         {% for page in request.state.nav_pages %}
                         <a href="/page/{{ page.slug }}" class="text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:text-[#0D2A22] dark:hover:text-gray-100 transition-colors">{{ page.title }}</a>
@@ -127,6 +128,9 @@
                     <a href="/#storefront" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Shop</a>
                     <a href="/lookbook" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Lookbook</a>
                     <a href="/about" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">About</a>
+                    <a href="/contact" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Contact</a>
+                    <a href="/shipping" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Shipping</a>
+                    <a href="/size-guide" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Size Guide</a>
                     <a href="/faq" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">FAQ</a>
                     {% for page in request.state.nav_pages %}
                     <a href="/page/{{ page.slug }}" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">{{ page.title }}</a>
@@ -198,6 +202,7 @@
                             <li><a href="/" class="text-sm text-white/60 hover:text-white transition-colors">New Arrivals</a></li>
                             <li><a href="/#storefront" class="text-sm text-white/60 hover:text-white transition-colors">Collection</a></li>
                             <li><a href="/lookbook" class="text-sm text-white/60 hover:text-white transition-colors">Lookbook</a></li>
+                            <li><a href="/contact" class="text-sm text-white/60 hover:text-white transition-colors">Contact</a></li>
                         </ul>
                     </div>
 
@@ -208,6 +213,8 @@
                             {% for page in request.state.footer_pages %}
                             <li><a href="/page/{{ page.slug }}" class="text-sm text-white/60 hover:text-white transition-colors">{{ page.title }}</a></li>
                             {% endfor %}
+                            <li><a href="/shipping" class="text-sm text-white/60 hover:text-white transition-colors">Shipping & Returns</a></li>
+                            <li><a href="/size-guide" class="text-sm text-white/60 hover:text-white transition-colors">Size Guide</a></li>
                         </ul>
                     </div>
 

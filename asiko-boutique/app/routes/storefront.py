@@ -495,6 +495,28 @@ async def faq_page(request: Request) -> HTMLResponse:
     })
 
 
+async def contact_page(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "contact.html", {
+        "request": request, "settings": settings,
+    })
+
+async def shipping_page(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "shipping.html", {
+        "request": request, "settings": settings,
+    })
+
+async def size_guide_page(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "size_guide.html", {
+        "request": request, "settings": settings,
+    })
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/about", endpoint=about_page, methods=["GET"]),
@@ -510,4 +532,7 @@ routes = [
     Route("/page/{slug}", endpoint=dynamic_page, methods=["GET"]),
     Route("/blog", endpoint=blog_listing, methods=["GET"]),
     Route("/blog/{slug}", endpoint=blog_post_detail, methods=["GET"]),
+    Route("/contact", endpoint=contact_page, methods=["GET"]),
+    Route("/shipping", endpoint=shipping_page, methods=["GET"]),
+    Route("/size-guide", endpoint=size_guide_page, methods=["GET"]),
 ]

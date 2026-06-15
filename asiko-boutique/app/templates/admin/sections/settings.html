@@ -340,6 +340,82 @@
         </div>
     </form>
 
+    <!-- Page Configuration -->
+<div x-data="{ section: 'page_config' }" x-show="activeSection === 'page_config' || activeSection === 'all'" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Page Configuration</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Control which storefront pages are visible and their labels.</p>
+        </div>
+        <button type="submit" name="section" value="page_config" class="bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors">Save</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_contact_visible" {% if settings.page_contact_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">Contact Page</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_faq_visible" {% if settings.page_faq_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">FAQ Page</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_shipping_visible" {% if settings.page_shipping_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">Shipping & Returns</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_size_guide_visible" {% if settings.page_size_guide_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">Size Guide</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_stylist_visible" {% if settings.page_stylist_visible is not defined or settings.page_stylist_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">AI Stylist</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-[#18181B] transition-colors cursor-pointer">
+                <input type="checkbox" name="page_lookbook_visible" {% if settings.page_lookbook_visible is not defined or settings.page_lookbook_visible %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <div><span class="text-sm font-medium text-gray-900 dark:text-gray-100">Lookbook</span><p class="text-xs text-gray-500">Show in navigation</p></div>
+            </label>
+        </div>
+    </div>
+</div>
+
+<!-- Email Campaigns -->
+<div x-data="{ section: 'email_campaigns' }" x-show="activeSection === 'email_campaigns' || activeSection === 'all'" class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800">
+    <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+        <div>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100">Email Campaigns</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Configure email campaign defaults and tracking.</p>
+        </div>
+        <button type="submit" name="section" value="email_campaigns" class="bg-[#0D2A22] hover:bg-[#0a1f1a] text-white text-xs font-medium px-4 py-2 rounded-lg transition-colors">Save</button>
+    </div>
+    <div class="px-6 py-5 space-y-4">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Default From Name</label>
+            <input type="text" name="email_from_name" value="{{ settings.email_from_name or 'ASIKO Boutique' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Reply-To Email</label>
+            <input type="email" name="email_reply_to" value="{{ settings.email_reply_to or 'support@asikoboutique.com' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+        </div>
+        <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="email_tracking_enabled" {% if settings.email_tracking_enabled is not defined or settings.email_tracking_enabled %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <span class="text-sm text-gray-700 dark:text-gray-200">Enable open/click tracking</span>
+            </label>
+        </div>
+        <div class="flex items-center gap-3">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" name="email_unsubscribe_link" {% if settings.email_unsubscribe_link is not defined or settings.email_unsubscribe_link %}checked{% endif %} class="rounded border-gray-300 text-[#D4AF37] focus:ring-[#D4AF37]">
+                <span class="text-sm text-gray-700 dark:text-gray-200">Include unsubscribe link in emails</span>
+            </label>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Email Footer Text</label>
+            <input type="text" name="email_footer_text" value="{{ settings.email_footer_text or 'ASIKO Boutique — Authentic Nigerian Fashion' }}" class="w-full text-sm border border-gray-200 dark:border-gray-800 rounded-lg px-3 py-2.5 bg-white dark:bg-[#18181B] text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#D4AF37]/40">
+        </div>
+    </div>
+</div>
+
     <!-- ==================== INTEGRATIONS (read-only) ==================== -->
     <div class="bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 p-4 sm:p-6">
         <h3 class="font-medium text-gray-900 dark:text-gray-100 mb-3 sm:mb-4 flex items-center gap-2"><span class="w-1 h-5 bg-[#D4AF37] rounded-full"></span> Integrations</h3>
