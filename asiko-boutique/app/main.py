@@ -389,6 +389,60 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             await conn.execute(col_def)
     logger.info("LOG_SYSTEM: Migration 32 — SEO/GEO/AEO/SEM/SMO settings added to store_settings.")
 
+    # Migration 33: dedicated seo_settings table
+    async with app.state.db_pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS seo_settings (
+                id INTEGER PRIMARY KEY DEFAULT 1,
+                seo_title VARCHAR(200) DEFAULT '',
+                seo_description TEXT DEFAULT '',
+                seo_keywords TEXT DEFAULT '',
+                seo_og_image VARCHAR(500) DEFAULT '',
+                seo_twitter_handle VARCHAR(100) DEFAULT '',
+                seo_google_analytics VARCHAR(100) DEFAULT '',
+                seo_google_tag_manager VARCHAR(100) DEFAULT '',
+                seo_structured_data BOOLEAN DEFAULT TRUE,
+                seo_sitemap_enabled BOOLEAN DEFAULT TRUE,
+                seo_robots_enabled BOOLEAN DEFAULT TRUE,
+                geo_enabled BOOLEAN DEFAULT TRUE,
+                geo_local_business JSONB DEFAULT '{}'::jsonb,
+                aeo_faq_schema BOOLEAN DEFAULT TRUE,
+                aeo_product_schema BOOLEAN DEFAULT TRUE,
+                smo_twitter_card VARCHAR(50) DEFAULT 'summary_large_image',
+                smo_facebook_app_id VARCHAR(50) DEFAULT '',
+                sem_conversion_id VARCHAR(100) DEFAULT '',
+                sem_conversion_label VARCHAR(100) DEFAULT '',
+                sem_remarketing_tag TEXT DEFAULT '',
+                updated_at TIMESTAMP DEFAULT now()
+            )
+        """)
+        # Migrate existing data from store_settings if seo_settings is empty
+        existing = await conn.fetchval("SELECT COUNT(*) FROM seo_settings")
+        if existing == 0:
+            await conn.execute("""
+                INSERT INTO seo_settings (
+                    id, seo_title, seo_description, seo_keywords, seo_og_image,
+                    seo_twitter_handle, seo_google_analytics, seo_google_tag_manager,
+                    seo_structured_data, seo_sitemap_enabled, seo_robots_enabled,
+                    geo_enabled, geo_local_business, aeo_faq_schema, aeo_product_schema,
+                    smo_twitter_card, smo_facebook_app_id, sem_conversion_id,
+                    sem_conversion_label, sem_remarketing_tag
+                )
+                SELECT 1,
+                    COALESCE(seo_title, ''), COALESCE(seo_description, ''), COALESCE(seo_keywords, ''),
+                    COALESCE(seo_og_image, ''), COALESCE(seo_twitter_handle, ''),
+                    COALESCE(seo_google_analytics, ''), COALESCE(seo_google_tag_manager, ''),
+                    COALESCE(seo_structured_data, TRUE), COALESCE(seo_sitemap_enabled, TRUE),
+                    COALESCE(seo_robots_enabled, TRUE), COALESCE(geo_enabled, TRUE),
+                    COALESCE(geo_local_business, '{}'::jsonb), COALESCE(aeo_faq_schema, TRUE),
+                    COALESCE(aeo_product_schema, TRUE), COALESCE(smo_twitter_card, 'summary_large_image'),
+                    COALESCE(smo_facebook_app_id, ''), COALESCE(sem_conversion_id, ''),
+                    COALESCE(sem_conversion_label, ''), COALESCE(sem_remarketing_tag, '')
+                FROM store_settings WHERE id = 1
+                ON CONFLICT (id) DO NOTHING
+            """)
+    logger.info("LOG_SYSTEM: Migration 33 — seo_settings table created, data migrated from store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")

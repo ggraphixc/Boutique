@@ -48,9 +48,9 @@ def _section_response(request: Request, template: str, context: dict) -> HTMLRes
     if request.headers.get("HX-Request"):
         return templates.TemplateResponse(request, template, ctx)
     # Direct navigation — render section inside the admin shell
-    from app.settings_service import DEFAULTS
+    from app.settings_service import DEFAULTS, SEO_DEFAULTS
     if "settings" not in ctx:
-        ctx["settings"] = DEFAULTS
+        ctx["settings"] = {**DEFAULTS, **SEO_DEFAULTS}
     ctx["section_template"] = template
     return templates.TemplateResponse(request, "admin/base.html", ctx)
 
@@ -753,7 +753,7 @@ async def section_settings_post(request: Request) -> HTMLResponse:
     }
 
     try:
-        from app.settings_service import save_settings
+        from app.settings_service import save_settings, save_seo_settings
 
         # Handle brand_logo file upload (multipart/form-data)
         if section == "brand":
@@ -769,12 +769,16 @@ async def section_settings_post(request: Request) -> HTMLResponse:
                 b64 = base64.b64encode(contents).decode("ascii")
                 SECTION_PAYLOADS["brand"]["brand_logo"] = f"data:{mime};base64,{b64}"
 
-        if section and section in SECTION_PAYLOADS:
+        # SEO section saves to dedicated seo_settings table
+        if section == "seo":
+            await save_seo_settings(pool, SECTION_PAYLOADS["seo"])
+        elif section and section in SECTION_PAYLOADS:
             await save_settings(pool, SECTION_PAYLOADS[section], partial=True)
         else:
             full_payload = {}
-            for sec_payload in SECTION_PAYLOADS.values():
-                full_payload.update(sec_payload)
+            for sec_key, sec_payload in SECTION_PAYLOADS.items():
+                if sec_key != "seo":
+                    full_payload.update(sec_payload)
             await save_settings(pool, full_payload, partial=False)
 
         # Success — return with HX-Trigger toast
