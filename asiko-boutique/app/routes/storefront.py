@@ -487,7 +487,8 @@ async def blog_post_detail(request: Request) -> HTMLResponse:
 
 
 async def faq_page(request: Request) -> HTMLResponse:
-    settings = await _get_settings(request)
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     return templates.TemplateResponse(request, "faq.html", {
         "request": request,
         "settings": settings,
