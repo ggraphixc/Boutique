@@ -30,6 +30,12 @@ DEFAULTS: Dict[str, Any] = {
     "store_description": "",
     "phone": "",
     "store_address": "",
+    # Global brand identity
+    "brand_name": "ASIKO Boutique",
+    "brand_tagline": "Authentic Nigerian Fashion",
+    "brand_footer_text": "© 2026 ASIKO Boutique. All rights reserved.",
+    "brand_currency_symbol": "&#8358;",
+    "brand_currency_code": "NGN",
     # Currency / locale
     "currency": "NGN",
     "timezone": "Africa/Lagos",

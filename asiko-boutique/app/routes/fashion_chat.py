@@ -123,7 +123,7 @@ async def events_list_endpoint(request: Request) -> JSONResponse:
             "slug": e["slug"],
             "description": e.get("description", ""),
             "dress_code": e.get("dress_code", ""),
-            "icon_emoji": e.get("icon_emoji", ""),
+            "icon": e.get("icon", e.get("slug", "")),
             "recommended_categories": e.get("recommended_categories", []),
             "recommended_fabrics": e.get("recommended_fabrics", []),
             "recommended_colors": e.get("recommended_colors", []),
@@ -160,7 +160,7 @@ async def event_styling_endpoint(request: Request) -> JSONResponse:
             "recommended_fabrics": result.get("recommended_fabrics", []),
             "recommended_colors": result.get("recommended_colors", []),
             "avoid_colors": result.get("avoid_colors", []),
-            "icon_emoji": result.get("icon_emoji", ""),
+            "icon": result.get("icon", result.get("slug", "")),
         },
         "products": products,
     })

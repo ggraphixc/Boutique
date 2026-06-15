@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}ASIKO Boutique — Contemporary Nigerian Fashion{% endblock %}
+{% block title %}{{ settings.brand_name or 'ASIKO' }} Boutique — Contemporary Nigerian Fashion{% endblock %}
 {% block content %}
 <style>
     @keyframes fadeInUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }

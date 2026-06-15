@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Lookbook — ASIKO Boutique{% endblock %}
+{% block title %}Lookbook — {{ settings.brand_name or 'ASIKO' }} Boutique{% endblock %}
 
 {% block content %}
 <main class="min-h-screen bg-[#FBF9F6] dark:bg-[#0B0B0D] text-[#1A1A1A] dark:text-gray-100">
@@ -28,7 +28,7 @@
         </div>
 
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-[#D4AF37]">ASIKO Atelier</span>
+            <span class="text-[10px] font-mono uppercase tracking-[0.3em] text-[#D4AF37]">{{ settings.brand_name or 'ASIKO' }} Atelier</span>
             <h1 class="font-display text-4xl sm:text-5xl lg:text-6xl text-white font-light tracking-wide mt-4 mb-4">{{ settings.lookbook_title or 'The Lookbook' }}</h1>
             <p class="text-white/50 text-base lg:text-lg max-w-lg mx-auto font-light">{{ settings.lookbook_subtitle or 'Curated ensembles and styling inspiration from ASIKO\'s collection.' }}</p>
         </div>

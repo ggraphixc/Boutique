@@ -48,6 +48,9 @@ def _section_response(request: Request, template: str, context: dict) -> HTMLRes
     if request.headers.get("HX-Request"):
         return templates.TemplateResponse(request, template, ctx)
     # Direct navigation — render section inside the admin shell
+    from app.settings_service import DEFAULTS
+    if "settings" not in ctx:
+        ctx["settings"] = DEFAULTS
     ctx["section_template"] = template
     return templates.TemplateResponse(request, "admin/base.html", ctx)
 
@@ -695,6 +698,13 @@ async def section_settings_post(request: Request) -> HTMLResponse:
             "email_newsletter_enabled": _bool("email_newsletter_enabled", True),
             "email_password_reset_enabled": _bool("email_password_reset_enabled", True),
         },
+        "brand_identity": {
+            "brand_name": _val("brand_name", "ASIKO Boutique", 100),
+            "brand_tagline": _val("brand_tagline", "Authentic Nigerian Fashion", 200),
+            "brand_footer_text": _val("brand_footer_text", "© 2026 ASIKO Boutique. All rights reserved.", 300),
+            "brand_currency_symbol": _val("brand_currency_symbol", "&#8358;", 10),
+            "brand_currency_code": _val("brand_currency_code", "NGN", 10),
+        },
     }
 
     # Chatbot widget settings
@@ -814,9 +824,12 @@ async def section_about_post(request: Request) -> HTMLResponse:
 async def admin_index(request: Request) -> HTMLResponse:
     """GET /admin — Render the light-theme admin shell. The workspace child
     element loads the dashboard via HTMX on page load."""
+    pool = request.app.state.db_pool
+    from app.settings_service import get_settings
+    settings = await get_settings(pool)
     return templates.TemplateResponse(
         request, "admin/base.html",
-        {"request": request},
+        {"request": request, "settings": settings},
     )
 
 

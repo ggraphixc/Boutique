@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}ASIKO Boutique{% endblock %}</title>
+    <title>{% block title %}{{ settings.brand_name or 'ASIKO' }} Boutique{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         // Apply persisted theme synchronously to prevent FOUC.
@@ -55,8 +55,8 @@
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex items-center justify-between h-16">
                     <div class="flex items-center gap-3">
-                        <a href="/" class="font-display text-2xl font-light text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">ASIKO</a>
-                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 text-[#0D2A22] dark:text-[#D4AF37]">Boutique</span>
+                        <a href="/" class="font-display text-2xl font-light text-[#0D2A22] dark:text-[#D4AF37] tracking-wider">{{ settings.brand_name or 'ASIKO' }}</a>
+                        <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 text-[#0D2A22] dark:text-[#D4AF37]">{{ settings.brand_tagline or 'Boutique' }}</span>
                     </div>
                     <nav class="hidden md:flex items-center gap-6">
                         <a href="/" class="text-sm font-medium text-[#0D2A22] dark:text-gray-200 hover:text-[#D4AF37] dark:hover:text-[#D4AF37] transition-colors">Home</a>
@@ -68,6 +68,11 @@
                         {% endfor %}
                     </nav>
                     <div class="flex items-center gap-2 sm:gap-3">
+                        <!-- Search Trigger -->
+                        <button @click="$dispatch('open-search')"
+                                class="relative w-9 h-9 inline-flex items-center justify-center text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors" title="Search (⌘K)">
+                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        </button>
                         <button
                             @click="darkMode = !darkMode; localStorage.setItem('asiko:store:darkMode', darkMode); $root.classList.toggle('dark', darkMode); document.dispatchEvent(new CustomEvent('asiko:theme-changed', { detail: { dark: darkMode } }))"
                             class="relative w-9 h-9 inline-flex items-center justify-center text-[#0D2A22] dark:text-[#D4AF37] border border-[#D4AF37]/40 dark:border-[#D4AF37]/30 rounded-md hover:bg-[#D4AF37]/10 dark:hover:bg-[#D4AF37]/10 transition-colors"
@@ -138,9 +143,71 @@
                     <a href="/login" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Sign In</a>
                     <a href="/register" class="block px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">Create Account</a>
                     {% endif %}
+                    <button @click="$dispatch('open-search'); mobileOpen=false" class="flex items-center gap-2 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-[#0D2A22]/60 dark:text-gray-400 hover:bg-[#D4AF37]/10 dark:hover:bg-gray-800 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        Search
+                    </button>
                 </div>
             </div>
         </header>
+
+        <!-- Search Overlay -->
+        <div x-data="{ searchOpen: false, searchQuery: '', searchResults: [], searchAI: '', searching: false }"
+             @keydown.window.prevent.meta.k="if(!searchOpen){searchOpen=true}" @keydown.window.prevent.ctrl.k="if(!searchOpen){searchOpen=true}"
+             @open-search.window="searchOpen=true" x-cloak>
+            <!-- Search Modal -->
+            <div x-show="searchOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-[60] bg-[#0D2A22]/60 backdrop-blur-sm flex items-start justify-center pt-[15vh]" @click="searchOpen=false" @keydown.escape.window="searchOpen=false">
+                <div class="w-full max-w-xl mx-4 bg-white dark:bg-[#0E0E10] rounded-2xl shadow-2xl border border-[#D4AF37]/20 dark:border-gray-700 overflow-hidden" @click.stop>
+                    <div class="flex items-center gap-3 px-5 py-4 border-b border-[#D4AF37]/10 dark:border-gray-800">
+                        <svg class="w-5 h-5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input x-ref="searchInput" x-model="searchQuery" @input.debounce.300ms="await (async()=>{ searching=true; try{ const r=await fetch('/api/search?q='+encodeURIComponent(searchQuery)); const d=await r.json(); searchResults=d.results||[]; searchAI=d.ai_answer||''; }catch(e){} searching=false; })()" type="text" placeholder="Search products, FAQs, help..." class="flex-1 bg-transparent text-sm text-[#0D2A22] dark:text-white placeholder-[#0D2A22]/30 dark:placeholder-gray-500 focus:outline-none" x-init="$watch('searchOpen', v => { if(v) $nextTick(()=>$refs.searchInput?.focus()) })">
+                        <kbd class="hidden sm:inline-flex items-center px-2 py-0.5 text-[10px] font-mono text-[#0D2A22]/30 dark:text-gray-500 bg-[#0D2A22]/5 dark:bg-white/5 rounded">ESC</kbd>
+                    </div>
+                    <div class="max-h-[50vh] overflow-y-auto">
+                        <template x-if="searching">
+                            <div class="px-5 py-8 text-center text-sm text-[#0D2A22]/40 dark:text-gray-500">Searching...</div>
+                        </template>
+                        <template x-if="!searching && searchResults.length===0 && searchQuery.length>0 && !searchAI">
+                            <div class="px-5 py-8 text-center text-sm text-[#0D2A22]/40 dark:text-gray-500">No results found. Try different keywords.</div>
+                        </template>
+                        <!-- AI Answer -->
+                        <template x-if="searchAI && !searching">
+                            <div class="px-5 py-4 border-b border-[#D4AF37]/10 dark:border-gray-800">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-7 h-7 rounded-full bg-[#D4AF37]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                        <svg class="w-3.5 h-3.5 text-[#D4AF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-mono text-[#D4AF37] uppercase tracking-wider mb-1">AI Assistant</div>
+                                        <div class="text-sm text-[#0D2A22]/70 dark:text-gray-300 leading-relaxed" x-text="searchAI"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                        <!-- Results -->
+                        <template x-if="searchResults.length>0 && !searching">
+                            <div class="py-2">
+                                <template x-for="(r,i) in searchResults" :key="i">
+                                    <a :href="r.url" class="flex items-center gap-3 px-5 py-3 hover:bg-[#D4AF37]/5 dark:hover:bg-white/5 transition-colors" @click="searchOpen=false">
+                                        <div class="w-10 h-10 rounded-lg bg-[#0D2A22]/5 dark:bg-white/5 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                            <template x-if="r.image"><img :src="r.image" class="w-full h-full object-cover"></img></template>
+                                            <template x-if="!r.image">
+                                                <svg class="w-5 h-5 text-[#D4AF37]/60" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                            </template>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-sm font-medium text-[#0D2A22] dark:text-white truncate" x-text="r.title"></div>
+                                            <div class="text-xs text-[#0D2A22]/40 dark:text-gray-500 truncate" x-text="r.subtitle"></div>
+                                        </div>
+                                        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37]" x-text="r.type"></span>
+                                    </a>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <main class="flex-1">{% block content %}{% endblock %}</main>
 
@@ -174,7 +241,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
                     <!-- Brand -->
                     <div class="col-span-2 md:col-span-1">
-                        <span class="font-display text-2xl text-[#D4AF37] tracking-wider">ASIKO</span>
+                        <span class="font-display text-2xl text-[#D4AF37] tracking-wider">{{ settings.brand_name or 'ASIKO' }}</span>
                         <p class="text-sm text-white/50 mt-3 leading-relaxed">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
                         <div class="flex items-center gap-3 mt-4">
                             <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#D4AF37]/20 transition-colors" aria-label="Instagram">
@@ -206,6 +273,8 @@
                             {% for page in request.state.footer_pages %}
                             <li><a href="/page/{{ page.slug }}" class="text-sm text-white/60 hover:text-white transition-colors">{{ page.title }}</a></li>
                             {% endfor %}
+                            <li><a href="/terms" class="text-sm text-white/60 hover:text-white transition-colors">Terms of Service</a></li>
+                            <li><a href="/privacy" class="text-sm text-white/60 hover:text-white transition-colors">Privacy Policy</a></li>
                         </ul>
                     </div>
 
@@ -231,11 +300,11 @@
             <!-- Bottom bar -->
             <div class="border-t border-white/10">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <p class="text-xs text-white/40">&copy; 2026 ASIKO Boutique. All rights reserved.</p>
+                    <p class="text-xs text-white/40">{{ settings.brand_footer_text or '© 2026 ASIKO Boutique. All rights reserved.' }}</p>
                     <div class="flex items-center gap-4">
-                        <a href="#" class="text-xs text-white/40 hover:text-white/60 transition-colors">Privacy</a>
-                        <a href="#" class="text-xs text-white/40 hover:text-white/60 transition-colors">Terms</a>
-                        <span class="text-xs text-white/30">NGN &#8358;</span>
+                        <a href="/privacy" class="text-xs text-white/40 hover:text-white/60 transition-colors">Privacy</a>
+                        <a href="/terms" class="text-xs text-white/40 hover:text-white/60 transition-colors">Terms</a>
+                        <span class="text-xs text-white/30">{{ settings.brand_currency_code or 'NGN' }} {{ settings.brand_currency_symbol or '&#8358;' }}</span>
                     </div>
                 </div>
             </div>
@@ -293,7 +362,7 @@
                         A
                     </div>
                     <div>
-                        <div class="text-sm font-semibold text-[#0D2A22] dark:text-[#D4AF37]">ASIKO Stylist</div>
+                        <div class="text-sm font-semibold text-[#0D2A22] dark:text-[#D4AF37]">{{ settings.brand_name or 'ASIKO' }} Stylist</div>
                         <div class="text-[10px] text-green-500 flex items-center gap-1">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-500 inline-block"></span> Online
                         </div>
@@ -379,7 +448,7 @@
                 if (a) this.accentColor = a.content;
                 // Welcome message
                 const welcome = document.querySelector('meta[name="chatbot-welcome"]');
-                const welcomeText = welcome ? welcome.content : 'Hi! I\'m your personal ASIKO stylist. How can I help you find the perfect look today?';
+                const welcomeText = welcome ? welcome.content : 'Hi! I\'m your personal {{ settings.brand_name or "ASIKO" }} stylist. How can I help you find the perfect look today?';
                 this.messages.push({ role: 'assistant', text: welcomeText });
             },
             toggleChat() {

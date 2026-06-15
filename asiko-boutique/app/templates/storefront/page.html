@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ page.title }} | ASIKO Boutique{% endblock %}
+{% block title %}{{ page.title }} | {{ settings.brand_name or 'ASIKO' }} Boutique{% endblock %}
 {% block meta %}
     {% if page.meta_description %}<meta name="description" content="{{ page.meta_description }}">{% endif %}
 {% endblock %}

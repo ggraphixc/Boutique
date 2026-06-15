@@ -28,6 +28,7 @@
 21. [Running the Application](#21-running-the-application)
 22. [Known Limitations](#22-known-limitations)
 23. [Future Work](#23-future-work)
+24. [QA Checklist](QA_CHECKLIST.md)
 
 ---
 

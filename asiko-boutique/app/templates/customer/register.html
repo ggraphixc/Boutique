@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ASIKO // Create Account</title>
+    <title>{{ settings.brand_name or 'ASIKO' }} // Create Account</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -80,8 +80,8 @@
 
                 <!-- Center text -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center text-center px-12">
-                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">ASIKO</span>
-                    <p class="text-white/40 text-sm tracking-widest uppercase">Boutique</p>
+                    <span class="font-display text-5xl text-[#D4AF37] tracking-wider mb-4">{{ settings.brand_name or 'ASIKO' }}</span>
+                    <p class="text-white/40 text-sm tracking-widest uppercase">{{ settings.brand_tagline or 'Boutique' }}</p>
                     <div class="w-12 h-px bg-[#D4AF37]/30 mt-6"></div>
                     <p class="text-white/30 text-xs mt-4 max-w-xs">Transparent pricing. Verified provenance. Atelier craftsmanship.</p>
                 </div>
@@ -93,15 +93,15 @@
             <div class="w-full max-w-md mx-auto">
                 <!-- Mobile brand -->
                 <div class="text-center mb-8 lg:hidden">
-                    <a href="/" class="font-display text-3xl tracking-wide text-[#0D2A22]">ASIKO</a>
-                    <p class="text-xs text-[#0D2A22]/40 mt-1 font-mono uppercase tracking-widest">Boutique</p>
+                    <a href="/" class="font-display text-3xl tracking-wide text-[#0D2A22]">{{ settings.brand_name or 'ASIKO' }}</a>
+                    <p class="text-xs text-[#0D2A22]/40 mt-1 font-mono uppercase tracking-widest">{{ settings.brand_tagline or 'Boutique' }}</p>
                 </div>
 
                 <!-- Form card -->
                 <div class="bg-white rounded-2xl border border-[#0D2A22]/8 p-5 sm:p-8 shadow-xl shadow-[#0D2A22]/5">
                     <div class="mb-6">
                         <h1 class="font-display text-2xl text-[#0D2A22] mb-1">Create your account</h1>
-                        <p class="text-sm text-[#0D2A22]/50">Join ASIKO to track orders and manage your wardrobe.</p>
+                        <p class="text-sm text-[#0D2A22]/50">Join {{ settings.brand_name or 'ASIKO' }} to track orders and manage your wardrobe.</p>
                     </div>
 
                     {% if error %}

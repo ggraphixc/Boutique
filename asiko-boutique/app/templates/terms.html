@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Terms of Service — {{ settings.store_name or 'ASIKO Boutique' }}{% endblock %}
+{% block content %}
+<section class="bg-[#0D2A22] py-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="font-display text-3xl sm:text-4xl text-white font-light tracking-wide">Terms of Service</h1>
+        <p class="text-white/45 text-sm mt-3">Last updated: January 2026</p>
+    </div>
+</section>
+<section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="prose prose-sm max-w-none text-[#1A1A1A]/70 dark:text-gray-300 space-y-8">
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">1. Acceptance of Terms</h2>
+            <p class="text-sm leading-relaxed">By accessing and using {{ settings.store_name or 'ASIKO Boutique' }} ("the Store"), you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">2. Products and Services</h2>
+            <p class="text-sm leading-relaxed">All products listed on {{ settings.store_name or 'ASIKO Boutique' }} are authentic Nigerian fashion items. We strive to display accurate colors, descriptions, and pricing. Prices are listed in Nigerian Naira (₦) and include applicable taxes unless stated otherwise.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">3. Orders and Payment</h2>
+            <p class="text-sm leading-relaxed">Orders are subject to availability. We reserve the right to cancel any order. Payment is processed securely through OPay. By placing an order, you warrant that all information provided is accurate and that you are authorized to use the payment method.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">4. Shipping and Delivery</h2>
+            <p class="text-sm leading-relaxed">We deliver across Nigeria through our trusted logistics partners. Delivery times are estimates and may vary. Risk of loss and title for items pass to you upon delivery to the carrier.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">5. Returns and Exchanges</h2>
+            <p class="text-sm leading-relaxed">Items may be returned within 14 days of delivery if they are unworn, unused, and in original packaging. Sale items and personalized items are final sale. To initiate a return, contact us at {{ settings.contact_email or 'support@asikoboutique.com' }}.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">6. Privacy</h2>
+            <p class="text-sm leading-relaxed">Your privacy is important to us. Please review our <a href="/privacy" class="text-[#D4AF37] hover:underline">Privacy Policy</a> to understand how we collect, use, and protect your personal information.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">7. Intellectual Property</h2>
+            <p class="text-sm leading-relaxed">All content on this website, including images, logos, text, and designs, is the property of {{ settings.store_name or 'ASIKO Boutique' }} and is protected by copyright laws. Unauthorized use is prohibited.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">8. Limitation of Liability</h2>
+            <p class="text-sm leading-relaxed">{{ settings.store_name or 'ASIKO Boutique' }} shall not be liable for any indirect, incidental, or consequential damages arising from the use of our products or services.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">9. Contact</h2>
+            <p class="text-sm leading-relaxed">For questions about these Terms, contact us at:<br>Email: {{ settings.contact_email or 'support@asikoboutique.com' }}<br>Address: {{ settings.store_address or 'Lagos, Nigeria' }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

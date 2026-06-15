@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ post.title }} | ASIKO Blog{% endblock %}
+{% block title %}{{ post.title }} | {{ settings.brand_name or 'ASIKO' }} Blog{% endblock %}
 
 {% block content %}
 <main class="min-h-screen bg-white dark:bg-[#0a0a0c]">

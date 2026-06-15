@@ -31,9 +31,12 @@ def _check_password(password: str, password_hash: str) -> bool:
 
 async def register_page(request: Request) -> HTMLResponse:
     error = request.query_params.get("error", "")
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     return templates.TemplateResponse(request, "customer/register.html", {
         "request": request,
         "error": error,
+        "settings": settings,
     })
 
 
@@ -85,9 +88,12 @@ async def register_submit(request: Request) -> RedirectResponse:
 
 async def login_page(request: Request) -> HTMLResponse:
     error = request.query_params.get("error", "")
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
     return templates.TemplateResponse(request, "customer/login.html", {
         "request": request,
         "error": error,
+        "settings": settings,
     })
 
 

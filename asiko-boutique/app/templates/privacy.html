@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — {{ settings.store_name or 'ASIKO Boutique' }}{% endblock %}
+{% block content %}
+<section class="bg-[#0D2A22] py-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="font-display text-3xl sm:text-4xl text-white font-light tracking-wide">Privacy Policy</h1>
+        <p class="text-white/45 text-sm mt-3">Last updated: January 2026</p>
+    </div>
+</section>
+<section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="prose prose-sm max-w-none text-[#1A1A1A]/70 dark:text-gray-300 space-y-8">
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">1. Information We Collect</h2>
+            <p class="text-sm leading-relaxed">We collect information you provide directly: name, email address, shipping address, phone number, and payment information. We also collect usage data including browsing history, search queries, and device information.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">2. How We Use Your Information</h2>
+            <p class="text-sm leading-relaxed">We use your information to: process orders and payments, deliver products, send order updates, provide customer support, personalize your shopping experience, improve our services, and send marketing communications (with your consent).</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">3. Information Sharing</h2>
+            <p class="text-sm leading-relaxed">We share your information only with: logistics partners (for delivery), payment processors (OPay), and service providers who assist in operating our store. We do not sell your personal information to third parties.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">4. Data Security</h2>
+            <p class="text-sm leading-relaxed">We implement appropriate security measures to protect your personal information. However, no method of transmission over the Internet is 100% secure, and we cannot guarantee absolute security.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">5. Cookies</h2>
+            <p class="text-sm leading-relaxed">We use cookies and similar technologies to maintain your session, remember your preferences, and analyze usage patterns. You can control cookie settings through your browser preferences.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">6. Your Rights</h2>
+            <p class="text-sm leading-relaxed">You have the right to: access your personal data, correct inaccurate data, request deletion of your data, opt out of marketing communications, and withdraw consent at any time.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">7. Data Retention</h2>
+            <p class="text-sm leading-relaxed">We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, unless a longer retention period is required by law.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">8. Children's Privacy</h2>
+            <p class="text-sm leading-relaxed">Our services are not directed to individuals under 18. We do not knowingly collect personal information from children.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">9. Changes to This Policy</h2>
+            <p class="text-sm leading-relaxed">We may update this Privacy Policy from time to time. We will notify you of any material changes by posting the new policy on this page.</p>
+        </div>
+        <div>
+            <h2 class="font-display text-xl text-[#0D2A22] dark:text-white mb-3">10. Contact Us</h2>
+            <p class="text-sm leading-relaxed">For questions about this Privacy Policy, contact us at:<br>Email: {{ settings.contact_email or 'support@asikoboutique.com' }}<br>Address: {{ settings.store_address or 'Lagos, Nigeria' }}</p>
+        </div>
+    </div>
+</section>
+{% endblock %}

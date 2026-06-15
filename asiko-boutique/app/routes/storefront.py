@@ -575,6 +575,22 @@ async def size_guide_page(request: Request) -> HTMLResponse:
     })
 
 
+async def terms_page(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "terms.html", {
+        "request": request, "settings": settings,
+    })
+
+
+async def privacy_page(request: Request) -> HTMLResponse:
+    pool = request.app.state.db_pool
+    settings = await get_settings(pool)
+    return templates.TemplateResponse(request, "privacy.html", {
+        "request": request, "settings": settings,
+    })
+
+
 routes = [
     Route("/", endpoint=homepage, methods=["GET"]),
     Route("/about", endpoint=about_page, methods=["GET"]),
@@ -594,4 +610,6 @@ routes = [
     Route("/contact/submit", endpoint=contact_submit, methods=["POST"]),
     Route("/shipping", endpoint=shipping_page, methods=["GET"]),
     Route("/size-guide", endpoint=size_guide_page, methods=["GET"]),
+    Route("/terms", endpoint=terms_page, methods=["GET"]),
+    Route("/privacy", endpoint=privacy_page, methods=["GET"]),
 ]

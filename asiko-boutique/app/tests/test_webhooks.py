@@ -1,4 +1,6 @@
 # app/tests/test_webhooks.py
+# Tests for order-status and test-email webhook endpoints.
+# These test the validation paths that don't require a DB connection.
 import pytest
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -6,69 +8,74 @@ from starlette.testclient import TestClient
 from starlette.applications import Starlette
 from starlette.routing import Route
 
+from app.routes.webhooks import order_status_webhook, send_test_email
 
-def test_meshy_webhook_method_not_allowed():
-    """Verify GET method returns 405 for webhook endpoint."""
-    from app.routes.webhooks import meshy_webhook_receiver
-    
+
+def _make_test_app(endpoint, path):
     mock_pool = MagicMock()
-    routes = [
-        Route("/api/v1/webhooks/meshy", endpoint=meshy_webhook_receiver, methods=["POST"]),
-    ]
+    routes = [Route(path, endpoint, methods=["POST"])]
     test_app = Starlette(routes=routes)
     test_app.state.db_pool = mock_pool
-
-    with TestClient(test_app) as client:
-        response = client.get("/api/v1/webhooks/meshy")
-        assert response.status_code == 405
+    return test_app
 
 
-def test_meshy_webhook_post_acknowledged():
-    """Verify POST returns acknowledgment for deprecated endpoint."""
-    from app.routes.webhooks import meshy_webhook_receiver
-    
-    mock_pool = MagicMock()
-    routes = [
-        Route("/api/v1/webhooks/meshy", endpoint=meshy_webhook_receiver, methods=["POST"]),
-    ]
-    test_app = Starlette(routes=routes)
-    test_app.state.db_pool = mock_pool
-
-    with TestClient(test_app) as client:
-        mock_payload = {"id": "msy_task", "status": "succeeded"}
-        response = client.post("/api/v1/webhooks/meshy", json=mock_payload)
-        assert response.status_code == 200
-        assert b"DEPRECATED_ENDPOINT_ACKNOWLEDGED" in response.content
+def test_order_status_webhook_get_not_allowed():
+    """GET should return 405 for order-status webhook."""
+    app = _make_test_app(order_status_webhook, "/webhooks/order-status")
+    with TestClient(app) as client:
+        r = client.get("/webhooks/order-status")
+        assert r.status_code == 405
 
 
-def test_meshy_webhook_invalid_json_returns_ok():
-    """Verify invalid JSON payload still returns 200 for deprecated endpoint."""
-    from app.routes.webhooks import meshy_webhook_receiver
-    
-    mock_pool = MagicMock()
-    routes = [
-        Route("/api/v1/webhooks/meshy", endpoint=meshy_webhook_receiver, methods=["POST"]),
-    ]
-    test_app = Starlette(routes=routes)
-    test_app.state.db_pool = mock_pool
-
-    with TestClient(test_app) as client:
-        response = client.post("/api/v1/webhooks/meshy", content=b"not valid json{{{")
-        assert response.status_code == 200
+def test_order_status_webhook_missing_fields():
+    """POST with missing order_id or status should return 400."""
+    app = _make_test_app(order_status_webhook, "/webhooks/order-status")
+    with TestClient(app) as client:
+        r = client.post("/webhooks/order-status", json={"order_id": "x"})
+        assert r.status_code == 400
+        r = client.post("/webhooks/order-status", json={"status": "paid"})
+        assert r.status_code == 400
 
 
-def test_meshy_webhook_internal_error_returns_ok():
-    """Verify internal errors return 200 for deprecated endpoint."""
-    from app.routes.webhooks import meshy_webhook_receiver
-    
-    mock_pool = MagicMock()
-    routes = [
-        Route("/api/v1/webhooks/meshy", endpoint=meshy_webhook_receiver, methods=["POST"]),
-    ]
-    test_app = Starlette(routes=routes)
-    test_app.state.db_pool = mock_pool
+def test_order_status_webhook_invalid_status():
+    """POST with invalid status value should return 400."""
+    app = _make_test_app(order_status_webhook, "/webhooks/order-status")
+    with TestClient(app) as client:
+        r = client.post("/webhooks/order-status", json={"order_id": "x", "status": "bogus"})
+        assert r.status_code == 400
+        assert "Invalid status" in r.json()["error"]
 
-    with TestClient(test_app) as client:
-        mock_payload = {"id": "msy_error_task", "status": "succeeded"}
-        response = client.post("/api/v1/webhooks/meshy", json=mock_payload)
-        assert response.status_code == 200
+
+def test_order_status_webhook_order_not_found():
+    """POST with valid fields but missing order should return 404."""
+    app = _make_test_app(order_status_webhook, "/webhooks/order-status")
+    with TestClient(app) as client:
+        with patch("app.routes.webhooks.fetch_order_by_id", new_callable=AsyncMock, return_value=None):
+            r = client.post("/webhooks/order-status", json={"order_id": "no-such", "status": "paid"})
+            assert r.status_code == 404
+
+
+def test_send_test_email_get_not_allowed():
+    """GET should return 405 for test-email endpoint."""
+    app = _make_test_app(send_test_email, "/webhooks/test-email")
+    with TestClient(app) as client:
+        r = client.get("/webhooks/test-email")
+        assert r.status_code == 405
+
+
+def test_send_test_email_missing_email():
+    """POST with missing email should return 400."""
+    app = _make_test_app(send_test_email, "/webhooks/test-email")
+    with TestClient(app) as client:
+        r = client.post("/webhooks/test-email", json={})
+        assert r.status_code == 400
+
+
+def test_send_test_email_success():
+    """POST with valid email should return 200 with sent status."""
+    app = _make_test_app(send_test_email, "/webhooks/test-email")
+    with TestClient(app) as client:
+        with patch("app.routes.webhooks.send_brevo_email", new_callable=AsyncMock, return_value=True):
+            r = client.post("/webhooks/test-email", json={"email": "test@example.com"})
+            assert r.status_code == 200
+            assert r.json()["sent"] is True

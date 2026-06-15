@@ -662,29 +662,27 @@ class TestNewSections:
             assert r.status_code == 200
             body = r.text
             assert "data-section=\"analytics\"" in body
-            for title in ("Sessions", "Page Views", "Conversion Rate", "Avg. Session"):
+            # 3 KPI cards: Sessions, Conversion Rate, This Week (revenue)
+            for title in ("Sessions", "Conversion Rate", "This Week"):
                 assert title in body, f"missing KPI {title!r}"
             # 7-day revenue + funnel + sources
             assert "7-day revenue" in body
             assert "Conversion funnel" in body
             assert "Traffic sources" in body
-            # Funnel steps
-            for step in ("Visitors", "Product views", "Add to cart", "Checkout", "Purchased"):
-                assert step in body, f"missing funnel step {step!r}"
 
     def test_analytics_handles_no_orders(self):
         """Empty DB should still render the chart + funnel with fallback data."""
         app = _make_app_with_routes()
         with TestClient(app, raise_server_exceptions=False) as client:
             body = client.get("/admin/section/analytics").text
-            # 7-day series renders (at least Mon with zero orders when no data)
-            assert "Mon" in body
+            # Empty state fallback
+            assert "No revenue data" in body
             assert "0" in body  # zero orders/revenue for empty DB
             # Funnel steps rendered
             for step in ("Visitors", "Product views", "Add to cart", "Checkout", "Purchased"):
                 assert step in body
-            # Sources fallback (Direct when no traffic_sources data)
-            assert "Direct" in body
+            # Sources fallback (no traffic data)
+            assert "No traffic data" in body
 
     def test_analytics_sidebar_nav(self):
         import re

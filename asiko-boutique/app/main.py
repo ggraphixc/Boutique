@@ -408,8 +408,10 @@ def _register_route_modules(app: Starlette) -> None:
     from app.routes.ws_store import ws_store_routes
     from app.routes.fashion_chat import routes as fashion_chat_routes
     from app.routes.wardrobe import routes as wardrobe_routes
+    from app.routes.search import routes as search_routes
 
     for route_list in [
+        search_routes,
         storefront_routes,
         cart_routes,
         checkout_routes,
