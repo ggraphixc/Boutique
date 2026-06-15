@@ -323,7 +323,7 @@ async def forgot_password_submit(request: Request) -> RedirectResponse:
     # Always show success to prevent email enumeration
     if customer:
         token = secrets.token_hex(32)
-        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        expires_at = (datetime.now(timezone.utc) + timedelta(hours=1)).replace(tzinfo=None)
         async with pool.acquire() as conn:
             await conn.execute(
                 "INSERT INTO password_reset_tokens (customer_id, token, expires_at) VALUES ($1, $2, $3)",
