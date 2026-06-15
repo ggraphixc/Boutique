@@ -351,6 +351,18 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
         )
     logger.info("LOG_SYSTEM: Migration 30 — brand_logo column added to store_settings.")
 
+    # Migration 31: add brand identity columns to store_settings
+    async with app.state.db_pool.acquire() as conn:
+        for col_def in [
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_name VARCHAR(100) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_tagline VARCHAR(200) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_footer_text VARCHAR(300) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_currency_symbol VARCHAR(10) DEFAULT ''",
+            "ALTER TABLE store_settings ADD COLUMN IF NOT EXISTS brand_currency_code VARCHAR(10) DEFAULT ''",
+        ]:
+            await conn.execute(col_def)
+    logger.info("LOG_SYSTEM: Migration 31 — brand identity columns added to store_settings.")
+
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
     logger.info("LOG_SYSTEM: Real-time WebSocket listeners started (pipeline, reviews, orders, stock).")
