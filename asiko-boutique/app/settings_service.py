@@ -128,6 +128,14 @@ NOTIFICATION_DEFAULTS: Dict[str, Any] = {
     "email_tracking_enabled": True,
     "email_unsubscribe_link": True,
     "email_footer_text": "ASIKO Boutique — Authentic Nigerian Fashion",
+    "brevo_api_key": "",
+    "sender_name": "ASIKO Boutique",
+    "admin_email": "",
+    "email_welcome_enabled": True,
+    "email_order_enabled": True,
+    "email_shipping_enabled": True,
+    "email_newsletter_enabled": True,
+    "email_password_reset_enabled": True,
 }
 
 SEO_DEFAULTS: Dict[str, Any] = {
@@ -188,6 +196,8 @@ _BOOL_KEYS: Dict[str, set] = {
     "notification": {
         "notif_new_order", "notif_pipeline", "notif_review", "notif_low_stock",
         "email_tracking_enabled", "email_unsubscribe_link",
+        "email_welcome_enabled", "email_order_enabled", "email_shipping_enabled",
+        "email_newsletter_enabled", "email_password_reset_enabled",
     },
     "seo": {
         "seo_structured_data", "seo_sitemap_enabled", "seo_robots_enabled",

@@ -548,6 +548,14 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
                 email_tracking_enabled BOOLEAN DEFAULT TRUE,
                 email_unsubscribe_link BOOLEAN DEFAULT TRUE,
                 email_footer_text TEXT DEFAULT '',
+                brevo_api_key VARCHAR(500) DEFAULT '',
+                sender_name VARCHAR(100) DEFAULT 'ASIKO Boutique',
+                admin_email VARCHAR(200) DEFAULT '',
+                email_welcome_enabled BOOLEAN DEFAULT TRUE,
+                email_order_enabled BOOLEAN DEFAULT TRUE,
+                email_shipping_enabled BOOLEAN DEFAULT TRUE,
+                email_newsletter_enabled BOOLEAN DEFAULT TRUE,
+                email_password_reset_enabled BOOLEAN DEFAULT TRUE,
                 updated_at TIMESTAMP DEFAULT now()
             )""",
         ]:
@@ -635,6 +643,21 @@ async def lifespan(app: Starlette) -> AsyncGenerator[None, None]:
             await conn.execute(q)
 
     logger.info("LOG_SYSTEM: Migration 34 — 7 settings tables created, data migrated from store_settings.")
+
+    # Migration 35: Add missing columns to notification_settings for email_config + email_notifications
+    async with app.state.db_pool.acquire() as conn:
+        for col in [
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS brevo_api_key VARCHAR(500) DEFAULT ''",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS sender_name VARCHAR(100) DEFAULT 'ASIKO Boutique'",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS admin_email VARCHAR(200) DEFAULT ''",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS email_welcome_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS email_order_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS email_shipping_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS email_newsletter_enabled BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE notification_settings ADD COLUMN IF NOT EXISTS email_password_reset_enabled BOOLEAN DEFAULT TRUE",
+        ]:
+            await conn.execute(col)
+    logger.info("LOG_SYSTEM: Migration 35 — 8 missing columns added to notification_settings.")
 
     # 3. Start Postgres LISTEN/NOTIFY listeners for real-time WebSocket broadcast
     realtime_manager.start_listeners(app.state.db_pool)
