@@ -681,7 +681,7 @@ async def section_settings_post(request: Request) -> HTMLResponse:
         },
         "email_config": {
             "brevo_api_key": _val("brevo_api_key", "", 500),
-            "sender_email": _val("sender_email", "orders@asikoboutique.com", 200),
+            "email_reply_to": _val("sender_email", "orders@asikoboutique.com", 200),
             "sender_name": _val("sender_name", "ASIKO Boutique", 100),
             "admin_email": _val("admin_email", "hello@asikoboutique.com", 200),
         },
