@@ -34,9 +34,16 @@ def _is_admin(session: dict) -> bool:
 async def admin_login_page(request: Request) -> HTMLResponse:
     """GET /admin/login — Render admin login form."""
     error = request.query_params.get("error", "")
+    settings = {}
+    try:
+        from app.settings_service import get_settings
+        settings = await get_settings(request.app.state.db_pool)
+    except Exception:
+        pass
     return templates.TemplateResponse(request, "admin/login.html", {
         "request": request,
         "error": error,
+        "settings": settings,
     })
 
 
