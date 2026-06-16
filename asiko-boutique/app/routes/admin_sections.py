@@ -672,7 +672,6 @@ async def section_settings_post(request: Request) -> HTMLResponse:
             "free_shipping_threshold": _float("free_shipping_threshold"),
         },
         "security": {
-            "admin_auth": _bool("admin_auth"),
             "session_timeout": _int("session_timeout", 60),
         },
         "notifications": {
