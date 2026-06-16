@@ -555,14 +555,12 @@ async def section_ads(request: Request) -> HTMLResponse:
 # ===========================================================================
 async def section_settings_get(request: Request) -> HTMLResponse:
     pool = request.app.state.db_pool
-    settings: Dict[str, Any] = {}
     try:
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow("SELECT * FROM store_settings WHERE id = 1")
-            if row:
-                settings = dict(row)
+        from app.settings_service import get_settings
+        settings = await get_settings(pool)
     except Exception as exc:
-        logger.warning("[admin] settings fetch failed (table may not exist yet): %s", exc)
+        logger.warning("[admin] settings fetch failed: %s", exc)
+        settings = {}
 
     return _section_response(
         request, "admin/sections/settings.html",
