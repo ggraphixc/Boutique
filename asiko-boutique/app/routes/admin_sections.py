@@ -1675,44 +1675,202 @@ async def rt_reviews_summary(request: Request) -> HTMLResponse:
 # ===========================================================================
 
 async def rt_notifications(request: Request) -> HTMLResponse:
-    """Return recent notifications as an HTMX fragment for the bell dropdown."""
+    """Return recent notifications as an HTMX fragment for the bell dropdown.
+
+    Covers ALL webstore and admin activity:
+    - New orders
+    - New customer registrations
+    - New product reviews
+    - Low stock alerts
+    - Waitlist signups
+    - Email sends (from email_logs)
+    - Contact form messages
+    """
     pool = request.app.state.db_pool
     notifications: List[Dict[str, str]] = []
     unread_count = 0
+
+    # Load notification preferences
+    prefs = {
+        "order": True,
+        "review": True,
+        "low_stock": True,
+    }
     try:
         async with pool.acquire() as conn:
-            # Recent orders
             try:
-                rows = await conn.fetch(
-                    """SELECT customer_email, total_amount, status, created_at
-                       FROM orders ORDER BY created_at DESC LIMIT 5"""
+                pr = await conn.fetchrow(
+                    "SELECT notif_new_order, notif_review, notif_low_stock FROM notification_settings WHERE id=1"
                 )
-                for o in rows:
-                    name = (o["customer_email"] or "Guest").split("@")[0].replace(".", " ").title()
+                if pr:
+                    prefs["order"] = bool(pr["notif_new_order"])
+                    prefs["review"] = bool(pr["notif_review"])
+                    prefs["low_stock"] = bool(pr["notif_low_stock"])
+            except Exception:
+                pass
+
+            # --- New orders (last 24h) ---
+            if prefs["order"]:
+                try:
+                    rows = await conn.fetch(
+                        """SELECT id, customer_email, total_amount, status, created_at
+                           FROM orders
+                           WHERE created_at > now() - interval '24 hours'
+                           ORDER BY created_at DESC LIMIT 8"""
+                    )
+                    for o in rows:
+                        name = (o["customer_email"] or "Guest").split("@")[0].replace(".", " ").title()
+                        oid = str(o["id"])[:8]
+                        notifications.append({
+                            "id": f"order-{o['id']}",
+                            "icon": "order",
+                            "color": "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+                            "title": f"New order from {name}",
+                            "subtitle": f"₦{o['total_amount']:,.0f} \u00b7 {o['status'].title()}",
+                            "time": _humanize_dt(o["created_at"]),
+                            "ts": o["created_at"],
+                            "type": "order",
+                        })
+                except Exception:
+                    pass
+
+            # --- New customer registrations (last 24h) ---
+            try:
+                customers = await conn.fetch(
+                    """SELECT id, email, full_name, created_at
+                       FROM customers
+                       WHERE created_at > now() - interval '24 hours'
+                       ORDER BY created_at DESC LIMIT 5"""
+                )
+                for c in customers:
+                    name = c["full_name"] or (c["email"] or "Someone").split("@")[0].replace(".", " ").title()
                     notifications.append({
-                        "icon": "sale",
-                        "color": "bg-emerald-50 text-emerald-600",
-                        "title": f"New order from {name}",
-                        "subtitle": f"₦{o['total_amount']:,.0f} · {o['status'].title()}",
-                        "time": _humanize_dt(o["created_at"]),
+                        "id": f"customer-{c['id']}",
+                        "icon": "customer",
+                        "color": "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400",
+                        "title": f"New customer: {name}",
+                        "subtitle": c["email"] or "",
+                        "time": _humanize_dt(c["created_at"]),
+                        "ts": c["created_at"],
+                        "type": "customer",
                     })
             except Exception:
                 pass
 
-            # Recent reviews
+            # --- New reviews (last 7 days) ---
+            if prefs["review"]:
+                try:
+                    reviews = await conn.fetch(
+                        """SELECT r.id, r.rating, r.title, p.name AS product_name, r.created_at
+                           FROM product_reviews r
+                           JOIN products p ON r.product_id = p.id
+                           WHERE r.deleted_at IS NULL
+                             AND r.created_at > now() - interval '7 days'
+                           ORDER BY r.created_at DESC LIMIT 5"""
+                    )
+                    for rev in reviews:
+                        notifications.append({
+                            "id": f"review-{rev['id']}",
+                            "icon": "review",
+                            "color": "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+                            "title": f"{rev['rating']}\u2605 review on {rev['product_name']}",
+                            "subtitle": (rev["title"] or "No comment")[:50],
+                            "time": _humanize_dt(rev["created_at"]),
+                            "ts": rev["created_at"],
+                            "type": "review",
+                        })
+                except Exception:
+                    pass
+
+            # --- Low stock alerts ---
+            if prefs["low_stock"]:
+                try:
+                    low = await conn.fetch(
+                        """SELECT id, name, stock_quantity, created_at
+                           FROM products
+                           WHERE deleted_at IS NULL
+                             AND stock_quantity IS NOT NULL
+                             AND stock_quantity <= 5
+                           ORDER BY stock_quantity ASC LIMIT 5"""
+                    )
+                    for p in low:
+                        notifications.append({
+                            "id": f"stock-{p['id']}",
+                            "icon": "low_stock",
+                            "color": "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+                            "title": f"Low stock: {p['name']}",
+                            "subtitle": f"Only {p['stock_quantity']} left in stock",
+                            "time": _humanize_dt(p["created_at"]),
+                            "ts": p["created_at"],
+                            "type": "low_stock",
+                        })
+                except Exception:
+                    pass
+
+            # --- Waitlist signups (last 24h) ---
             try:
-                reviews = await conn.fetch(
-                    """SELECT r.rating, r.title, p.name, r.created_at
-                       FROM product_reviews r JOIN products p ON r.product_id = p.id
-                       WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 3"""
+                wl = await conn.fetch(
+                    """SELECT id, email, created_at
+                       FROM waitlist
+                       WHERE created_at > now() - interval '24 hours'
+                       ORDER BY created_at DESC LIMIT 5"""
                 )
-                for rev in reviews:
+                for w in wl:
+                    email_name = (w["email"] or "Someone").split("@")[0].replace(".", " ").title()
                     notifications.append({
-                        "icon": "review",
-                        "color": "bg-amber-50 text-amber-600",
-                        "title": f"{rev['rating']}★ review on {rev['name']}",
-                        "subtitle": (rev["title"] or "")[:40],
-                        "time": _humanize_dt(rev["created_at"]),
+                        "id": f"waitlist-{w['id']}",
+                        "icon": "waitlist",
+                        "color": "bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400",
+                        "title": f"Waitlist signup: {email_name}",
+                        "subtitle": w["email"] or "",
+                        "time": _humanize_dt(w["created_at"]),
+                        "ts": w["created_at"],
+                        "type": "waitlist",
+                    })
+            except Exception:
+                pass
+
+            # --- Recent email sends (last 24h) ---
+            try:
+                emails = await conn.fetch(
+                    """SELECT id, recipient_email, subject, status, sent_at
+                       FROM email_logs
+                       WHERE sent_at > now() - interval '24 hours'
+                       ORDER BY sent_at DESC LIMIT 5"""
+                )
+                for e in emails:
+                    status_icon = "email_ok" if e["status"] == "sent" else "email_fail"
+                    notifications.append({
+                        "id": f"email-{e['id']}",
+                        "icon": status_icon,
+                        "color": "bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400" if e["status"] == "sent" else "bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400",
+                        "title": f"Email: {e['subject'][:35]}",
+                        "subtitle": f"To {(e['recipient_email'] or '')[:30]} \u00b7 {e['status'].title()}",
+                        "time": _humanize_dt(e["sent_at"]),
+                        "ts": e["sent_at"],
+                        "type": "email",
+                    })
+            except Exception:
+                pass
+
+            # --- Contact form messages (last 24h) ---
+            try:
+                msgs = await conn.fetch(
+                    """SELECT id, name, subject, created_at
+                       FROM contact_messages
+                       WHERE created_at > now() - interval '24 hours'
+                       ORDER BY created_at DESC LIMIT 3"""
+                )
+                for m in msgs:
+                    notifications.append({
+                        "id": f"contact-{m['id']}",
+                        "icon": "contact",
+                        "color": "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+                        "title": f"Contact: {m['name'] or 'Anonymous'}",
+                        "subtitle": (m["subject"] or "No subject")[:40],
+                        "time": _humanize_dt(m["created_at"]),
+                        "ts": m["created_at"],
+                        "type": "contact",
                     })
             except Exception:
                 pass
@@ -1720,13 +1878,19 @@ async def rt_notifications(request: Request) -> HTMLResponse:
     except Exception:
         pass
 
-    # Sort by time (newest first) and count unread
-    notifications = notifications[:10]
-    unread_count = len([n for n in notifications if n["time"] not in ("just now", "1m ago", "2m ago", "3m ago", "4m ago", "5m ago")])
+    # Sort by timestamp (newest first) and limit
+    notifications.sort(key=lambda n: n.get("ts") or "", reverse=True)
+    notifications = notifications[:15]
+
+    # Unread = anything older than 5 minutes
+    unread_count = sum(1 for n in notifications if n["time"] not in (
+        "just now", "1m ago", "2m ago", "3m ago", "4m ago", "5m ago"
+    ))
 
     return templates.TemplateResponse(
         request, "admin/sections/_rt_notifications.html",
         {"request": request, "notifications": notifications, "unread_count": unread_count},
+        headers={"X-Unread-Count": str(unread_count)},
     )
 
 

@@ -519,15 +519,17 @@
             </button>
             <div class="w-px h-6 bg-gray-200 dark:bg-gray-800 mx-1"></div>
             <!-- Notifications bell with dropdown -->
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open; if(open) { htmx.ajax('GET', '/admin/rt/notifications', {target: '#notifications-dropdown', swap: 'innerHTML'}) }"
+            <div class="relative" x-data="{ open: false, unread: 0, loadNotifs() { if(this.open) { fetch('/admin/rt/notifications').then(r => { this.unread = parseInt(r.headers.get('X-Unread-Count') || '0'); return r.text(); }).then(html => { document.getElementById('notifications-dropdown').innerHTML = html; htmx.process(document.getElementById('notifications-dropdown')); }); } }">
+                <button @click="open = !open; loadNotifs()"
                         class="relative w-9 h-9 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 flex items-center justify-center transition-colors" title="Notifications">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
-                    <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-[#0E0E10]"></span>
+                    <span x-show="unread > 0" x-text="unread > 9 ? '9+' : unread"
+                          class="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full bg-rose-500 text-white text-[9px] font-bold ring-2 ring-white dark:ring-[#0E0E10]"
+                          x-cloak></span>
                 </button>
-                <!-- Dropdown -->
+                <!-- Dropdown — mobile: full-width inset, desktop: fixed width right-aligned -->
                 <div x-show="open" @click.outside="open = false" x-cloak
                      x-transition:enter="transition ease-out duration-150"
                      x-transition:enter-start="opacity-0 scale-95 -translate-y-1"
@@ -535,15 +537,22 @@
                      x-transition:leave="transition ease-in duration-100"
                      x-transition:leave-start="opacity-100 scale-100 translate-y-0"
                      x-transition:leave-end="opacity-0 scale-95 -translate-y-1"
-                     class="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl z-50">
-                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                     class="absolute right-0 top-full mt-2 w-72 sm:w-[340px] bg-white dark:bg-[#111114] rounded-xl border border-gray-200 dark:border-gray-800 shadow-xl z-50 max-h-[70vh] sm:max-h-96 flex flex-col overflow-hidden">
+                    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex-shrink-0">
                         <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-                        <button @click="open = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                        </button>
+                        <div class="flex items-center gap-1">
+                            <button x-show="unread > 0" @click="unread = 0" x-cloak
+                                    class="text-[11px] text-blue-600 dark:text-blue-400 hover:underline px-1">Mark read</button>
+                            <button @click="open = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
                     </div>
-                    <div id="notifications-dropdown">
-                        <div class="px-4 py-6 text-center text-sm text-gray-400">Loading...</div>
+                    <div id="notifications-dropdown" x-ref="notifContent">
+                        <div class="px-4 py-8 text-center">
+                            <div class="w-5 h-5 border-2 border-gray-200 dark:border-gray-700 border-t-[#D4AF37] rounded-full animate-spin mx-auto mb-2"></div>
+                            <p class="text-xs text-gray-400">Loading...</p>
+                        </div>
                     </div>
                 </div>
             </div>
