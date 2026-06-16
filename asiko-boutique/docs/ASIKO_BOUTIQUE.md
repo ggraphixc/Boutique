@@ -342,7 +342,7 @@ asiko-boutique/
 - Operations: inventory tracking, order processing, waitlist management
 - AI Stylist admin: training data CRUD (add Q&A pairs for brand knowledge)
 - Settings: per-section save with 11+ configuration areas
-- Notifications: bell icon with real-time unread count
+- Notifications: bell icon with 7 activity types (orders, customers, reviews, low stock, waitlist, emails, contacts), dynamic unread count, responsive dropdown
 - Custom confirm dialog (replaces browser `window.confirm`)
 - Toast notifications (`asikoToast()`) for success/failure feedback
 - Dark mode toggle (admin-specific key: `asiko:admin:darkMode`)
@@ -666,13 +666,10 @@ CATEGORY_PAIRS = {
 ### Real-Time
 | Method | Path | Description |
 |--------|------|-------------|
-| WS | `/ws/admin` | Admin WebSocket (real-time updates) |
-| WS | `/ws/store` | Store WebSocket (stock updates) |
-| GET | `/api/realtime/pipeline/{product_id}` | Pipeline status (RT) |
-| GET | `/api/realtime/activity` | Activity feed (RT) |
-| GET | `/api/realtime/reviews` | Review notifications (RT) |
-| GET | `/api/realtime/dashboard` | Dashboard KPIs (RT) |
-| GET | `/api/stream/pipeline/{product_id}` | Pipeline SSE stream |
+| WS | `/ws/admin/dashboard` | Admin dashboard WebSocket (orders, reviews) |
+| WS | `/ws/admin/reviews` | Admin reviews WebSocket |
+| WS | `/ws/store/product/{id}` | Store product WebSocket (stock, reviews) |
+| GET | `/admin/rt/notifications` | Notification bell dropdown (7 activity types, X-Unread-Count header) |
 
 ### Payments & Webhooks
 | Method | Path | Description |
@@ -831,23 +828,30 @@ When `OPAY_SECRET_KEY` starts with `your_`:
 ## 14. Real-Time System
 
 ### Architecture
-- **WebSocket**: Bidirectional for admin dashboard and store stock updates
-- **SSE (Server-Sent Events)**: One-way for pipeline status, activity feed
-- **Postgres LISTEN/NOTIFY**: 4 channels for database-level events
+- **WebSocket**: Bidirectional for admin dashboard and store product updates
+- **Postgres LISTEN/NOTIFY**: 3 channels for database-level events
+- **HTMX on-demand polling**: Notification bell fetches fresh data on click
 
 ### Channels
 | Channel | Purpose |
 |---------|---------|
-| `ch_pipeline` | 3D pipeline status updates |
-| `ch_new_review` | New product review notifications |
-| `ch_new_order` | New order alerts |
-| `ch_stock` | Stock level changes |
+| `new_review` | New product review notifications |
+| `new_order` | New order alerts |
+| `stock_update` | Stock level changes |
 
 ### ConnectionManager (`app/realtime.py`)
 - Maintains active WebSocket connections per channel
 - `broadcast(channel, data)` — sends to all connected clients
 - `start_listeners(pool)` — starts Postgres LISTEN/NOTIFY
 - `stop_listeners()` — graceful shutdown
+
+### Notification Bell (`/admin/rt/notifications`)
+- Fetches 7 activity types: orders (24h), customers (24h), reviews (7d), low stock (≤5 qty), waitlist (24h), email logs (24h), contact messages (24h)
+- Respects `notification_settings` toggles (notif_new_order, notif_review, notif_low_stock)
+- Returns `X-Unread-Count` header for dynamic badge
+- Alpine.js manages unread count, "Mark all as read" button
+- Responsive dropdown: `w-72` mobile, `w-[340px]` desktop
+- All queries wrapped in try/except for graceful degradation
 
 ---
 
@@ -875,24 +879,36 @@ When `OPAY_SECRET_KEY` starts with `your_`:
 - Blog (blog management)
 
 **Account Group:**
-- Settings (11+ sections)
+- Settings (18 sections)
 - About Me (store profile)
 
-### Settings Sections (11+)
+### Settings Sections (18)
 1. Store Profile
 2. AI Provider
-3. Homepage
+3. Homepage (hero, featured)
 4. Lookbook
 5. Shop
 6. About
-7. AI Stylist
+7. AI Stylist (page config)
 8. Pages & Blog
 9. Security
 10. Notifications
-11. Email (Brevo)
-12. Email Notifications
+11. Email (Brevo config)
+12. Email Notifications (welcome, order, shipping, newsletter, password reset)
+13. Shipping
+14. Currency & Locale
+15. Brand Identity (logo, name, tagline)
+16. SEO / GEO / AEO
+17. Chatbot
+18. Social & Loyalty
 
 Each section has its own save button. Save triggers `asikoToast()` feedback.
+
+### Admin Header
+- Hamburger menu (mobile only)
+- Notification bell (7 activity types, dynamic unread badge)
+- Dark mode toggle
+- Profile avatar + name
 
 ### Admin Dark Mode
 - Toggle button in header
@@ -1007,7 +1023,7 @@ Each section has its own save button. Save triggers `asikoToast()` feedback.
 ### Test Files (14)
 | File | Tests | Coverage |
 |------|-------|----------|
-| `test_admin_sections.py` | 72 | Admin section handlers |
+| `test_admin_sections.py` | 73 | Admin section handlers |
 | `test_admin_create_product.py` | 30 | Product CRUD |
 | `test_storefront_pages.py` | 43 | Storefront routes |
 | `test_realtime.py` | 35 | WebSocket, LISTEN/NOTIFY |
@@ -1016,9 +1032,11 @@ Each section has its own save button. Save triggers `asikoToast()` feedback.
 | `test_dpp.py` | ~10 | Digital Product Passport |
 | `test_dual_ingestion.py` | ~10 | Dual ingestion |
 | `test_flow.py` | ~15 | End-to-end flows |
-| `test_schema_guard.py` | ~10 | Schema validation |
+| `test_schema_guard.py` | 3 | Schema validation |
 | `test_sse_streams.py` | ~10 | Server-Sent Events |
-| `test_webhooks.py` | ~10 | OPay webhooks |
+| `test_webhooks.py` | 7 | OPay webhooks, email sending |
+
+**83 tests passing** (core suite: 73 admin + 7 webhooks + 3 schema guard)
 
 ### Running Tests
 ```bash

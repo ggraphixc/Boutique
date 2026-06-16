@@ -104,23 +104,27 @@ The complete admin redesign with 12+ HTMX sections. Each section is served as a 
 12. Notifications
 13. Email (Brevo)
 14. Email Notifications
+15. Brand Identity (logo, name, tagline)
+16. SEO / GEO / AEO
+17. Chatbot
+18. Social & Loyalty
 
 ### Per-Section Save
 ```python
 async def section_settings_post(request):
     form = await request.form()
     section = form.get("section", "")
-    
+
     # Extract only fields for this section
     payload = {k: v for k, v in form.items() if k != "section"}
-    
-    # Save to DB
-    await save_settings(pool, payload, partial=True)
-    
-    # Return toast
-    return HTMLResponse("""
-        <script>asikoToast('success', 'Saved', 'Settings updated successfully')</script>
-    """)
+
+    # Save to correct table via per-table save function
+    save_fn = _SAVE路由.get(section)
+    if save_fn:
+        await save_fn(pool, payload)
+
+    # Return toast via HX-Trigger header
+    return HTMLResponse("", headers={"HX-Trigger": "settingsToast"})
 ```
 
 ### Real-Time Fragments
@@ -128,8 +132,14 @@ async def section_settings_post(request):
 _rt_kpi_cards.html      → Live KPI updates via WebSocket
 _rt_activity_feed.html   → Live activity feed items
 _rt_review_stats.html    → Live review statistics
-_rt_notifications.html   → Bell icon notification count
+_rt_notifications.html   → Bell icon dropdown (7 activity types, responsive)
 ```
+
+### Admin Header
+- Hamburger menu (mobile only)
+- Notification bell (dynamic unread badge, responsive dropdown)
+- Dark mode toggle
+- Profile avatar + name
 
 ### Why It Matters
 This is where the owner spends most of their time. Every business operation is managed from these sections.

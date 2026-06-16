@@ -132,8 +132,13 @@
 | 7.1 | Dashboard loads | Login, visit dashboard | KPI cards: Total Sales, Total Orders, Products, Customers | |
 | 7.2 | KPI values | Dashboard | Real numbers from database (not placeholder) | |
 | 7.3 | Activity feed | Dashboard | Recent orders, reviews, new customers listed | |
-| 7.4 | Real-time notifications | Open dashboard, new order comes in | Bell icon updates with unread count | |
-| 7.5 | Notification dropdown | Click bell icon | Dropdown shows recent notifications | |
+| 7.4 | Notification bell badge | Login, check header | Bell shows dynamic unread count (red badge with number) | |
+| 7.5 | Notification dropdown | Click bell icon | Dropdown shows 7 activity types: orders, customers, reviews, low stock, waitlist, emails, contacts | |
+| 7.6 | Notification summary bar | Open dropdown | Top bar shows count per category (e.g. "2 orders 1 customers 0 reviews") | |
+| 7.7 | Notification unread dot | Open dropdown | Items < 5 min old show blue dot, older items don't | |
+| 7.8 | Mark all as read | Click "Mark read" in dropdown header | Unread badge disappears | |
+| 7.9 | Mobile dropdown | Open bell on mobile | Dropdown is full-width with proper scroll, not clipped | |
+| 7.10 | Empty notifications | No recent activity | Empty state with bell icon and "No notifications yet" message | |
 
 ---
 
@@ -183,7 +188,7 @@
 | 10.8 | Toggle a page on | Set FAQ to visible, save | FAQ returns to nav and footer | |
 | 10.9 | Email Settings | Section: Email/Brevo | Brevo API key, sender email, sender name, admin email | |
 | 10.10 | Email Campaign Settings | Section: Email Campaigns | From name, reply-to, tracking toggle, unsubscribe link, footer text | |
-| 10.11 | Notification Settings | Section: Notifications | Toggle for each notification type | |
+| 10.11 | Notification Settings | Section: Notifications | Toggles for: New Order, Review, Low Stock — each controls notification visibility in bell dropdown | |
 | 10.12 | Dark mode (admin) | Toggle dark mode in settings or sidebar | Admin switches to dark theme | |
 | 10.13 | Dark mode persists | Reload admin page | Dark mode stays on | |
 | 10.14 | Page reload stays on section | Scroll to a section, reload | Stays on same section (or at least same page, not redirected to dashboard) | |
